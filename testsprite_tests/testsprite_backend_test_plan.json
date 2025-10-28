@@ -1,0 +1,137 @@
+[
+  {
+    "id": "backend-test-plan-001",
+    "title": "LinkedIn Content Intelligence System Backend Tests",
+    "projectName": "Linkedin_agent",
+    "version": "1.0.0",
+    "description": "Backend API test plan for LinkedIn Content Intelligence System",
+    "baseUrl": "http://localhost:8080",
+    "authRequired": true,
+    "authType": "Bearer",
+    "tests": [
+      {
+        "id": "health-check-001",
+        "title": "Health check endpoint returns healthy status",
+        "method": "GET",
+        "endpoint": "/health",
+        "expectedStatus": 200,
+        "expectedResponse": {
+          "status": "healthy"
+        }
+      },
+      {
+        "id": "root-endpoint-001",
+        "title": "Root endpoint returns API information",
+        "method": "GET",
+        "endpoint": "/",
+        "expectedStatus": 200,
+        "expectedResponseContains": ["service", "version"]
+      },
+      {
+        "id": "auth-callback-001",
+        "title": "Auth callback creates new user",
+        "method": "POST",
+        "endpoint": "/auth/callback",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "clerk_user_id": "test_user_123",
+          "email": "test@example.com",
+          "full_name": "Test User"
+        },
+        "expectedStatus": 200
+      },
+      {
+        "id": "auth-verify-001",
+        "title": "Auth verify requires valid token",
+        "method": "GET",
+        "endpoint": "/auth/verify",
+        "authRequired": true,
+        "expectedStatus": 401
+      },
+      {
+        "id": "onboarding-questionnaire-001",
+        "title": "Onboarding questionnaire saves responses",
+        "method": "POST",
+        "endpoint": "/onboarding/questionnaire",
+        "authRequired": true,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "writing_tone": "Professional & Formal",
+          "audience": "CTOs and Engineering Managers",
+          "values": ["Innovation", "Leadership", "Growth"],
+          "personality": "Thought leader",
+          "frequency": 3,
+          "focus": "AI and Technology"
+        },
+        "expectedStatus": 200
+      },
+      {
+        "id": "user-profile-001",
+        "title": "Get user profile requires authentication",
+        "method": "GET",
+        "endpoint": "/user/profile",
+        "authRequired": true,
+        "expectedStatus": 401
+      },
+      {
+        "id": "linkedin-token-001",
+        "title": "LinkedIn token save requires authentication",
+        "method": "POST",
+        "endpoint": "/auth/linkedin/token",
+        "authRequired": true,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "access_token": "test_token",
+          "refresh_token": "test_refresh",
+          "expires_at": "2025-12-31T00:00:00"
+        },
+        "expectedStatus": 401
+      },
+      {
+        "id": "linkedin-status-001",
+        "title": "LinkedIn status check requires authentication",
+        "method": "GET",
+        "endpoint": "/auth/linkedin/status",
+        "authRequired": true,
+        "expectedStatus": 401
+      },
+      {
+        "id": "posts-generate-001",
+        "title": "Post generation requires authentication",
+        "method": "POST",
+        "endpoint": "/posts/generate",
+        "authRequired": true,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "topic": "AI Agents",
+          "style": "Professional"
+        },
+        "expectedStatus": 401
+      },
+      {
+        "id": "posts-pending-001",
+        "title": "Get pending posts requires authentication",
+        "method": "GET",
+        "endpoint": "/posts/pending",
+        "authRequired": true,
+        "expectedStatus": 401
+      },
+      {
+        "id": "posts-published-001",
+        "title": "Get published posts requires authentication",
+        "method": "GET",
+        "endpoint": "/posts/published",
+        "authRequired": true,
+        "expectedStatus": 401
+      }
+    ]
+  }
+]

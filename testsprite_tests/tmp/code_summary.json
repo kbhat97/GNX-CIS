@@ -1,0 +1,84 @@
+{
+  "project_name": "LinkedIn Content Intelligence System",
+  "project_type": "fullstack",
+  "backend_stack": {
+    "language": "Python",
+    "framework": "FastAPI",
+    "version": "3.11",
+    "asgi_server": "Uvicorn",
+    "database": "Supabase (PostgreSQL)",
+    "authentication": "Clerk (JWT)",
+    "api_style": "REST"
+  },
+  "frontend_stack": {
+    "language": "Python",
+    "framework": "Streamlit",
+    "language_version": "3.11"
+  },
+  "key_features": [
+    "User authentication with Clerk",
+    "JWT-based authentication",
+    "User onboarding questionnaire",
+    "LinkedIn OAuth integration",
+    "AI-powered content generation",
+    "Post management (draft/published)",
+    "User profile management",
+    "Supabase database integration"
+  ],
+  "api_endpoints": [
+    "GET /health",
+    "GET /",
+    "POST /auth/callback",
+    "GET /auth/verify",
+    "POST /onboarding/questionnaire",
+    "GET /user/profile",
+    "POST /auth/linkedin/token",
+    "GET /auth/linkedin/status",
+    "POST /posts/generate",
+    "GET /posts/pending",
+    "GET /posts/published"
+  ],
+  "database_tables": [
+    "users",
+    "user_profiles",
+    "onboarding_questionnaire",
+    "linkedin_tokens",
+    "posts"
+  ],
+  "ports": {
+    "api": 8080,
+    "frontend": 8501
+  },
+  "dependencies": [
+    "fastapi",
+    "uvicorn",
+    "python-dotenv",
+    "clerk-backend-api",
+    "supabase",
+    "psycopg2-binary",
+    "requests",
+    "oauthlib",
+    "google-generativeai",
+    "openai",
+    "streamlit",
+    "pydantic",
+    "python-jose",
+    "passlib",
+    "python-multipart",
+    "email-validator",
+    "google-cloud-secret-manager",
+    "google-cloud-storage",
+    "loguru"
+  ],
+  "deployment": {
+    "platform": "Google Cloud Run",
+    "backend_dockerfile": "Dockerfile.api",
+    "frontend_dockerfile": "Dockerfile.frontend"
+  },
+  "authentication_flow": {
+    "method": "JWT",
+    "provider": "Clerk",
+    "database_sync": "Supabase",
+    "requires_auth": true
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "status": "init",
+  "scope": "codebase",
+  "type": "backend",
+  "localEndpoint": "http://localhost:8080/",
+  "serverPort": 59751,
+  "executionArgs": {
+    "projectName": "Linkedin_agent",
+    "projectPath": "C:\\Users\\16139\\Linkedin_agent",
+    "testIds": [],
+    "additionalInstruction": "Test the backend API endpoints including health check, authentication, user profile, onboarding, post generation, and LinkedIn integration endpoints.",
+    "envs": {
+      "API_KEY": "sk-user-CoXlucdf-_DqC6lM0tD9Gn685gQgXgnFvKTnWv6DD_THAWSDCWkrmsaEX5Zt5lqaBZvfblg7mXLtffo1NVGk1so1iStpKPJDP--XjaXgr4yJuD9TFWJ4NXvSoLXpYB80NYc"
+    }
+  },
+  "proxy": "http://5c0c8ca5-ca8e-452c-90ee-ec29561eb443:4iFu4JO8qpc4jueEjATW5dbalE4x7Shj@tun.testsprite.com:8080"
+}

@@ -1,0 +1,254 @@
+2025-10-19 12:23:46,446 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 12:23:49,440 - LinkedInAgent - INFO - [Orchestrator] Starting post creation workflow: User: ac6d75d4-02b8-4c84-8011-51453cb44cb6, Topic: The impact of GenAI on supply chain management
+2025-10-19 12:23:49,440 - LinkedInAgent - INFO - [ContentAgent] Analyzing historical posts: Fetching style profile for user ac6d75d4-02b8-4c84-8011-51453cb44cb6
+2025-10-19 12:23:49,443 - LinkedInAgent - INFO - [HistoryAgent] Fetching past posts: Limit: 10
+2025-10-19 12:23:50,506 - LinkedInAgent - INFO - [LinkedInAPI] Profile retrieved: KUNAL BHAT , PMP
+2025-10-19 12:23:51,444 - LinkedInAgent - ERROR - ERROR in Get user posts: API error: 426
+2025-10-19 12:24:09,808 - LinkedInAgent - INFO - [HistoryAgent] Analysis complete: Style: The author's voice is that of an experienced techn...
+2025-10-19 12:24:24,151 - LinkedInAgent - INFO - [ContentAgent] Post text generated: Topic: The impact of GenAI on supply chain management
+2025-10-19 12:24:49,579 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 75/100
+2025-10-19 12:24:49,812 - httpx - INFO - HTTP Request: POST https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts "HTTP/2 401 Unauthorized"
+2025-10-19 12:24:49,820 - LinkedInAgent - ERROR - ERROR in Save draft post: {'message': 'new row violates row-level security policy for table "posts"', 'code': '42501', 'hint': None, 'details': None}
+2025-10-19 12:24:49,821 - LinkedInAgent - ERROR - ERROR in Post orchestration workflow failed: {'message': 'new row violates row-level security policy for table "posts"', 'code': '42501', 'hint': None, 'details': None}
+2025-10-19 12:24:49,910 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:27:13,863 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:27:15,720 - LinkedInAgent - INFO - Starting generation for user ac6d75d4-02b8-4c84-8011-51453cb44cb6 on topic: The impact of GenAI on supply chain management
+2025-10-19 13:27:15,720 - LinkedInAgent - INFO - [Orchestrator] Starting post creation workflow: User: ac6d75d4-02b8-4c84-8011-51453cb44cb6, Topic: The impact of GenAI on supply chain management
+2025-10-19 13:27:15,723 - LinkedInAgent - INFO - [ContentAgent] Analyzing historical posts: Fetching style profile for user ac6d75d4-02b8-4c84-8011-51453cb44cb6
+2025-10-19 13:27:15,723 - LinkedInAgent - INFO - [HistoryAgent] Fetching past posts: Limit: 10
+2025-10-19 13:27:16,669 - LinkedInAgent - INFO - [LinkedInAPI] Profile retrieved: KUNAL BHAT , PMP
+2025-10-19 13:27:17,670 - LinkedInAgent - ERROR - ERROR in Get user posts: API error: 426
+2025-10-19 13:27:35,069 - LinkedInAgent - INFO - [HistoryAgent] Analysis complete: Style: The author has a technical, practitioner-focused v...
+2025-10-19 13:27:54,733 - LinkedInAgent - INFO - [ContentAgent] Post text generated: Topic: The impact of GenAI on supply chain management
+2025-10-19 13:28:30,389 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 77/100
+2025-10-19 13:28:30,868 - LinkedInAgent - INFO - [Orchestrator] Image created: static\outputs\c513d585-307d-47d4-b66a-cf2d8bae2dc8.png
+2025-10-19 13:28:31,110 - httpx - INFO - HTTP Request: POST https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts "HTTP/2 401 Unauthorized"
+2025-10-19 13:28:31,112 - LinkedInAgent - ERROR - ERROR in Save draft post: {'message': 'new row violates row-level security policy for table "posts"', 'code': '42501', 'hint': None, 'details': None}
+2025-10-19 13:28:31,114 - LinkedInAgent - ERROR - ERROR in Post orchestration workflow failed: {'message': 'new row violates row-level security policy for table "posts"', 'code': '42501', 'hint': None, 'details': None}
+2025-10-19 13:28:31,114 - LinkedInAgent - ERROR - Error in generation endpoint: 500: {'message': 'new row violates row-level security policy for table "posts"', 'code': '42501', 'hint': None, 'details': None}
+Traceback (most recent call last):
+  File "C:\Users\16139\linkedin-agent\api\main.py", line 30, in generate_post_endpoint
+    raise HTTPException(status_code=500, detail=result["error"])
+fastapi.exceptions.HTTPException: 500: {'message': 'new row violates row-level security policy for table "posts"', 'code': '42501', 'hint': None, 'details': None}
+2025-10-19 13:28:31,225 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:35:09,347 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:35:10,318 - LinkedInAgent - INFO - Starting generation for user ac6d75d4-02b8-4c84-8011-51453cb44cb6 on topic: The impact of GenAI on supply chain management
+2025-10-19 13:35:10,319 - LinkedInAgent - INFO - [Orchestrator] Starting post creation workflow: User: ac6d75d4-02b8-4c84-8011-51453cb44cb6, Topic: The impact of GenAI on supply chain management
+2025-10-19 13:35:10,326 - LinkedInAgent - INFO - [ContentAgent] Analyzing historical posts: Fetching style profile for user ac6d75d4-02b8-4c84-8011-51453cb44cb6
+2025-10-19 13:35:10,327 - LinkedInAgent - INFO - [HistoryAgent] Fetching past posts: Limit: 10
+2025-10-19 13:35:11,366 - LinkedInAgent - INFO - [LinkedInAPI] Profile retrieved: KUNAL BHAT , PMP
+2025-10-19 13:35:12,329 - LinkedInAgent - ERROR - ERROR in Get user posts: API error: 426
+2025-10-19 13:35:33,087 - LinkedInAgent - INFO - [HistoryAgent] Analysis complete: Style: The author's voice is that of a technical practiti...
+2025-10-19 13:35:50,637 - LinkedInAgent - INFO - [ContentAgent] Post text generated: Topic: The impact of GenAI on supply chain management
+2025-10-19 13:36:09,604 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 91/100
+2025-10-19 13:36:09,910 - LinkedInAgent - INFO - [Orchestrator] Image created: static\outputs\663d0ef3-9c5e-44a0-b826-f9867e377ffe.png
+2025-10-19 13:36:10,178 - httpx - INFO - HTTP Request: POST https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts "HTTP/2 201 Created"
+2025-10-19 13:36:10,187 - LinkedInAgent - INFO - [Database] Draft saved: 97d1fc91-ac60-4303-82e6-a0ee8f2f5e92
+2025-10-19 13:36:10,188 - LinkedInAgent - INFO - [Orchestrator] Workflow complete, draft saved: Post ID: 97d1fc91-ac60-4303-82e6-a0ee8f2f5e92
+2025-10-19 13:36:10,291 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:36:48,283 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:37:01,078 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:37:01,192 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.97d1fc91-ac60-4303-82e6-a0ee8f2f5e92&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 13:37:01,267 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.97d1fc91-ac60-4303-82e6-a0ee8f2f5e92&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 400 Bad Request"
+2025-10-19 13:37:01,269 - LinkedInAgent - ERROR - ERROR in Approve post: {'message': "Could not find the 'approved_at' column of 'posts' in the schema cache", 'code': 'PGRST204', 'hint': None, 'details': None}
+2025-10-19 13:40:33,583 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:40:36,262 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:40:36,390 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.97d1fc91-ac60-4303-82e6-a0ee8f2f5e92&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 13:40:36,496 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.97d1fc91-ac60-4303-82e6-a0ee8f2f5e92&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 400 Bad Request"
+2025-10-19 13:40:36,498 - LinkedInAgent - ERROR - ERROR in Approve post: {'message': "Could not find the 'approved_at' column of 'posts' in the schema cache", 'code': 'PGRST204', 'hint': None, 'details': None}
+2025-10-19 13:40:40,026 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:40:40,122 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.97d1fc91-ac60-4303-82e6-a0ee8f2f5e92&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 13:40:40,206 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.97d1fc91-ac60-4303-82e6-a0ee8f2f5e92&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 400 Bad Request"
+2025-10-19 13:40:40,208 - LinkedInAgent - ERROR - ERROR in Approve post: {'message': "Could not find the 'approved_at' column of 'posts' in the schema cache", 'code': 'PGRST204', 'hint': None, 'details': None}
+2025-10-19 13:47:34,759 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:47:34,852 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.97d1fc91-ac60-4303-82e6-a0ee8f2f5e92&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 13:47:34,937 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.97d1fc91-ac60-4303-82e6-a0ee8f2f5e92&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 400 Bad Request"
+2025-10-19 13:47:34,939 - LinkedInAgent - ERROR - ERROR in Approve post: {'message': "Could not find the 'approved_at' column of 'posts' in the schema cache", 'code': 'PGRST204', 'hint': None, 'details': None}
+2025-10-19 13:49:46,999 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 13:49:47,094 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.97d1fc91-ac60-4303-82e6-a0ee8f2f5e92&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 13:49:47,163 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.97d1fc91-ac60-4303-82e6-a0ee8f2f5e92&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 13:49:47,166 - LinkedInAgent - INFO - [Database] Post approved: 97d1fc91-ac60-4303-82e6-a0ee8f2f5e92
+2025-10-19 13:49:48,012 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 14:03:21,665 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 14:03:41,743 - LinkedInAgent - INFO - [Orchestrator] Starting post creation workflow: User: ac6d75d4-02b8-4c84-8011-51453cb44cb6, Topic: The impact of GenAI on supply chain management in complex scenerios.
+2025-10-19 14:03:41,744 - LinkedInAgent - INFO - [HistoryAgent] Fetching past posts: Limit: 10
+2025-10-19 14:03:42,941 - LinkedInAgent - INFO - [LinkedInAPI] Profile retrieved: KUNAL BHAT , PMP
+2025-10-19 14:03:43,860 - LinkedInAgent - ERROR - ERROR in Get user posts: API error: 426
+2025-10-19 14:04:04,487 - LinkedInAgent - INFO - [HistoryAgent] Analysis complete: Style: The author's voice is that of an experienced techn...
+2025-10-19 14:04:26,048 - LinkedInAgent - INFO - [ContentAgent] Post text generated: Topic: The impact of GenAI on supply chain management in complex scenerios.
+2025-10-19 14:04:47,067 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 92/100
+2025-10-19 14:04:47,392 - LinkedInAgent - INFO - [Orchestrator] Image created: static\outputs\e5c4708d-71fa-4de6-be7c-e00c56c1014c.png
+2025-10-19 14:04:48,037 - httpx - INFO - HTTP Request: POST https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts "HTTP/2 201 Created"
+2025-10-19 14:04:48,041 - LinkedInAgent - INFO - [Database] Draft saved: 0a3c9310-eba5-480c-a3ca-7a83d8502b6e
+2025-10-19 14:04:48,041 - LinkedInAgent - INFO - [Orchestrator] Workflow complete, draft saved: Post ID: 0a3c9310-eba5-480c-a3ca-7a83d8502b6e
+2025-10-19 14:04:48,167 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 14:08:08,648 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 14:08:08,776 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.0a3c9310-eba5-480c-a3ca-7a83d8502b6e&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 14:08:10,770 - LinkedInAgent - INFO - [LinkedInPublisher] Post published successfully: urn:li:share:7385738553781309440
+2025-10-19 14:08:10,855 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.0a3c9310-eba5-480c-a3ca-7a83d8502b6e&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 14:08:10,860 - LinkedInAgent - INFO - [Database] Post status updated to PUBLISHED: 0a3c9310-eba5-480c-a3ca-7a83d8502b6e
+2025-10-19 14:08:11,897 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:09:56,282 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:10:11,181 - LinkedInAgent - INFO - [Orchestrator] Starting post creation workflow: User: ac6d75d4-02b8-4c84-8011-51453cb44cb6, Topic: The impact of GenAI on supply chain management in complex scenarios.
+2025-10-19 17:10:11,182 - LinkedInAgent - INFO - [HistoryAgent] Fetching past posts: Limit: 10
+2025-10-19 17:10:12,273 - LinkedInAgent - INFO - [LinkedInAPI] Profile retrieved: KUNAL BHAT , PMP
+2025-10-19 17:10:13,147 - LinkedInAgent - ERROR - ERROR in Get user posts: API error: 426
+2025-10-19 17:10:29,877 - LinkedInAgent - INFO - [HistoryAgent] Analysis complete: Style: The author has a technical, practitioner-focused v...
+2025-10-19 17:10:49,534 - LinkedInAgent - INFO - [ContentAgent] Post text generated: Topic: The impact of GenAI on supply chain management in complex scenarios.
+2025-10-19 17:11:08,284 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 91/100
+2025-10-19 17:11:08,286 - LinkedInAgent - INFO - [Orchestrator] Image created: None
+2025-10-19 17:11:08,814 - httpx - INFO - HTTP Request: POST https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts "HTTP/2 201 Created"
+2025-10-19 17:11:08,817 - LinkedInAgent - INFO - [Database] Draft saved: 8a0ef0fc-502f-434e-8ddd-eb335bfa9abb
+2025-10-19 17:11:08,817 - LinkedInAgent - INFO - [Orchestrator] Workflow complete, draft saved: Post ID: 8a0ef0fc-502f-434e-8ddd-eb335bfa9abb
+2025-10-19 17:11:08,942 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:12:17,852 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:12:17,887 - LinkedInAgent - INFO - [Orchestrator] Starting post improvement workflow: Post ID: 8a0ef0fc-502f-434e-8ddd-eb335bfa9abb
+2025-10-19 17:12:17,967 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.8a0ef0fc-502f-434e-8ddd-eb335bfa9abb&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:12:17,969 - LinkedInAgent - INFO - [ContentAgent] Improving post text: Feedback: Improve the content add how AI is integrated in ex...
+2025-10-19 17:12:32,021 - LinkedInAgent - INFO - [ContentAgent] Post text improved successfully: 
+2025-10-19 17:12:52,194 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 90/100
+2025-10-19 17:12:52,197 - LinkedInAgent - INFO - [Orchestrator] New image created for improved post: None
+2025-10-19 17:12:52,430 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.8a0ef0fc-502f-434e-8ddd-eb335bfa9abb&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft "HTTP/2 200 OK"
+2025-10-19 17:12:52,432 - LinkedInAgent - INFO - [Database] Draft post improved: 8a0ef0fc-502f-434e-8ddd-eb335bfa9abb
+2025-10-19 17:12:52,432 - LinkedInAgent - INFO - [Orchestrator] Improvement workflow complete: Post ID: 8a0ef0fc-502f-434e-8ddd-eb335bfa9abb
+2025-10-19 17:12:53,305 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:15:04,029 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:15:04,056 - LinkedInAgent - INFO - [Orchestrator] Starting post improvement workflow: Post ID: 8a0ef0fc-502f-434e-8ddd-eb335bfa9abb
+2025-10-19 17:15:04,114 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.8a0ef0fc-502f-434e-8ddd-eb335bfa9abb&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:15:04,117 - LinkedInAgent - INFO - [ContentAgent] Improving post text: Feedback: Improve the content add how AI is integrated in ex...
+2025-10-19 17:15:20,938 - LinkedInAgent - INFO - [ContentAgent] Post text improved successfully: 
+2025-10-19 17:15:35,670 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 93/100
+2025-10-19 17:15:36,056 - LinkedInAgent - INFO - [Orchestrator] New image created for improved post: static/outputs/61d9da80-c64d-4760-82c4-36a27340794d.png
+2025-10-19 17:15:36,257 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.8a0ef0fc-502f-434e-8ddd-eb335bfa9abb&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft "HTTP/2 200 OK"
+2025-10-19 17:15:36,260 - LinkedInAgent - INFO - [Database] Draft post improved: 8a0ef0fc-502f-434e-8ddd-eb335bfa9abb
+2025-10-19 17:15:36,260 - LinkedInAgent - INFO - [Orchestrator] Improvement workflow complete: Post ID: 8a0ef0fc-502f-434e-8ddd-eb335bfa9abb
+2025-10-19 17:15:37,230 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:15:46,652 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:15:46,730 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.8a0ef0fc-502f-434e-8ddd-eb335bfa9abb&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:15:48,756 - LinkedInAgent - INFO - [LinkedInPublisher] Post published successfully: urn:li:share:7385785770801938434
+2025-10-19 17:15:48,842 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.8a0ef0fc-502f-434e-8ddd-eb335bfa9abb&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:15:48,847 - LinkedInAgent - INFO - [Database] Post status updated to PUBLISHED: 8a0ef0fc-502f-434e-8ddd-eb335bfa9abb
+2025-10-19 17:15:49,650 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:20:20,185 - LinkedInAgent - INFO - [Orchestrator] Starting post creation workflow: User: ac6d75d4-02b8-4c84-8011-51453cb44cb6, Topic: SAP ECC migration until 2027, why it is important.
+2025-10-19 17:20:20,186 - LinkedInAgent - INFO - [HistoryAgent] Fetching past posts: Limit: 10
+2025-10-19 17:20:21,134 - LinkedInAgent - INFO - [LinkedInAPI] Profile retrieved: KUNAL BHAT , PMP
+2025-10-19 17:20:21,985 - LinkedInAgent - ERROR - ERROR in Get user posts: API error: 426
+2025-10-19 17:20:44,619 - LinkedInAgent - INFO - [HistoryAgent] Analysis complete: Style: The author's voice is that of an experienced techn...
+2025-10-19 17:20:58,634 - LinkedInAgent - INFO - [ContentAgent] Post text generated: Topic: SAP ECC migration until 2027, why it is important.
+2025-10-19 17:21:21,665 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 75/100
+2025-10-19 17:21:21,885 - LinkedInAgent - INFO - [Orchestrator] Image created: static/outputs/a43b4a84-c04f-45c1-b7b6-93042cf133c8.png
+2025-10-19 17:21:22,582 - httpx - INFO - HTTP Request: POST https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts "HTTP/2 201 Created"
+2025-10-19 17:21:22,584 - LinkedInAgent - INFO - [Database] Draft saved: 0c2857c6-cd11-4173-8f15-c0a47e1bf1c5
+2025-10-19 17:21:22,585 - LinkedInAgent - INFO - [Orchestrator] Workflow complete, draft saved: Post ID: 0c2857c6-cd11-4173-8f15-c0a47e1bf1c5
+2025-10-19 17:21:22,681 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:22:26,078 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:22:26,119 - LinkedInAgent - INFO - [Orchestrator] Starting post improvement workflow: Post ID: 0c2857c6-cd11-4173-8f15-c0a47e1bf1c5
+2025-10-19 17:22:26,202 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.0c2857c6-cd11-4173-8f15-c0a47e1bf1c5&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:22:26,204 - LinkedInAgent - INFO - [ContentAgent] Improving post text: Feedback: Add more depth to why it is important to upgrade y...
+2025-10-19 17:22:42,693 - LinkedInAgent - INFO - [ContentAgent] Post text improved successfully: 
+2025-10-19 17:22:58,740 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 82/100
+2025-10-19 17:22:58,987 - LinkedInAgent - INFO - [Orchestrator] New image created for improved post: static/outputs/5a905864-5ff1-4393-b793-3d3ff53e7b68.png
+2025-10-19 17:22:59,728 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.0c2857c6-cd11-4173-8f15-c0a47e1bf1c5&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft "HTTP/2 200 OK"
+2025-10-19 17:22:59,730 - LinkedInAgent - INFO - [Database] Draft post improved: 0c2857c6-cd11-4173-8f15-c0a47e1bf1c5
+2025-10-19 17:22:59,731 - LinkedInAgent - INFO - [Orchestrator] Improvement workflow complete: Post ID: 0c2857c6-cd11-4173-8f15-c0a47e1bf1c5
+2025-10-19 17:23:00,698 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:23:10,805 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:23:10,939 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.0c2857c6-cd11-4173-8f15-c0a47e1bf1c5&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:23:10,940 - LinkedInAgent - INFO - [LinkedInPublisher] Image found, starting upload process: C:\Users\16139\linkedin-agent\static/outputs/5a905864-5ff1-4393-b793-3d3ff53e7b68.png
+2025-10-19 17:23:12,128 - LinkedInAgent - ERROR - ERROR in Failed to publish post to LinkedIn: {"message":"Internal Server Error","status":500}: 500 Server Error: Server Error for url: https://api.linkedin.com/v2/assets?action=registerUpload
+2025-10-19 17:23:27,856 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:23:28,016 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.0c2857c6-cd11-4173-8f15-c0a47e1bf1c5&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:23:28,019 - LinkedInAgent - INFO - [LinkedInPublisher] Image found, starting upload process: C:\Users\16139\linkedin-agent\static/outputs/5a905864-5ff1-4393-b793-3d3ff53e7b68.png
+2025-10-19 17:23:28,942 - LinkedInAgent - ERROR - ERROR in Failed to publish post to LinkedIn: {"message":"Internal Server Error","status":500}: 500 Server Error: Server Error for url: https://api.linkedin.com/v2/assets?action=registerUpload
+2025-10-19 17:25:49,311 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:25:49,422 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.0c2857c6-cd11-4173-8f15-c0a47e1bf1c5&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:25:49,424 - LinkedInAgent - INFO - [LinkedInPublisher] Image found, starting upload process: C:\Users\16139\linkedin-agent\static/outputs/5a905864-5ff1-4393-b793-3d3ff53e7b68.png
+2025-10-19 17:25:50,385 - LinkedInAgent - ERROR - ERROR in Failed to publish post to LinkedIn: {"message":"Internal Server Error","status":500}: 500 Server Error: Server Error for url: https://api.linkedin.com/v2/assets?action=registerUpload
+2025-10-19 17:26:32,716 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:26:32,762 - LinkedInAgent - INFO - [Orchestrator] Starting post improvement workflow: Post ID: 0c2857c6-cd11-4173-8f15-c0a47e1bf1c5
+2025-10-19 17:26:32,860 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.0c2857c6-cd11-4173-8f15-c0a47e1bf1c5&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:26:32,863 - LinkedInAgent - INFO - [ContentAgent] Improving post text: Feedback: Add more depth to why it is important to upgrade y...
+2025-10-19 17:26:51,252 - LinkedInAgent - INFO - [ContentAgent] Post text improved successfully: 
+2025-10-19 17:27:15,103 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 65/100
+2025-10-19 17:27:15,304 - LinkedInAgent - INFO - [Orchestrator] New image created for improved post: static/outputs/98b2e487-f5ba-4fea-a7b4-ae9221fa95fc.png
+2025-10-19 17:27:15,524 - httpx - INFO - HTTP Request: PATCH https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?id=eq.0c2857c6-cd11-4173-8f15-c0a47e1bf1c5&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft "HTTP/2 200 OK"
+2025-10-19 17:27:15,526 - LinkedInAgent - INFO - [Database] Draft post improved: 0c2857c6-cd11-4173-8f15-c0a47e1bf1c5
+2025-10-19 17:27:15,526 - LinkedInAgent - INFO - [Orchestrator] Improvement workflow complete: Post ID: 0c2857c6-cd11-4173-8f15-c0a47e1bf1c5
+2025-10-19 17:27:16,445 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:27:47,118 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:27:47,234 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.0c2857c6-cd11-4173-8f15-c0a47e1bf1c5&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:27:47,236 - LinkedInAgent - INFO - [LinkedInPublisher] Image found, starting upload process: C:\Users\16139\linkedin-agent\static/outputs/98b2e487-f5ba-4fea-a7b4-ae9221fa95fc.png
+2025-10-19 17:27:48,101 - LinkedInAgent - ERROR - ERROR in Failed to publish post to LinkedIn: {"message":"Internal Server Error","status":500}: 500 Server Error: Server Error for url: https://api.linkedin.com/v2/assets?action=registerUpload
+2025-10-19 17:28:26,387 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 17:28:26,483 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.0c2857c6-cd11-4173-8f15-c0a47e1bf1c5&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 17:28:26,486 - LinkedInAgent - INFO - [LinkedInPublisher] Image found, starting upload process: C:\Users\16139\linkedin-agent\static/outputs/98b2e487-f5ba-4fea-a7b4-ae9221fa95fc.png
+2025-10-19 17:28:27,379 - LinkedInAgent - ERROR - ERROR in Failed to publish post to LinkedIn: {"message":"Internal Server Error","status":500}: 500 Server Error: Server Error for url: https://api.linkedin.com/v2/assets?action=registerUpload
+2025-10-19 19:07:23,375 - LinkedInAgent - ERROR - ERROR in Failed to fetch LinkedIn user URN from /me endpoint: 403 Client Error: Forbidden for url: https://api.linkedin.com/v2/me
+2025-10-19 19:07:29,333 - LinkedInAgent - ERROR - ERROR in Failed to fetch LinkedIn user URN from /me endpoint: 403 Client Error: Forbidden for url: https://api.linkedin.com/v2/me
+2025-10-19 19:07:39,707 - LinkedInAgent - ERROR - ERROR in Failed to fetch LinkedIn user URN from /me endpoint: 403 Client Error: Forbidden for url: https://api.linkedin.com/v2/me
+2025-10-19 19:11:18,363 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:12:28,219 - LinkedInAgent - INFO - [Orchestrator] Starting post creation workflow: User: ac6d75d4-02b8-4c84-8011-51453cb44cb6, Topic: AI integration with SAP s4/hana to reduce manual invoicing.
+2025-10-19 19:12:28,219 - LinkedInAgent - INFO - [HistoryAgent] Fetching past posts: Limit: 10
+2025-10-19 19:12:29,226 - LinkedInAgent - INFO - [LinkedInAPI] Profile retrieved: KUNAL BHAT , PMP
+2025-10-19 19:12:30,215 - LinkedInAgent - ERROR - ERROR in Get user posts: API error: 426
+2025-10-19 19:12:46,201 - LinkedInAgent - INFO - [HistoryAgent] Analysis complete: Style: The author's voice is that of an experienced, 'in-...
+2025-10-19 19:13:02,768 - LinkedInAgent - INFO - [ContentAgent] Post text generated: Topic: AI integration with SAP s4/hana to reduce manual invoicing.
+2025-10-19 19:13:29,959 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 74/100
+2025-10-19 19:13:30,284 - LinkedInAgent - INFO - [Orchestrator] Image created: static/outputs/4b942b6c-4f6b-46b4-a3fc-bc82f94797d6.png
+2025-10-19 19:13:30,624 - httpx - INFO - HTTP Request: POST https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts "HTTP/2 201 Created"
+2025-10-19 19:13:30,626 - LinkedInAgent - INFO - [Database] Draft saved: 6abb1da7-dd6b-40fd-8af9-4b3f47776f5a
+2025-10-19 19:13:30,627 - LinkedInAgent - INFO - [Orchestrator] Workflow complete, draft saved: Post ID: 6abb1da7-dd6b-40fd-8af9-4b3f47776f5a
+2025-10-19 19:13:30,715 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:18:35,116 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:18:35,233 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.6abb1da7-dd6b-40fd-8af9-4b3f47776f5a&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:18:35,236 - LinkedInAgent - INFO - [LinkedInPublisher] Fetching user URN from /me endpoint: 
+2025-10-19 19:18:36,118 - LinkedInAgent - ERROR - ERROR in Failed to fetch LinkedIn user URN. Check your token's scopes (r_liteprofile).: 403 Client Error: Forbidden for url: https://api.linkedin.com/v2/me
+2025-10-19 19:18:36,119 - LinkedInAgent - ERROR - ERROR in Failed to publish post to LinkedIn: {"status":403,"serviceErrorCode":100,"code":"ACCESS_DENIED","message":"Not enough permissions to access: me.GET.NO_VERSION"}: 403 Client Error: Forbidden for url: https://api.linkedin.com/v2/me
+2025-10-19 19:29:20,612 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:38:25,497 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:38:52,572 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/auth/v1/admin/users/ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:38:52,648 - httpx - INFO - HTTP Request: PUT https://ijwmgwirhorksepabgpj.supabase.co/auth/v1/admin/users/ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:38:52,650 - LinkedInAgent - INFO - [Database] LinkedIn token saved for user: ac6d75d4-02b8-4c84-8011-51453cb44cb6
+2025-10-19 19:39:08,190 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:39:14,146 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/auth/v1/admin/users/ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:39:14,228 - httpx - INFO - HTTP Request: PUT https://ijwmgwirhorksepabgpj.supabase.co/auth/v1/admin/users/ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:39:14,230 - LinkedInAgent - INFO - [Database] LinkedIn token saved for user: ac6d75d4-02b8-4c84-8011-51453cb44cb6
+2025-10-19 19:39:26,606 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:39:42,791 - LinkedInAgent - INFO - [Orchestrator] Starting post creation workflow: User: ac6d75d4-02b8-4c84-8011-51453cb44cb6, Topic: AI integration with SAP S/4HANA Make sure the score is above 90
+2025-10-19 19:39:42,792 - LinkedInAgent - INFO - [HistoryAgent] Fetching past posts: Limit: 10
+2025-10-19 19:39:43,824 - LinkedInAgent - INFO - [LinkedInAPI] Profile retrieved: KUNAL BHAT , PMP
+2025-10-19 19:39:44,759 - LinkedInAgent - ERROR - ERROR in Get user posts: API error: 426
+2025-10-19 19:40:00,492 - LinkedInAgent - INFO - [HistoryAgent] Analysis complete: Style: The author's voice is that of an experienced AI pr...
+2025-10-19 19:40:17,907 - LinkedInAgent - INFO - [ContentAgent] Post text generated: Topic: AI integration with SAP S/4HANA Make sure the score is above 90
+2025-10-19 19:40:35,667 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 92/100
+2025-10-19 19:40:35,984 - LinkedInAgent - INFO - [Orchestrator] Image created: static/outputs/a9be091c-effb-4a9f-adf1-97f3a3d3c65f.png
+2025-10-19 19:40:36,277 - httpx - INFO - HTTP Request: POST https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts "HTTP/2 201 Created"
+2025-10-19 19:40:36,319 - LinkedInAgent - INFO - [Database] Draft saved: 893b710d-cacc-4970-9c8d-8d0032625957
+2025-10-19 19:40:36,319 - LinkedInAgent - INFO - [Orchestrator] Workflow complete, draft saved: Post ID: 893b710d-cacc-4970-9c8d-8d0032625957
+2025-10-19 19:40:36,438 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:41:00,909 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:41:01,115 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/auth/v1/admin/users/ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:41:01,214 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.893b710d-cacc-4970-9c8d-8d0032625957&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:41:02,097 - LinkedInAgent - ERROR - ERROR in Failed to fetch LinkedIn user URN. Check token scopes (profile/r_liteprofile).: 403 Client Error: Forbidden for url: https://api.linkedin.com/v2/me
+2025-10-19 19:41:02,098 - LinkedInAgent - ERROR - ERROR in Failed to publish post to LinkedIn: {"status":403,"serviceErrorCode":100,"code":"ACCESS_DENIED","message":"Not enough permissions to access: me.GET.NO_VERSION"}: 403 Client Error: Forbidden for url: https://api.linkedin.com/v2/me
+2025-10-19 19:45:51,230 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:45:55,710 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/auth/v1/admin/users/ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:45:55,781 - httpx - INFO - HTTP Request: PUT https://ijwmgwirhorksepabgpj.supabase.co/auth/v1/admin/users/ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:45:55,783 - LinkedInAgent - INFO - [Database] LinkedIn token saved for user: ac6d75d4-02b8-4c84-8011-51453cb44cb6
+2025-10-19 19:46:12,685 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:46:15,708 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:46:15,875 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/auth/v1/admin/users/ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:46:15,955 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.893b710d-cacc-4970-9c8d-8d0032625957&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:46:17,745 - LinkedInAgent - ERROR - ERROR in Failed to publish post to LinkedIn: {"status":403,"serviceErrorCode":100,"code":"ACCESS_DENIED","message":"Field Value validation failed in REQUEST_BODY: Data Processing Exception while processing fields [/author]"}: 403 Client Error: Forbidden for url: https://api.linkedin.com/v2/ugcPosts
+2025-10-19 19:54:35,711 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:54:38,118 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 19:54:38,345 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/auth/v1/admin/users/ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:54:38,430 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.893b710d-cacc-4970-9c8d-8d0032625957&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 19:54:40,258 - LinkedInAgent - ERROR - ERROR in Failed to publish post to LinkedIn: {"status":403,"serviceErrorCode":100,"code":"ACCESS_DENIED","message":"Field Value validation failed in REQUEST_BODY: Data Processing Exception while processing fields [/author]"}: 403 Client Error: Forbidden for url: https://api.linkedin.com/v2/ugcPosts
+2025-10-19 20:00:35,834 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 20:00:35,960 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 20:33:31,818 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 20:33:48,053 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6&status=eq.draft&order=created_at.desc "HTTP/2 200 OK"
+2025-10-19 20:33:48,240 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/auth/v1/admin/users/ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 20:33:48,328 - httpx - INFO - HTTP Request: GET https://ijwmgwirhorksepabgpj.supabase.co/rest/v1/posts?select=%2A&id=eq.893b710d-cacc-4970-9c8d-8d0032625957&user_id=eq.ac6d75d4-02b8-4c84-8011-51453cb44cb6 "HTTP/2 200 OK"
+2025-10-19 20:33:50,478 - LinkedInAgent - ERROR - ERROR in Failed to publish post to LinkedIn: {"status":403,"serviceErrorCode":100,"code":"ACCESS_DENIED","message":"Field Value validation failed in REQUEST_BODY: Data Processing Exception while processing fields [/author]"}: 403 Client Error: Forbidden for url: https://api.linkedin.com/v2/ugcPosts
