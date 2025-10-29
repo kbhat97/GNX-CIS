@@ -37,26 +37,27 @@ class HistoryAgent:
             # The method will return an empty list if it fails, which is handled gracefully.
             past_posts = self.linkedin_api.get_user_posts(access_token, limit=limit)
 
-            if no41	                log_agent_action("HistoryAgent", "No past posts found or API failed", "Using default style")
-42	                return self._default_style_profile()
-43	
-44	            posts_text = self._format_posts_for_analysis(past_posts)
-45	            analysis_prompt = f"""Analyze these LinkedIn posts and provide insights:
-46	{posts_text}
-47	Provide a JSON response with:
-48	1. "brand_voice_summary": A 1-2 sentence summary of the author's overall persona and voice.
-49	2. "writing_style": Description of the author's unique voice and tone.
-50	3. "common_topics": List of frequently discussed topics.
-51	4. "post_structures": Common patterns (storytelling, listicles, questions, etc.)
-52	5. "engagement_patterns": What types of posts get the most engagement.
-53	6. "avg_post_length": Typical word count range.
-54	7. "hashtag_strategy": How hashtags are typically used.
-55	8. "key_phrases": Recurring phrases or signature expressions.
-56	9. "improvement_areas": Suggestions for better engagement.
-57	Return ONLY valid JSON, no markdown formatting.
-58	The final JSON object MUST also include: "personality_vector": [0.1, 0.2, 0.3] (placeholder for vector embedding)"""
-59	            response = await self.model.generate_content_async(analysis_prompt)
-60	            analysis = parse_llm_json_response(response.text, self._default_style_profile())toryAgent", "Analysis complete", f"Style: {analysis.get('writing_style', 'N/A')[:50]}...")
+            if not past_posts:
+                log_agent_action("HistoryAgent", "No past posts found or API failed", "Using default style")
+                return self._default_style_profile()
+
+            posts_text = self._format_posts_for_analysis(past_posts)
+            analysis_prompt = f"""Analyze these LinkedIn posts and provide insights:
+{posts_text}
+Provide a JSON response with:
+1. "writing_style": Description of the author's unique voice and tone
+2. "common_topics": List of frequently discussed topics
+3. "post_structures": Common patterns (storytelling, listicles, questions, etc.)
+4. "engagement_patterns": What types of posts get the most engagement
+5. "avg_post_length": Typical word count range
+6. "hashtag_strategy": How hashtags are typically used
+7. "key_phrases": Recurring phrases or signature expressions
+8. "improvement_areas": Suggestions for better engagement
+Return ONLY valid JSON, no markdown formatting."""
+
+            response = await self.model.generate_content_async(analysis_prompt)
+            analysis = parse_llm_json_response(response.text, self._default_style_profile())
+            log_agent_action("HistoryAgent", "Analysis complete", f"Style: {analysis.get('writing_style', 'N/A')[:50]}...")
             return analysis
         except Exception as e:
             log_error(e, "Historical analysis")
