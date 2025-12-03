@@ -70,5 +70,16 @@ verify_*.py
 test_*.txt
 *_output.txt
 
+# Test files
+test_*.py
+*_test.py
+fix_*.py
+testsprite_tests/
+
+# Development documentation
+CIS_*.md
+STATE_DUMP_*.md
+BUG_FIX_*.md
+
 # Compiled
 *.cpython-*.pyc
