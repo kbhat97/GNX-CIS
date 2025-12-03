@@ -1,466 +1,535 @@
 import streamlit as st
-import requests
 import os
-from dotenv import load_dotenv
+import sys
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import time
 import json
 from datetime import datetime
+from typing import Dict, List, Optional
 
-# Load environment variables
-load_dotenv()
+# Add current directory to path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Configuration
-API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000").strip()
-CLERK_PUBLISHABLE_KEY = os.getenv("CLERK_PUBLISHABLE_KEY", "").strip()
+from agents.content_agent import ContentAgent
+from agents.virality_agent import ViralityAgent
+from utils.gemini_config import GeminiConfig
 
-# Page configuration
+# Page config
 st.set_page_config(
-    page_title="🤖 LinkedIn AI Co-pilot",
+    page_title="CIS - Content Intelligence System",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
-st.markdown("""
-<style>
-    .main {
-        padding-top: 1rem;
-    }
-    .stButton > button {
-        width: 100%;
-        padding: 0.75rem;
-        border-radius: 0.5rem;
-        font-weight: bold;
-    }
-    .success-box {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        background-color: #d4edda;
-        border-left: 4px solid #28a745;
-        color: #155724;
-        margin: 1rem 0;
-    }
-    .error-box {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        background-color: #f8d7da;
-        border-left: 4px solid #dc3545;
-        color: #721c24;
-        margin: 1rem 0;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 # Initialize session state
-if "auth_token" not in st.session_state:
-    st.session_state.auth_token = None
-if "user" not in st.session_state:
-    st.session_state.user = None
-if "onboarding_path" not in st.session_state:
-    st.session_state.onboarding_path = None
-if "linkedin_connected" not in st.session_state:
-    st.session_state.linkedin_connected = False
+def init_session_state():
+    """Initialize all session state variables"""
+    if 'post_history' not in st.session_state:
+        st.session_state.post_history = []
+    if 'gen_count' not in st.session_state:
+        st.session_state.gen_count = 0
+    if 'selected_post_idx' not in st.session_state:
+        st.session_state.selected_post_idx = None
+    if 'compare_mode' not in st.session_state:
+        st.session_state.compare_mode = False
+    if 'compare_posts' not in st.session_state:
+        st.session_state.compare_posts = []
 
-# ============================================
-# HELPER FUNCTIONS
-# ============================================
+def add_to_history(post_data: Dict):
+    """Add a generated post to history"""
+    post_data['timestamp'] = datetime.now().isoformat()
+    post_data['id'] = len(st.session_state.post_history)
+    st.session_state.post_history.append(post_data)
 
-def get_headers():
-    """Get authorization headers"""
-    if st.session_state.auth_token:
-        return {
-            "Authorization": f"Bearer {st.session_state.auth_token}",
-            "Content-Type": "application/json"
-        }
-    return {"Content-Type": "application/json"}
+def show_sidebar():
+    """Show sidebar with post history and controls"""
+    with st.sidebar:
+        st.markdown("## 📚 Post History")
+        st.markdown(f"**Total Posts:** {len(st.session_state.post_history)}")
+        
+        if st.session_state.post_history:
+            st.markdown("---")
+            
+            # Compare mode toggle
+            if st.checkbox("📊 Compare Mode", value=st.session_state.compare_mode):
+                st.session_state.compare_mode = True
+                st.info("Select 2 posts to compare")
+            else:
+                st.session_state.compare_mode = False
+                st.session_state.compare_posts = []
+            
+            st.markdown("---")
+            
+            # Show history (most recent first)
+            for idx, post in enumerate(reversed(st.session_state.post_history)):
+                actual_idx = len(st.session_state.post_history) - 1 - idx
+                
+                with st.expander(
+                    f"Post #{post['id']} - Score: {post.get('virality_score', 0)}/100",
+                    expanded=(actual_idx == 0)  # Expand most recent
+                ):
+                    # Show timestamp
+                    timestamp = datetime.fromisoformat(post['timestamp'])
+                    st.caption(f"🕒 {timestamp.strftime('%I:%M %p')}")
+                    
+                    # Show topic/style
+                    st.caption(f"📝 {post.get('topic', 'N/A')[:50]}...")
+                    st.caption(f"🎨 {post.get('style', 'N/A')}")
+                    
+                    # Show score with color
+                    score = post.get('virality_score', 0)
+                    if score >= 80:
+                        st.success(f"⭐ Score: {score}/100")
+                    elif score >= 70:
+                        st.info(f"✓ Score: {score}/100")
+                    else:
+                        st.warning(f"⚠ Score: {score}/100")
+                    
+                    # Action buttons
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        if st.button("👁️ View", key=f"view_{actual_idx}"):
+                            st.session_state.selected_post_idx = actual_idx
+                            st.session_state.compare_mode = False
+                            st.rerun()
+                    
+                    with col2:
+                        if st.session_state.compare_mode:
+                            if st.button("✓ Select", key=f"select_{actual_idx}"):
+                                if actual_idx not in st.session_state.compare_posts:
+                                    st.session_state.compare_posts.append(actual_idx)
+                                    if len(st.session_state.compare_posts) == 2:
+                                        st.rerun()
+                        else:
+                            if st.button("🔄 Improve", key=f"improve_{actual_idx}"):
+                                st.session_state.selected_post_idx = actual_idx
+                                st.session_state.show_improve_form = True
+                                st.rerun()
+            
+            # Clear history button
+            st.markdown("---")
+            if st.button("🗑️ Clear History", type="secondary"):
+                st.session_state.post_history = []
+                st.session_state.selected_post_idx = None
+                st.session_state.compare_posts = []
+                st.rerun()
+        else:
+            st.info("No posts yet. Generate your first post!")
 
-def check_api_health():
-    """Check if API is running"""
-    try:
-        response = requests.get(f"{API_BASE_URL}/health", timeout=5)
-        return response.status_code == 200
-    except:
-        return False
-
-def verify_auth():
-    """Verify authentication with API"""
-    try:
-        response = requests.get(
-            f"{API_BASE_URL}/auth/verify",
-            headers=get_headers(),
-            timeout=5
-        )
-        return response.status_code == 200
-    except:
-        return False
-
-def check_linkedin_status():
-    """Check LinkedIn connection status"""
-    try:
-        response = requests.get(
-            f"{API_BASE_URL}/auth/linkedin/status",
-            headers=get_headers(),
-            timeout=5
-        )
-        if response.status_code == 200:
-            data = response.json()
-            return data.get("status") == "connected"
-    except:
-        pass
-    return False
-
-# ============================================
-# AUTH SCREENS
-# ============================================
-
-def show_login_page():
-    """Show login/signup page"""
-    col1, col2, col3 = st.columns([1, 2, 1])
+def generate_post_async(topic: str, style: str, improvement_feedback: Optional[str] = None) -> Dict:
+    """Generate post with proper async handling and error recovery"""
+    max_retries = 3
+    retry_delay = 2
     
+    for attempt in range(max_retries):
+        try:
+            # Create agents
+            # Mock profile
+            profile = {
+                "writing_tone": "Professional & Insightful",
+                "target_audience": "Business professionals",
+                "personality_traits": ["Thought Leader"],
+                "full_name": "Kunal Bhat"
+            }
+            
+            # Generate content
+            # Use synchronous calls to avoid event loop issues
+            from utils.json_parser import parse_llm_json_response
+            
+            # Create agents
+            content_agent = ContentAgent()
+            virality_agent = ViralityAgent()
+            
+            # Add improvement feedback to topic if provided
+            enhanced_topic = topic
+            if improvement_feedback:
+                enhanced_topic = f"{topic}\n\nIMPROVEMENT FEEDBACK: {improvement_feedback}"
+            
+            # Generate content using SYNC method
+            prompt = f"""You are an expert LinkedIn content strategist creating high-engagement posts.
+
+TOPIC: "{enhanced_topic}"
+STYLE: {style}
+PERSONA: Thought Leader
+
+CREATE A VIRAL LINKEDIN POST WITH PROPER JSON FORMAT.
+Return ONLY valid JSON:
+{{
+    "post_text": "your complete post here",
+    "reasoning": "brief explanation"
+}}"""
+            
+            response = content_agent.model.generate_content(prompt)
+            error_payload = {"post_text": "Error generating content.", "reasoning": "JSON parsing failed."}
+            draft = parse_llm_json_response(response.text, error_payload)
+            post_text = draft.get("post_text", "")
+            
+            # Score using SYNC method
+            score_prompt = f"""Score this LinkedIn post strictly (0-100).
+POST: {post_text}
+
+Return ONLY valid JSON:
+{{
+    "score": 75,
+    "confidence": "MEDIUM",
+    "suggestions": ["suggestion 1", "suggestion 2"]
+}}"""
+            
+            score_response = virality_agent.model.generate_content(score_prompt)
+            score_result = parse_llm_json_response(score_response.text, {"score": 50, "confidence": "LOW", "suggestions": []})
+            
+            data = {
+                "content": post_text,
+                "reasoning": draft.get("reasoning", ""),
+                "virality_score": score_result.get("score", 0),
+                "confidence": score_result.get("confidence", ""),
+                "suggestions": score_result.get("suggestions", []),
+                "topic": topic,
+                "style": style,
+                "improvement_feedback": improvement_feedback
+            }
+            
+            # Generate image
+            try:
+                from utils.image_generator import create_branded_image
+                image_url = create_branded_image(data.get("content", ""), "Kunal Bhat, PMP")
+                data["image_url"] = image_url
+            except Exception as img_err:
+                st.warning(f"⚠️ Image generation error: {str(img_err)}")
+                data["image_url"] = None
+            
+            return data
+            
+        except Exception as e:
+            if attempt < max_retries - 1:
+                st.warning(f"⚠️ Attempt {attempt + 1} failed. Retrying in {retry_delay}s...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                raise e
+
+def show_post_detail(post: Dict, show_improve_button: bool = True):
+    """Display a single post with all details"""
+    # Show content
+    st.markdown("### 📝 Post Content")
+    st.text_area("", value=post.get("content", ""), height=300, key=f"content_detail_{post['id']}", disabled=True)
+    
+    # Show image if available
+    if post.get("image_url"):
+        st.markdown("### 🖼️ Generated Image")
+        st.image(post["image_url"], width=600)
+    
+    # Show metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        score = post.get('virality_score', 0)
+        delta = None
+        if len(st.session_state.post_history) > 1:
+            prev_score = st.session_state.post_history[-2].get('virality_score', 0)
+            delta = score - prev_score
+        st.metric("Virality Score", f"{score}/100", delta=delta)
     with col2:
-        st.markdown("## 🚀 LinkedIn AI Co-pilot")
-        st.markdown("### Smart Content Generation Powered by AI")
+        st.metric("Confidence", post.get("confidence", "N/A"))
+    with col3:
+        st.metric("Style", post.get("style", "N/A"))
+    with col4:
+        timestamp = datetime.fromisoformat(post['timestamp'])
+        st.metric("Generated", timestamp.strftime('%I:%M %p'))
+    
+    # Show suggestions
+    if post.get("suggestions"):
+        st.markdown("### 💡 Improvement Suggestions")
+        for i, suggestion in enumerate(post["suggestions"], 1):
+            st.info(f"{i}. {suggestion}")
+    
+    # Show reasoning
+    if post.get("reasoning"):
+        with st.expander("🧠 AI Reasoning"):
+            st.write(post["reasoning"])
+    
+    # Show improvement feedback if this was an improved version
+    if post.get("improvement_feedback"):
+        with st.expander("🔄 Improvement Feedback Used"):
+            st.write(post["improvement_feedback"])
+    
+    # Improve button
+    if show_improve_button:
         st.markdown("---")
-        
-        # Check API health
-        if not check_api_health():
-            st.error("❌ API is not responding. Please try again later.")
-            return
-        
-        st.markdown("### 🔐 Authentication")
-        
-        tab1, tab2 = st.tabs(["📝 Sign Up", "🔑 Log In"])
-        
-        with tab1:
-            st.write("#### Create Your Account")
-            
-            signup_email = st.text_input("Email", key="signup_email")
-            signup_password = st.text_input("Password", type="password", key="signup_password")
-            signup_password_confirm = st.text_input("Confirm Password", type="password", key="signup_confirm")
-            
-            if st.button("📧 Sign Up with Email", key="email_signup"):
-                if not signup_email:
-                    st.error("❌ Please enter an email")
-                elif not signup_password:
-                    st.error("❌ Please enter a password")
-                elif signup_password != signup_password_confirm:
-                    st.error("❌ Passwords don't match")
-                elif len(signup_password) < 8:
-                    st.error("❌ Password must be at least 8 characters")
-                else:
-                    st.info("📧 Please sign up using Clerk. Redirecting...")
-                    st.write("👉 [Sign up with Clerk](https://accounts.clerk.com/sign-up)")
-            
-            st.markdown("---")
-            st.write("#### Or sign up with Google")
-            if st.button("🔵 Continue with Google (Sign Up)", key="google_signup"):
-                st.info("🔵 Redirecting to Google OAuth...")
-                st.write("👉 [Google Sign Up](https://accounts.clerk.com/sign-up)")
-        
-        with tab2:
-            st.write("#### Log In to Your Account")
-            
-            login_email = st.text_input("Email", key="login_email")
-            login_password = st.text_input("Password", type="password", key="login_password")
-            
-            if st.button("🔑 Log In with Email", key="email_login"):
-                if not login_email or not login_password:
-                    st.error("❌ Please enter email and password")
-                else:
-                    st.info("🔑 Redirecting to Clerk login...")
-                    st.write("👉 [Log in with Clerk](https://accounts.clerk.com/sign-in)")
-            
-            st.markdown("---")
-            st.write("#### Or log in with Google")
-            if st.button("🔵 Continue with Google (Log In)", key="google_login"):
-                st.info("🔵 Redirecting to Google OAuth...")
-                st.write("👉 [Google Sign In](https://accounts.clerk.com/sign-in)")
-        
-        st.markdown("---")
-        st.markdown("""
-        ⚠️ **For production:**
-        - Use Clerk's official login component (React/Next.js)
-        - Or implement OAuth callback handler
-        - Store JWT token in session after authentication
-        """)
+        if st.button("🔄 Improve This Post", key=f"improve_detail_{post['id']}", use_container_width=True):
+            st.session_state.show_improve_form = True
+            st.rerun()
 
-# ============================================
-# ONBOARDING SCREENS
-# ============================================
-
-def show_onboarding_choice():
-    """Show onboarding path selection"""
-    st.markdown("## 👋 Welcome to LinkedIn AI Co-pilot")
-    st.markdown("Let's set up your profile so we can generate personalized content.")
-    st.markdown("---")
+def show_comparison_view(post1: Dict, post2: Dict):
+    """Show side-by-side comparison of two posts"""
+    st.markdown("## 📊 Post Comparison")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("📋 Answer Questions (2 min)", key="questionnaire_btn", use_container_width=True):
-            st.session_state.onboarding_path = "questionnaire"
-            st.rerun()
+        st.markdown(f"### Post #{post1['id']}")
+        st.markdown(f"**Score:** {post1.get('virality_score', 0)}/100")
+        st.markdown(f"**Style:** {post1.get('style', 'N/A')}")
+        timestamp1 = datetime.fromisoformat(post1['timestamp'])
+        st.caption(f"🕒 {timestamp1.strftime('%I:%M %p')}")
+        
+        st.markdown("**Content:**")
+        st.text_area("", value=post1.get("content", ""), height=400, key="compare_1", disabled=True)
+        
+        if post1.get("image_url"):
+            st.image(post1["image_url"], width=400)
+        
+        if post1.get("suggestions"):
+            with st.expander("💡 Suggestions"):
+                for i, s in enumerate(post1["suggestions"], 1):
+                    st.write(f"{i}. {s}")
     
     with col2:
-        if st.button("📸 Upload Your Posts (3 min)", key="content_analysis_btn", use_container_width=True):
-            st.session_state.onboarding_path = "content_analysis"
-            st.rerun()
-
-def show_questionnaire_onboarding():
-    """Show questionnaire onboarding"""
-    st.markdown("## 📋 Tell Us About Yourself")
-    st.markdown("This helps us generate content that matches your style and audience.")
-    st.markdown("---")
+        st.markdown(f"### Post #{post2['id']}")
+        st.markdown(f"**Score:** {post2.get('virality_score', 0)}/100")
+        st.markdown(f"**Style:** {post2.get('style', 'N/A')}")
+        timestamp2 = datetime.fromisoformat(post2['timestamp'])
+        st.caption(f"🕒 {timestamp2.strftime('%I:%M %p')}")
+        
+        st.markdown("**Content:**")
+        st.text_area("", value=post2.get("content", ""), height=400, key="compare_2", disabled=True)
+        
+        if post2.get("image_url"):
+            st.image(post2["image_url"], width=400)
+        
+        if post2.get("suggestions"):
+            with st.expander("💡 Suggestions"):
+                for i, s in enumerate(post2["suggestions"], 1):
+                    st.write(f"{i}. {s}")
     
-    with st.form("onboarding_form"):
-        q1 = st.radio(
-            "1️⃣ What's your writing tone?",
-            ["Professional & Formal", "Casual & Friendly", "Inspiring & Motivational", "Technical & Detailed"],
-            key="q1"
+    # Score comparison
+    st.markdown("---")
+    st.markdown("### 📈 Score Breakdown")
+    
+    score_diff = post2.get('virality_score', 0) - post1.get('virality_score', 0)
+    if score_diff > 0:
+        st.success(f"✅ Post #{post2['id']} scored {score_diff} points higher!")
+    elif score_diff < 0:
+        st.warning(f"⚠️ Post #{post1['id']} scored {abs(score_diff)} points higher!")
+    else:
+        st.info("📊 Both posts have the same score")
+    
+    # Exit comparison
+    if st.button("❌ Exit Comparison", use_container_width=True):
+        st.session_state.compare_mode = False
+        st.session_state.compare_posts = []
+        st.rerun()
+
+def show_generate_tab():
+    """Show content generation interface"""
+    
+    # Check if we're in comparison mode
+    if st.session_state.compare_mode and len(st.session_state.compare_posts) == 2:
+        idx1, idx2 = st.session_state.compare_posts
+        show_comparison_view(
+            st.session_state.post_history[idx1],
+            st.session_state.post_history[idx2]
         )
+        return
+    
+    # Check if we're viewing a specific post
+    if st.session_state.selected_post_idx is not None:
+        post = st.session_state.post_history[st.session_state.selected_post_idx]
+        st.markdown(f"## 👁️ Viewing Post #{post['id']}")
         
-        q2 = st.text_input(
-            "2️⃣ Who's your target audience?",
-            placeholder="e.g., SAP Project Managers, Startup Founders...",
-            key="q2"
-        )
-        
-        q3 = st.multiselect(
-            "3️⃣ What values are important to you? (select 3-5)",
-            ["Innovation", "Leadership", "Authenticity", "Growth", "Community", "Excellence", "Integrity", "Creativity"],
-            key="q3"
-        )
-        
-        q4 = st.text_area(
-            "4️⃣ Describe your personality as a creator",
-            placeholder="e.g., I'm a thought leader who shares practical insights...",
-            key="q4"
-        )
-        
-        q5 = st.slider(
-            "5️⃣ How often do you want to post?",
-            1, 7, 3,
-            help="posts per week",
-            key="q5"
-        )
-        
-        q6 = st.text_input(
-            "6️⃣ What's your main content focus?",
-            placeholder="e.g., SAP Implementation Best Practices",
-            key="q6"
-        )
-        
-        if st.form_submit_button("✅ Save Profile", use_container_width=True):
-            # Validate
-            if not q2 or not q3 or not q4 or not q6:
-                st.error("❌ Please fill in all fields")
-            elif len(q3) < 2:
-                st.error("❌ Please select at least 2 values")
-            else:
-                # Send to API
-                try:
-                    response = requests.post(
-                        f"{API_BASE_URL}/onboarding/questionnaire",
-                        json={
-                            "writing_tone": q1,
-                            "audience": q2,
-                            "values": q3,
-                            "personality": q4,
-                            "frequency": q5,
-                            "focus": q6
-                        },
-                        headers=get_headers(),
-                        timeout=10
-                    )
-                    
-                    if response.status_code == 200:
-                        st.success("✅ Profile saved! Ready to generate content!")
-                        st.session_state.onboarding_path = None
-                        st.rerun()
-                    else:
-                        st.error(f"❌ Error saving profile: {response.text}")
+        # Show improve form if requested
+        if st.session_state.get('show_improve_form', False):
+            st.markdown("### 🔄 Improve This Post")
+            
+            with st.form(key="improve_form"):
+                feedback = st.text_area(
+                    "What would you like to improve?",
+                    placeholder="e.g., Make it more technical, add statistics, change the hook, etc.",
+                    height=100
+                )
                 
-                except Exception as e:
-                    st.error(f"❌ API Error: {str(e)}")
-
-def show_content_analysis_onboarding():
-    """Show content analysis onboarding"""
-    st.markdown("## 📸 Upload Your Best Posts")
-    st.markdown("Paste links to your 3-5 top performing LinkedIn posts.")
-    st.markdown("---")
-    
-    st.info("ℹ️ This feature requires LinkedIn API integration. Coming soon!")
-
-# ============================================
-# MAIN DASHBOARD
-# ============================================
-
-def show_dashboard():
-    """Show main dashboard"""
-    # Header
-    col1, col2, col3 = st.columns([2, 1, 1])
-    
-    with col1:
-        st.markdown("## 🤖 LinkedIn AI Co-pilot")
-    
-    with col3:
-        if st.button("🚪 Log Out", key="logout_btn", use_container_width=True):
-            st.session_state.auth_token = None
-            st.session_state.user = None
-            st.rerun()
-    
-    st.markdown("---")
-    
-    # User info
-    st.markdown(f"### 👋 Welcome, {st.session_state.user.get('email', 'User')}")
-    
-    # Check LinkedIn status
-    st.session_state.linkedin_connected = check_linkedin_status()
-    
-    # Main content
-    tab1, tab2, tab3 = st.tabs(["🔗 LinkedIn", "✍️ Generate", "📊 Posts"])
-    
-    with tab1:
-        st.markdown("## 🔗 LinkedIn Connection")
-        
-        if st.session_state.linkedin_connected:
-            st.success("✅ LinkedIn is connected")
-            if st.button("🔌 Disconnect LinkedIn", use_container_width=True):
-                st.info("🔌 Disconnecting...")
-        else:
-            st.warning("⚠️ Connect LinkedIn to enable publishing")
-            if st.button("🔗 Connect LinkedIn", use_container_width=True):
-                st.info("🔗 Redirecting to LinkedIn OAuth...")
-                st.write("👉 [Connect with LinkedIn](https://www.linkedin.com/oauth/v2/authorization)")
-    
-    with tab2:
-        st.markdown("## ✍️ Generate Post")
-        
-        with st.form("post_generation_form"):
-            topic = st.text_input(
-                "What topic would you like to write about?",
-                placeholder="e.g., SAP Implementation Best Practices",
-                key="post_topic"
-            )
-            
-            style = st.selectbox(
-                "Choose writing style (optional)",
-                ["Default", "Professional", "Casual", "Inspirational", "Technical"],
-                key="post_style"
-            )
-            
-            if st.form_submit_button("🚀 Generate Post", use_container_width=True):
-                if not topic:
-                    st.error("❌ Please enter a topic")
-                else:
-                    with st.spinner("🤖 Generating post..."):
+                col1, col2 = st.columns(2)
+                with col1:
+                    submitted = st.form_submit_button("🚀 Generate Improved Version", use_container_width=True)
+                with col2:
+                    cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+                
+                if cancel:
+                    st.session_state.show_improve_form = False
+                    st.rerun()
+                
+                if submitted and feedback:
+                    with st.spinner("🤖 Gemini is improving your post..."):
                         try:
-                            response = requests.post(
-                                f"{API_BASE_URL}/posts/generate",
-                                json={
-                                    "topic": topic,
-                                    "style": style if style != "Default" else None
-                                },
-                                headers=get_headers(),
-                                timeout=30
+                            data = generate_post_async(
+                                post.get('topic', ''),
+                                post.get('style', 'Professional'),
+                                improvement_feedback=feedback
                             )
-                            
-                            if response.status_code == 200:
-                                data = response.json()
-                                st.success("✅ Post generated successfully!")
-                                
-                                st.markdown("### 📝 Generated Content:")
-                                st.text_area("", value=data.get("content", ""), height=200, disabled=True)
-                                
-                                col1, col2 = st.columns(2)
-                                with col1:
-                                    if st.button("📋 Copy to Clipboard", use_container_width=True):
-                                        st.success("✅ Copied!")
-                                with col2:
-                                    if st.button("📤 Publish Now", use_container_width=True):
-                                        st.info("📤 Publishing...")
-                            else:
-                                st.error(f"❌ Error generating post: {response.json().get('detail', 'Unknown error')}")
-                        
+                            add_to_history(data)
+                            st.session_state.selected_post_idx = len(st.session_state.post_history) - 1
+                            st.session_state.show_improve_form = False
+                            st.success("✅ Improved post generated!")
+                            st.rerun()
                         except Exception as e:
-                            st.error(f"❌ API Error: {str(e)}")
+                            st.error(f"❌ Error: {str(e)}")
+        else:
+            show_post_detail(post)
+        
+        # Back button
+        st.markdown("---")
+        if st.button("⬅️ Back to Generator", use_container_width=True):
+            st.session_state.selected_post_idx = None
+            st.session_state.show_improve_form = False
+            st.rerun()
+        
+        return
     
-    with tab3:
-        st.markdown("## 📊 Your Posts")
+    # Main generation interface
+    st.markdown("## 🤖 Generate LinkedIn Post")
+    st.info(f"🤖 **Content Model**: {GeminiConfig.CONTENT_MODEL} | **Scoring Model**: {GeminiConfig.SCORING_MODEL}")
+    
+    with st.form(key="gen_form"):
+        topic = st.text_area(
+            "What do you want to post about?",
+            placeholder="e.g., SAP S/4HANA migration challenges, AI in healthcare, quantum computing, etc.",
+            height=100
+        )
         
         col1, col2 = st.columns(2)
-        
         with col1:
-            st.markdown("### 📋 Pending Drafts")
-            try:
-                response = requests.get(
-                    f"{API_BASE_URL}/posts/pending",
-                    headers=get_headers(),
-                    timeout=10
-                )
-                
-                if response.status_code == 200:
-                    posts = response.json().get("posts", [])
-                    
-                    if not posts:
-                        st.info("No pending posts")
-                    else:
-                        for post in posts:
-                            with st.expander(f"📝 {post.get('topic', 'Untitled')}"):
-                                st.write(post.get("content", ""))
-                                st.caption(f"Created: {post.get('created_at', 'N/A')}")
-                else:
-                    st.error("Could not load pending posts")
-            
-            except Exception as e:
-                st.error(f"API Error: {str(e)}")
-        
+            style = st.selectbox(
+                "Style",
+                ["Thought Leadership", "Professional", "Casual", "Technical", "Inspirational"]
+            )
         with col2:
-            st.markdown("### ✅ Published Posts")
-            try:
-                response = requests.get(
-                    f"{API_BASE_URL}/posts/published",
-                    headers=get_headers(),
-                    timeout=10
-                )
-                
-                if response.status_code == 200:
-                    posts = response.json().get("posts", [])
-                    
-                    if not posts:
-                        st.info("No published posts yet")
-                    else:
-                        for post in posts:
-                            with st.expander(f"✅ {post.get('topic', 'Untitled')}"):
-                                st.write(post.get("content", ""))
-                                st.caption(f"Published: {post.get('published_at', 'N/A')}")
-                else:
-                    st.error("Could not load published posts")
+            st.markdown("**Quick Tips:**")
+            st.caption("• Be specific with your topic")
+            st.caption("• Include key points you want to cover")
+            st.caption("• Mention target audience if relevant")
+        
+        submitted = st.form_submit_button("🚀 Generate Post", use_container_width=True, type="primary")
+        
+        if submitted and topic:
+            st.session_state.gen_count += 1
             
-            except Exception as e:
-                st.error(f"API Error: {str(e)}")
+            with st.spinner("🤖 Gemini is crafting your viral post..."):
+                try:
+                    data = generate_post_async(topic, style)
+                    add_to_history(data)
+                    st.success("✅ Post generated successfully!")
+                    st.session_state.selected_post_idx = len(st.session_state.post_history) - 1
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+                    import traceback
+                    with st.expander("Error Details"):
+                        st.code(traceback.format_exc())
 
-# ============================================
-# MAIN APP LOGIC
-# ============================================
+def show_about_tab():
+    """Show about/help information"""
+    st.markdown("## 📖 How CIS Works")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        ### 🔄 The Workflow
+        
+        1. **Generate**: Create viral LinkedIn posts with AI
+        2. **Score**: Get 0-100 virality score with detailed feedback
+        3. **Improve**: Iteratively refine based on suggestions
+        4. **Compare**: Side-by-side comparison of versions
+        5. **Export**: Download or copy your best content
+        
+        ### 🤖 The Models
+        
+        - **Content**: Gemini 2.5 Flash (Fast, creative)
+        - **Scoring**: Gemini 2.0 Flash (Accurate evaluation)
+        - **Images**: PIL (Professional branding)
+        
+        ### 📊 Scoring Criteria
+        
+        - **90-100**: EXCEPTIONAL - Top 1% viral content
+        - **80-89**: EXCELLENT - Top 5% engagement
+        - **70-79**: GOOD - Above average
+        - **60-69**: AVERAGE - Typical LinkedIn post
+        - **<60**: NEEDS IMPROVEMENT
+        """)
+    
+    with col2:
+        st.markdown("""
+        ### 🎯 8 Scoring Dimensions
+        
+        1. **Hook Strength** - Grabs attention in first 2 lines
+        2. **Value Delivery** - Provides actionable insights
+        3. **Emotional Resonance** - Connects with audience
+        4. **Call-to-Action** - Encourages engagement
+        5. **Readability** - Easy to scan and understand
+        6. **Authority Signal** - Demonstrates expertise
+        7. **Shareability** - Worth sharing with network
+        8. **Hashtag Relevance** - Strategic tag usage
+        
+        ### 🚀 Pro Tips
+        
+        - Generate 3-5 versions, compare scores
+        - Use "Improve" to iterate on best version
+        - Aim for 80+ score for viral potential
+        - Technical content: use data & metrics
+        - Thought leadership: be contrarian
+        - Personal stories: be vulnerable & authentic
+        """)
+    
+    st.markdown("---")
+    st.markdown("### 🖼️ Image Features")
+    st.markdown("""
+    - Branded layout with professional design
+    - Optimized for LinkedIn (1200x675)
+    - Custom fonts (Poppins) and colors
+    - Automatic text extraction and formatting
+    """)
 
 def main():
-    """Main app logic"""
+    """Main application"""
     
-    # If authenticated
-    if st.session_state.auth_token and st.session_state.user:
-        # Check if onboarding needed
-        if st.session_state.onboarding_path == "questionnaire":
-            show_questionnaire_onboarding()
-        elif st.session_state.onboarding_path == "content_analysis":
-            show_content_analysis_onboarding()
-        elif st.session_state.onboarding_path is None:
-            # Show choice or dashboard
-            show_dashboard()
+    # Initialize session state
+    init_session_state()
     
-    # If not authenticated
-    else:
-        show_login_page()
+    # Show sidebar
+    show_sidebar()
+    
+    # Header
+    st.title("🚀 CIS - Content Intelligence System")
+    st.markdown("*AI-Powered LinkedIn Content Generation with Gemini*")
+    
+    # Stats bar
+    if st.session_state.post_history:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Posts", len(st.session_state.post_history))
+        with col2:
+            avg_score = sum(p.get('virality_score', 0) for p in st.session_state.post_history) / len(st.session_state.post_history)
+            st.metric("Avg Score", f"{avg_score:.1f}/100")
+        with col3:
+            max_score = max(p.get('virality_score', 0) for p in st.session_state.post_history)
+            st.metric("Best Score", f"{max_score}/100")
+        with col4:
+            excellent_count = sum(1 for p in st.session_state.post_history if p.get('virality_score', 0) >= 80)
+            st.metric("Excellent Posts", f"{excellent_count}/{len(st.session_state.post_history)}")
+        
+        st.markdown("---")
+    
+    # Main tabs
+    tab1, tab2 = st.tabs(["🤖 Generate", "📖 About"])
+    
+    with tab1:
+        show_generate_tab()
+    
+    with tab2:
+        show_about_tab()
 
 if __name__ == "__main__":
     main()

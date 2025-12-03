@@ -3,41 +3,54 @@ import json
 from typing import Dict, Any, List
 from utils.gemini_config import GeminiConfig
 from utils.logger import log_agent_action, log_error
-from utils.json_parser import parse_llm_json_response # <-- MODIFICATION: Import new utility
+from utils.json_parser import parse_llm_json_response
 
 class ViralityAgent:
-    """Enhanced virality scoring with detailed breakdown"""
+    """Enhanced virality scoring with stricter criteria for higher scores"""
 
     def __init__(self):
         self.model = GeminiConfig.get_model("scoring")
 
     async def score_post(self, post_text: str) -> Dict[str, Any]:
-        """Score post virality with detailed analysis"""
+        """Score post virality with detailed analysis - STRICT SCORING"""
         try:
-            prompt = f"""You are a LinkedIn engagement expert. Analyze this post and score its viral potential.
+            prompt = f"""You are a STRICT LinkedIn engagement expert and data analyst. Analyze this post with RIGOROUS standards.
 
 POST:
 {post_text}
 
-Scoring criteria (each 0-100):
-1. Hook Strength: Does it grab attention in the first line?
-2. Value Delivery: Does it provide actionable insights or unique perspective?
-3. Emotional Resonance: Does it connect with the audience's challenges/aspirations?
-4. Call-to-Action: Does it encourage engagement (comments, shares)?
-5. Readability: Is it easy to scan and digest? (formatting, length)
-6. Authority Signal: Does it demonstrate expertise without being preachy?
-7. Shareability: Would someone forward this to a colleague?
-8. Hashtag Relevance: Are hashtags strategic and not spammy?
+CRITICAL SCORING RULES:
+- Score 90-100: EXCEPTIONAL - Top 1% of LinkedIn content, guaranteed viral
+- Score 80-89: EXCELLENT - Top 5%, very high engagement potential  
+- Score 70-79: GOOD - Above average, solid engagement
+- Score 60-69: AVERAGE - Typical LinkedIn post
+- Score <60: NEEDS IMPROVEMENT
+
+Scoring criteria (each 0-100, be HONEST and STRICT):
+1. Hook Strength: First line must STOP the scroll. Is it shocking, contrarian, or deeply relatable?
+2. Value Delivery: Does it provide UNIQUE insights, not generic advice? Specific data/metrics?
+3. Emotional Resonance: Does it trigger strong emotion (frustration, hope, curiosity)?
+4. Call-to-Action: Clear, specific question that DEMANDS engagement?
+5. Readability: Perfect formatting, optimal length (150-300 words), scannable?
+6. Authority Signal: Demonstrates deep expertise with specific examples/results?
+7. Shareability: Would a CTO forward this to their team? Why?
+8. Hashtag Relevance: Strategic, not spammy (3-5 max)?
+
+BONUS POINTS (+10 each, max +30):
+- Uses specific metrics/data points
+- Includes contrarian/unpopular opinion
+- Ends with thought-provoking question
+- Has clear problem→solution→result structure
 
 LinkedIn-specific factors:
 - Target audience: CTOs, Engineering Managers, Senior Engineers
 - Best practices: Questions perform 2x better, lists get 1.5x engagement
 - Optimal length: 150-300 words
-- Timing: Technical content performs best Mon–Thu
+- Avoid: Generic advice, humble brags, excessive hashtags
 
-Return JSON:
+Return JSON (BE STRICT - most posts are 60-75):
 {{
-    "score": "overall_score_0_100 as an integer",
+    "score": "overall_score_0_100 as integer (STRICT - average is 65)",
     "confidence": "HIGH|MEDIUM|LOW",
     "predicted_engagement_rate": "percentage estimate with explanation",
     "breakdown": {{
@@ -55,14 +68,13 @@ Return JSON:
         "Specific actionable improvement 2",
         "Specific actionable improvement 3"
     ],
-    "reasoning": "Overall assessment and key insights"
+    "reasoning": "Overall assessment - be HONEST about weaknesses"
 }}
 
-Return ONLY valid JSON, no markdown."""
+Return ONLY valid JSON, no markdown. BE STRICT - don't inflate scores!"""
 
             response = await self.model.generate_content_async(prompt)
             
-            # --- MODIFICATION: Use the centralized JSON parser ---
             result = parse_llm_json_response(response.text, self._default_score())
 
             log_agent_action("ViralityAgent", "Post scored", f"Score: {result.get('score', 0)}/100")
@@ -82,5 +94,3 @@ Return ONLY valid JSON, no markdown."""
             "suggestions": ["Unable to analyze - please try again"],
             "reasoning": "Analysis failed"
         }
-
-    # --- MODIFICATION: Removed the local _parse_json_response method ---

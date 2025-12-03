@@ -1,0 +1,87 @@
+2025-12-03 09:33:06,637 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:33:06,637 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:33:24,224 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 76/100
+2025-12-03 09:33:43,563 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 76/100
+2025-12-03 09:33:59,862 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 09:35:25,789 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 09:35:41,407 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 82/100
+2025-12-03 09:35:56,042 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 76/100
+2025-12-03 09:37:13,372 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:37:13,373 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:37:31,103 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 09:37:47,188 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 75/100
+2025-12-03 09:38:05,174 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 09:39:38,312 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 76/100
+2025-12-03 09:39:51,498 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 09:40:34,982 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:40:34,984 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:40:51,394 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:40:51,394 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:41:07,192 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 09:41:23,998 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 09:41:43,782 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 09:41:52,425 - LinkedInAgent - ERROR - ERROR in JSON parsing failed for text snippet: {
+    "post_text": "In 2 years, the cloud market will bifurcate so profoundly that traditional 'lift...: Invalid control character at: line 2 column 146 (char 147)
+2025-12-03 09:43:11,129 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 72/100
+2025-12-03 09:43:27,123 - LinkedInAgent - ERROR - ERROR in JSON parsing failed for text snippet: {
+    "score": 82,
+    "confidence": "HIGH",
+    "predicted_engagement_rate": "2.5%, This post targe...: Expecting ',' delimiter: line 9 column 113 (char 1111)
+2025-12-03 09:43:27,123 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 50/100
+2025-12-03 09:43:42,296 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 77/100
+2025-12-03 09:50:53,791 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:50:53,792 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:51:11,972 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 09:54:51,857 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:54:51,858 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:55:12,101 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 76/100
+2025-12-03 09:57:36,842 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:57:36,844 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:57:52,659 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 74/100
+2025-12-03 09:58:24,102 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:58:24,102 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:58:24,106 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-03 09:58:24,108 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-03 09:59:28,373 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:59:28,374 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:59:28,376 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-03 09:59:28,377 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-03 10:07:38,277 - config - INFO - All required configuration loaded successfully
+2025-12-03 10:07:38,279 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-03 10:07:52,255 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:07:52,256 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:08:09,466 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 74/100
+2025-12-03 10:08:55,330 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:08:55,330 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:08:55,332 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-03 10:08:55,334 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-03 10:10:44,992 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:10:44,993 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:10:44,994 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-03 10:10:44,995 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-03 10:13:27,754 - config - INFO - All required configuration loaded successfully
+2025-12-03 10:13:27,757 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-03 10:14:42,670 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:14:42,671 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:15:01,656 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 10:15:31,930 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:15:31,935 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:15:31,941 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-03 10:15:31,946 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-03 10:18:45,705 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:18:45,706 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:19:02,237 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-03 10:19:31,430 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:19:31,431 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:19:31,433 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-03 10:19:31,435 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-03 10:22:24,281 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:22:24,281 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:23:13,174 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:23:13,175 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:24:02,829 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:24:02,831 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:24:49,759 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:24:49,760 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 10:25:52,294 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 10:25:52,295 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring

@@ -1,0 +1,187 @@
+2025-12-02 08:54:20,450 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 08:54:22,286 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for content
+2025-12-02 08:54:22,677 - main - INFO - ==================================================
+2025-12-02 08:54:33,812 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 08:54:34,610 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for content
+2025-12-02 08:54:34,653 - main - INFO - ==================================================
+2025-12-02 09:02:20,003 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 09:02:21,168 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for content
+2025-12-02 09:02:21,233 - main - INFO - ==================================================
+2025-12-02 09:03:00,190 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 09:03:01,042 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for content
+2025-12-02 09:03:01,093 - main - INFO - ==================================================
+2025-12-02 09:03:10,076 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for content
+2025-12-02 09:03:10,077 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 09:03:21,939 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-02 09:03:21,943 - LinkedInAgent - INFO - [ContentAgent] Improving post text: Feedback: Current score is 78/100. To reach 95+, focus on: I...
+2025-12-02 09:03:32,491 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-02 09:03:32,493 - LinkedInAgent - INFO - [ContentAgent] Improving post text: Feedback: Current score is 78/100. To reach 95+, focus on: C...
+2025-12-02 09:03:43,443 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-02 09:08:41,121 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 09:08:42,251 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for content
+2025-12-02 09:08:42,368 - main - INFO - ==================================================
+2025-12-02 09:08:46,677 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for content
+2025-12-02 09:08:46,678 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 09:08:57,833 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-02 09:19:04,921 - main - ERROR - HTTP error: Not Found
+2025-12-02 09:20:48,285 - main - ERROR - HTTP error: Not Found
+2025-12-02 09:22:43,233 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 09:22:44,308 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for content
+2025-12-02 09:22:44,371 - main - INFO - ==================================================
+2025-12-02 09:25:37,324 - main - ERROR - HTTP error: Not Found
+2025-12-02 09:29:12,488 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 09:29:13,423 - utils.gemini_config - INFO - Using model: models/gemini-exp-1206 for content
+2025-12-02 09:29:13,486 - main - INFO - ==================================================
+2025-12-02 09:29:33,541 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 09:29:34,201 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for content
+2025-12-02 09:29:34,235 - main - INFO - ==================================================
+2025-12-02 09:56:14,330 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 09:56:14,331 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 09:58:36,626 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 09:58:36,627 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 09:59:08,309 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 82/100
+2025-12-02 10:00:24,497 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:00:24,497 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:09:42,582 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 10:09:43,655 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:09:43,924 - main - INFO - ==================================================
+2025-12-02 10:11:34,886 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 10:11:35,515 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:11:35,564 - main - INFO - ==================================================
+2025-12-02 10:11:55,450 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 10:11:56,155 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:11:56,214 - main - INFO - ==================================================
+2025-12-02 10:12:04,768 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 10:12:05,466 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:12:05,509 - main - INFO - ==================================================
+2025-12-02 10:12:42,161 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:12:42,162 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:13:13,725 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-02 10:15:56,323 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:15:56,324 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:15:56,331 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 10:15:56,344 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 10:16:00,081 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:16:00,082 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:16:00,085 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 10:16:00,086 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 10:16:09,455 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:16:09,456 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:16:09,459 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 10:16:09,461 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 10:16:11,250 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:16:11,253 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:16:11,259 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 10:16:11,263 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 10:16:25,765 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:16:25,768 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:16:25,771 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 10:16:25,773 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 10:17:16,550 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:17:16,552 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:17:16,574 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 10:17:16,579 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 10:17:23,299 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:17:23,299 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:17:23,303 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 10:17:23,304 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 10:19:05,808 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 10:19:06,429 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:19:06,463 - main - INFO - ==================================================
+2025-12-02 10:19:18,477 - config - INFO - All required configuration loaded successfully
+2025-12-02 10:19:18,479 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 10:19:38,663 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:19:38,663 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:20:08,774 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:20:08,775 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:20:08,778 - LinkedInAgent - ERROR - ERROR in Content generation: Task <Task pending name='Task-3037' coro=<show_generate_tab.<locals>.generate() running at C:\Users\16139\Linkedin_agent\dashboard.py:58> cb=[_run_until_complete_cb() at c:\Python313\Lib\asyncio\base_events.py:181]> got Future <Task pending name='Task-3038' coro=<InterceptedUnaryUnaryCall._invoke() running at c:\Users\16139\Linkedin_agent\.venv\Lib\site-packages\grpc\aio\_interceptor.py:656> cb=[InterceptedCall._fire_or_add_pending_done_callbacks()]> attached to a different loop
+2025-12-02 10:20:08,779 - LinkedInAgent - ERROR - ERROR in Virality scoring: Task <Task pending name='Task-3037' coro=<show_generate_tab.<locals>.generate() running at C:\Users\16139\Linkedin_agent\dashboard.py:69> cb=[_run_until_complete_cb() at c:\Python313\Lib\asyncio\base_events.py:181]> got Future <Task pending name='Task-3039' coro=<InterceptedUnaryUnaryCall._invoke() running at c:\Users\16139\Linkedin_agent\.venv\Lib\site-packages\grpc\aio\_interceptor.py:656> cb=[InterceptedCall._fire_or_add_pending_done_callbacks()]> attached to a different loop
+2025-12-02 10:21:25,351 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:21:25,352 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:22:25,369 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-02 10:24:33,022 - config - INFO - All required configuration loaded successfully
+2025-12-02 10:24:33,025 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 10:26:05,464 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:26:05,465 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:26:47,474 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:26:47,481 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:28:35,581 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:28:35,582 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:28:35,588 - LinkedInAgent - ERROR - ERROR in Content generation: Task <Task pending name='Task-541' coro=<show_generate_tab.<locals>.generate() running at C:\Users\16139\Linkedin_agent\dashboard.py:58> cb=[_run_until_complete_cb() at c:\Python313\Lib\asyncio\base_events.py:181]> got Future <Task pending name='Task-542' coro=<InterceptedUnaryUnaryCall._invoke() running at c:\Users\16139\Linkedin_agent\.venv\Lib\site-packages\grpc\aio\_interceptor.py:656> cb=[InterceptedCall._fire_or_add_pending_done_callbacks()]> attached to a different loop
+2025-12-02 10:28:35,591 - LinkedInAgent - ERROR - ERROR in Virality scoring: Task <Task pending name='Task-541' coro=<show_generate_tab.<locals>.generate() running at C:\Users\16139\Linkedin_agent\dashboard.py:69> cb=[_run_until_complete_cb() at c:\Python313\Lib\asyncio\base_events.py:181]> got Future <Task pending name='Task-546' coro=<InterceptedUnaryUnaryCall._invoke() running at c:\Users\16139\Linkedin_agent\.venv\Lib\site-packages\grpc\aio\_interceptor.py:656> cb=[InterceptedCall._fire_or_add_pending_done_callbacks()]> attached to a different loop
+2025-12-02 10:28:50,226 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:28:50,226 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:28:50,230 - LinkedInAgent - ERROR - ERROR in Content generation: Task <Task pending name='Task-690' coro=<show_generate_tab.<locals>.generate() running at C:\Users\16139\Linkedin_agent\dashboard.py:58> cb=[_run_until_complete_cb() at c:\Python313\Lib\asyncio\base_events.py:181]> got Future <Task pending name='Task-692' coro=<InterceptedUnaryUnaryCall._invoke() running at c:\Users\16139\Linkedin_agent\.venv\Lib\site-packages\grpc\aio\_interceptor.py:656> cb=[InterceptedCall._fire_or_add_pending_done_callbacks()]> attached to a different loop
+2025-12-02 10:28:50,232 - LinkedInAgent - ERROR - ERROR in Virality scoring: Task <Task pending name='Task-690' coro=<show_generate_tab.<locals>.generate() running at C:\Users\16139\Linkedin_agent\dashboard.py:69> cb=[_run_until_complete_cb() at c:\Python313\Lib\asyncio\base_events.py:181]> got Future <Task pending name='Task-694' coro=<InterceptedUnaryUnaryCall._invoke() running at c:\Users\16139\Linkedin_agent\.venv\Lib\site-packages\grpc\aio\_interceptor.py:656> cb=[InterceptedCall._fire_or_add_pending_done_callbacks()]> attached to a different loop
+2025-12-02 10:31:07,224 - config - INFO - All required configuration loaded successfully
+2025-12-02 10:31:07,227 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-02 10:31:11,367 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:31:11,368 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:31:34,143 - asyncio - ERROR - Exception in callback PollerCompletionQueue._handle_events()()
+handle: <Handle PollerCompletionQueue._handle_events()()>
+Traceback (most recent call last):
+  File "c:\Python313\Lib\asyncio\events.py", line 89, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/python/grpcio/grpc/_cython/_cygrpc/aio/completion_queue.pyx.pxi", line 148, in grpc._cython.cygrpc.PollerCompletionQueue._handle_events
+BlockingIOError: [WinError 10035] A non-blocking socket operation could not be completed immediately
+2025-12-02 10:31:40,693 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-02 10:31:40,693 - asyncio - ERROR - Exception in callback PollerCompletionQueue._handle_events()()
+handle: <Handle PollerCompletionQueue._handle_events()()>
+Traceback (most recent call last):
+  File "c:\Python313\Lib\asyncio\events.py", line 89, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/python/grpcio/grpc/_cython/_cygrpc/aio/completion_queue.pyx.pxi", line 148, in grpc._cython.cygrpc.PollerCompletionQueue._handle_events
+BlockingIOError: [WinError 10035] A non-blocking socket operation could not be completed immediately
+2025-12-02 10:36:46,993 - LinkedInAgent - ERROR - ERROR in Content generation: 504 Deadline expired before operation could complete.
+2025-12-02 10:36:46,994 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 10:38:01,301 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:38:01,302 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:38:32,202 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 74/100
+2025-12-02 10:44:29,727 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:44:29,730 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:45:18,629 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 83/100
+2025-12-02 10:46:03,872 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:46:03,873 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:46:03,879 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 10:46:03,881 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 10:46:20,396 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:46:20,397 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:46:20,401 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 10:46:20,404 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 10:50:07,243 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:50:07,246 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:54:59,489 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:54:59,490 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:55:22,616 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-02 10:56:47,504 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 77/100
+2025-12-02 10:57:36,114 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 10:57:36,115 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 10:58:45,152 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 78/100
+2025-12-02 11:00:18,821 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 11:00:18,821 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 11:00:18,831 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 11:00:18,833 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 11:00:31,669 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 11:00:31,670 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 11:00:31,677 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-02 11:00:31,681 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-02 11:04:16,969 - utils.gemini_config - INFO - Using model: gemini-3-pro-preview for content
+2025-12-02 11:04:16,970 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-02 11:14:17,607 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 74/100
+2025-12-03 09:46:14,089 - config - INFO - All required configuration loaded successfully
+2025-12-03 09:46:14,108 - core.message_bus - INFO - Message bus initialized in development mode.
+2025-12-03 09:46:40,469 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:46:40,470 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:47:00,501 - LinkedInAgent - INFO - [ViralityAgent] Post scored: Score: 74/100
+2025-12-03 09:48:01,281 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:48:01,282 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:48:01,287 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-03 09:48:01,289 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-03 09:48:24,162 - utils.gemini_config - INFO - Using model: gemini-2.5-flash for content
+2025-12-03 09:48:24,163 - utils.gemini_config - INFO - Using model: models/gemini-2.0-flash-exp for scoring
+2025-12-03 09:48:24,167 - LinkedInAgent - ERROR - ERROR in Content generation: Event loop is closed
+2025-12-03 09:48:24,168 - LinkedInAgent - ERROR - ERROR in Virality scoring: Event loop is closed
+2025-12-03 09:56:59,859 - config - INFO - All required configuration loaded successfully
+2025-12-03 09:56:59,861 - core.message_bus - INFO - Message bus initialized in development mode.
