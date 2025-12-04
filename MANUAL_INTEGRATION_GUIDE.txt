@@ -1,0 +1,99 @@
+# CIS IMPROVEMENT TRACKING - Manual Integration Guide
+# This file contains the code changes needed for smart model escalation
+# You need to manually copy these into dashboard.py at the specified locations
+
+# ========================================================================
+# CHANGE 1: Function Signature (Line 122-123)
+# ========================================================================
+# REPLACE THIS:
+"""
+def generate_post_async(topic: str, style: str, improvement_feedback: Optional[str] = None) -> Dict:
+    "Generate post with proper async handling and error recovery"
+"""
+
+# WITH THIS:
+"""
+def generate_post_async(topic: str, style: str, improvement_feedback: Optional[str] = None, 
+                       improvement_count: int = 0, previous_score: int = 0) -> Dict:
+    "Generate post with smart model escalation (uses advanced model if improvement_count >= 2 and previous_score < 80)"
+"""
+
+# ========================================================================
+# CHANGE 2: Add Tracking to Return Data (Around Line 187-193)
+# ========================================================================
+# FIND THIS section in the data dict:
+"""
+data = {
+    "content": post_text,
+    "reasoning": draft.get("reasoning", ""),
+    "virality_score": score_result.get("score", 0),
+    "confidence": score_result.get("confidence", ""),
+    "suggestions": score_result.get("suggestions", []),
+    "topic": topic,
+    "style": style,
+    "improvement_feedback": improvement_feedback
+}
+"""
+
+# REPLACE WITH:
+"""
+data = {
+    "content": post_text,
+    "reasoning": draft.get("reasoning", ""),
+    "virality_score": score_result.get("score", 0),
+    "confidence": score_result.get("confidence", ""),
+    "suggestions": score_result.get("suggestions", []),
+    "topic": topic,
+    "style": style,
+    "improvement_feedback": improvement_feedback,
+    "improvement_count": improvement_count,
+    "previous_score": previous_score
+}
+"""
+
+# ========================================================================
+# CHANGE 3: Update Improve Workflow (Around Line 363-370)
+# ========================================================================
+# FIND THIS:
+"""
+if submitted and feedback:
+    with st.spinner("🤖 Gemini is improving your post..."):
+        try:
+            data = generate_post_async(
+                post.get('topic', ''),
+                post.get('style', 'Professional'),
+                improvement_feedback=feedback
+            )
+"""
+
+# REPLACE WITH:
+"""
+if submitted and feedback:
+    # Track improvement iterations
+    improvement_count = post.get('improvement_count', 0) + 1
+    previous_score = post.get('virality_score', 0)
+    
+    # Show model escalation message
+    if improvement_count >= 2 and previous_score < 80:
+        st.info("🧠 Activating advanced model for deeper analysis (score-based escalation)...")
+    
+    with st.spinner("🤖 Gemini is improving your post..."):
+        try:
+            data = generate_post_async(
+                post.get('topic', ''),
+                post.get('style', 'Professional'),
+                improvement_feedback=feedback,
+                improvement_count=improvement_count,
+                previous_score=previous_score
+            )
+"""
+
+# ========================================================================
+# END OF CHANGES
+# ========================================================================
+
+# Summary:
+# - 3 small changes total
+# - Adds improvement tracking
+# - Enables score-based model escalation (2+ improvements + score < 80)
+# - User sees notification when advanced model activates

@@ -23,6 +23,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
 # Initialize session state
 def init_session_state():
     """Initialize all session state variables"""
@@ -36,12 +37,16 @@ def init_session_state():
         st.session_state.compare_mode = False
     if 'compare_posts' not in st.session_state:
         st.session_state.compare_posts = []
+    if 'show_improve_form' not in st.session_state:
+        st.session_state.show_improve_form = False
+
 
 def add_to_history(post_data: Dict):
     """Add a generated post to history"""
     post_data['timestamp'] = datetime.now().isoformat()
     post_data['id'] = len(st.session_state.post_history)
     st.session_state.post_history.append(post_data)
+
 
 def show_sidebar():
     """Show sidebar with post history and controls"""
@@ -115,18 +120,26 @@ def show_sidebar():
                 st.session_state.post_history = []
                 st.session_state.selected_post_idx = None
                 st.session_state.compare_posts = []
+                st.session_state.compare_mode = False
+                st.session_state.show_improve_form = False
                 st.rerun()
         else:
             st.info("No posts yet. Generate your first post!")
 
-def generate_post_async(topic: str, style: str, improvement_feedback: Optional[str] = None) -> Dict:
-    """Generate post with proper async handling and error recovery"""
+
+def generate_post_async(
+    topic: str,
+    style: str,
+    improvement_feedback: Optional[str] = None,
+    improvement_count: int = 0,
+    previous_score: int = 0
+) -> Dict:
+    "Generate post with smart model escalation (uses advanced model if improvement_count >= 2 and previous_score < 80)"
     max_retries = 3
     retry_delay = 2
     
     for attempt in range(max_retries):
         try:
-            # Create agents
             # Mock profile
             profile = {
                 "writing_tone": "Professional & Insightful",
@@ -135,23 +148,46 @@ def generate_post_async(topic: str, style: str, improvement_feedback: Optional[s
                 "full_name": "Kunal Bhat"
             }
             
-            # Generate content
-            # Use synchronous calls to avoid event loop issues
+            # JSON parser
             from utils.json_parser import parse_llm_json_response
             
-            # Create agents
+            # Create agents with smart model escalation
             content_agent = ContentAgent()
             virality_agent = ViralityAgent()
             
-            # Add improvement feedback to topic if provided
-            enhanced_topic = topic
-            if improvement_feedback:
-                enhanced_topic = f"{topic}\n\nIMPROVEMENT FEEDBACK: {improvement_feedback}"
+            # SMART MODEL ESCALATION: Use advanced model if struggling
+            use_advanced_model = improvement_count >= 2 and previous_score < 80
+            if use_advanced_model:
+                # Import advanced model
+                import google.generativeai as genai
+                advanced_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+                content_agent.model = advanced_model  # Override with advanced model
+                st.info("🧠 Using Gemini 2.0 Flash Exp for deeper analysis...")
             
             # Generate content using SYNC method
-            prompt = f"""You are an expert LinkedIn content strategist creating high-engagement posts.
+            if improvement_feedback:
+                # IMPROVEMENT MODE: Explicitly tell AI to improve previous content
+                prompt = f"""You are an expert LinkedIn content strategist improving a post.
 
-TOPIC: "{enhanced_topic}"
+ORIGINAL TOPIC: "{topic}"
+STYLE: {style}
+PERSONA: Thought Leader
+
+IMPROVEMENT FEEDBACK: {improvement_feedback}
+
+TASK: Rewrite and IMPROVE the post based on the feedback above. Make specific changes to address the feedback.
+Do NOT just regenerate - actively incorporate the suggestions to make it better.
+
+Return ONLY valid JSON:
+{{
+    "post_text": "your IMPROVED post here",
+    "reasoning": "what specific improvements you made"
+}}"""
+            else:
+                # GENERATION MODE: Create new content
+                prompt = f"""You are an expert LinkedIn content strategist creating high-engagement posts.
+
+TOPIC: "{topic}"
 STYLE: {style}
 PERSONA: Thought Leader
 
@@ -167,19 +203,43 @@ Return ONLY valid JSON:
             draft = parse_llm_json_response(response.text, error_payload)
             post_text = draft.get("post_text", "")
             
-            # Score using SYNC method
-            score_prompt = f"""Score this LinkedIn post strictly (0-100).
-POST: {post_text}
+            # Score using SYNC method - STRICT EVALUATION
+            score_prompt = f"""You are a LinkedIn virality expert. Score this post STRICTLY on a 0-100 scale.
 
-Return ONLY valid JSON:
+POST TO EVALUATE:
+{post_text}
+
+SCORING RUBRIC (be harsh and honest):
+- 90-100: EXCEPTIONAL - Would go viral, perfect hook, compelling story, strong CTA
+- 80-89: EXCELLENT - Very engaging, clear value, good structure
+- 70-79: GOOD - Solid post but missing viral elements
+- 60-69: AVERAGE - Generic LinkedIn content
+- Below 60: NEEDS WORK - Lacks engagement potential
+
+EVALUATE THESE 8 DIMENSIONS:
+1. Hook Strength (first 2 lines grab attention?)
+2. Value Delivery (actionable insights?)
+3. Emotional Resonance (connects with audience?)
+4. Call-to-Action (encourages engagement?)
+5. Readability (easy to scan?)
+6. Authority Signal (demonstrates expertise?)
+7. Shareability (worth sharing?)
+8. Hashtag Relevance (strategic tags?)
+
+BE STRICT. Most posts should score 65-80. Only exceptional posts get 85+.
+
+Return ONLY valid JSON with your ACTUAL evaluation:
 {{
-    "score": 75,
-    "confidence": "MEDIUM",
-    "suggestions": ["suggestion 1", "suggestion 2"]
+    "score": <your calculated score 0-100>,
+    "confidence": "HIGH" or "MEDIUM" or "LOW",
+    "suggestions": ["specific improvement 1", "specific improvement 2", "specific improvement 3"]
 }}"""
             
             score_response = virality_agent.model.generate_content(score_prompt)
-            score_result = parse_llm_json_response(score_response.text, {"score": 50, "confidence": "LOW", "suggestions": []})
+            score_result = parse_llm_json_response(
+                score_response.text,
+                {"score": 50, "confidence": "LOW", "suggestions": []}
+            )
             
             data = {
                 "content": post_text,
@@ -189,16 +249,27 @@ Return ONLY valid JSON:
                 "suggestions": score_result.get("suggestions", []),
                 "topic": topic,
                 "style": style,
-                "improvement_feedback": improvement_feedback
+                "improvement_feedback": improvement_feedback,
+                "improvement_count": improvement_count,
+                "previous_score": previous_score
             }
             
             # Generate image
             try:
                 from utils.image_generator import create_branded_image
+                st.info("🎨 Generating branded image...")
                 image_url = create_branded_image(data.get("content", ""), "Kunal Bhat, PMP")
-                data["image_url"] = image_url
+                if image_url:
+                    data["image_url"] = image_url
+                    st.success("✅ Image generated successfully!")
+                else:
+                    st.warning("⚠️ Image generation returned None - check logs")
+                    data["image_url"] = None
             except Exception as img_err:
-                st.warning(f"⚠️ Image generation error: {str(img_err)}")
+                st.error(f"❌ Image generation failed: {str(img_err)}")
+                import traceback
+                with st.expander("Image Error Details"):
+                    st.code(traceback.format_exc())
                 data["image_url"] = None
             
             return data
@@ -210,6 +281,7 @@ Return ONLY valid JSON:
                 retry_delay *= 2  # Exponential backoff
             else:
                 raise e
+
 
 def show_post_detail(post: Dict, show_improve_button: bool = True):
     """Display a single post with all details"""
@@ -261,6 +333,7 @@ def show_post_detail(post: Dict, show_improve_button: bool = True):
         if st.button("🔄 Improve This Post", key=f"improve_detail_{post['id']}", use_container_width=True):
             st.session_state.show_improve_form = True
             st.rerun()
+
 
 def show_comparison_view(post1: Dict, post2: Dict):
     """Show side-by-side comparison of two posts"""
@@ -322,6 +395,7 @@ def show_comparison_view(post1: Dict, post2: Dict):
         st.session_state.compare_posts = []
         st.rerun()
 
+
 def show_generate_tab():
     """Show content generation interface"""
     
@@ -361,21 +435,35 @@ def show_generate_tab():
                     st.rerun()
                 
                 if submitted and feedback:
+                    # Track improvement iterations
+                    improvement_count = post.get('improvement_count', 0) + 1
+                    previous_score = post.get('virality_score', 0)
+                    
+                    # Show model escalation message
+                    if improvement_count >= 2 and previous_score < 80:
+                        st.info("🧠 Activating advanced model for deeper analysis (score-based escalation)...")
+                    
                     with st.spinner("🤖 Gemini is improving your post..."):
                         try:
                             data = generate_post_async(
                                 post.get('topic', ''),
                                 post.get('style', 'Professional'),
-                                improvement_feedback=feedback
+                                improvement_feedback=feedback,
+                                improvement_count=improvement_count,
+                                previous_score=previous_score
                             )
                             add_to_history(data)
+                            st.success("✅ Improved post generated successfully!")
                             st.session_state.selected_post_idx = len(st.session_state.post_history) - 1
                             st.session_state.show_improve_form = False
-                            st.success("✅ Improved post generated!")
                             st.rerun()
                         except Exception as e:
-                            st.error(f"❌ Error: {str(e)}")
+                            st.error(f"❌ Error while improving post: {str(e)}")
+                            import traceback
+                            with st.expander("Error Details"):
+                                st.code(traceback.format_exc())
         else:
+            # Normal post detail view
             show_post_detail(post)
         
         # Back button
@@ -422,12 +510,12 @@ def show_generate_tab():
                     st.success("✅ Post generated successfully!")
                     st.session_state.selected_post_idx = len(st.session_state.post_history) - 1
                     st.rerun()
-                    
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
                     import traceback
                     with st.expander("Error Details"):
                         st.code(traceback.format_exc())
+
 
 def show_about_tab():
     """Show about/help information"""
@@ -492,6 +580,7 @@ def show_about_tab():
     - Automatic text extraction and formatting
     """)
 
+
 def main():
     """Main application"""
     
@@ -511,13 +600,17 @@ def main():
         with col1:
             st.metric("Total Posts", len(st.session_state.post_history))
         with col2:
-            avg_score = sum(p.get('virality_score', 0) for p in st.session_state.post_history) / len(st.session_state.post_history)
+            avg_score = sum(
+                p.get('virality_score', 0) for p in st.session_state.post_history
+            ) / len(st.session_state.post_history)
             st.metric("Avg Score", f"{avg_score:.1f}/100")
         with col3:
             max_score = max(p.get('virality_score', 0) for p in st.session_state.post_history)
             st.metric("Best Score", f"{max_score}/100")
         with col4:
-            excellent_count = sum(1 for p in st.session_state.post_history if p.get('virality_score', 0) >= 80)
+            excellent_count = sum(
+                1 for p in st.session_state.post_history if p.get('virality_score', 0) >= 80
+            )
             st.metric("Excellent Posts", f"{excellent_count}/{len(st.session_state.post_history)}")
         
         st.markdown("---")
@@ -530,6 +623,7 @@ def main():
     
     with tab2:
         show_about_tab()
+
 
 if __name__ == "__main__":
     main()
