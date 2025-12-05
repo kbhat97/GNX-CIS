@@ -7,22 +7,74 @@ import time
 import json
 from datetime import datetime
 from typing import Dict, List, Optional
+import sentry_sdk
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Sentry for error tracking
+sentry_dsn = os.getenv("SENTRY_DSN")
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        # Set traces_sample_rate to 1.0 to capture 100% of transactions for performance monitoring
+        traces_sample_rate=0.1,
+        # Enable profiling
+        profiles_sample_rate=0.1,
+        # Add data like request headers and IP for users
+        send_default_pii=True,
+        # Environment
+        environment="development",
+        # Release version
+        release="cis@1.0.0",
+    )
+    print("✅ Sentry initialized for error tracking")
 
 # Add current directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# Import authentication
+from auth import init_auth, require_auth, show_user_menu, get_current_user
 from agents.content_agent import ContentAgent
 from agents.virality_agent import ViralityAgent
 from utils.gemini_config import GeminiConfig
+from utils.sanitizer import sanitize_topic, sanitize_feedback, escape_for_prompt
+from utils.content_filter import is_safe_for_generation, moderate_content, ContentRiskLevel
+from utils.cache import get_cache, cache_get, cache_set
+from utils.rate_limiter import check_generation_limit, check_improvement_limit, format_retry_message
 
 # Page config
 st.set_page_config(
-    page_title="CIS - Content Intelligence System",
-    page_icon="🚀",
+    page_title="GNX - Content Intelligence System",
+    page_icon="✨",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"  # Hamburger menu style
 )
 
+def load_css():
+    """Load custom CSS from assets/style.css"""
+    css_file = os.path.join(os.path.dirname(__file__), "assets", "style.css")
+    if os.path.exists(css_file):
+        with open(css_file, "r") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+# Load custom design system
+load_css()
+
+# Initialize authentication
+init_auth()
+
+# Require authentication - this will show login page if not authenticated
+current_user = require_auth()
+
+# Set Sentry user context for error tracking
+if current_user and sentry_dsn:
+    sentry_sdk.set_user({
+        "id": current_user.get("user_id"),
+        "email": current_user.get("email"),
+        "username": f"{current_user.get('first_name', '')} {current_user.get('last_name', '')}"
+    })
 
 # Initialize session state
 def init_session_state():
@@ -39,6 +91,29 @@ def init_session_state():
         st.session_state.compare_posts = []
     if 'show_improve_form' not in st.session_state:
         st.session_state.show_improve_form = False
+    
+    # User preferences (persist between sessions)
+    if 'user_preferences' not in st.session_state:
+        st.session_state.user_preferences = {
+            'default_style': 'inspirational',
+            'default_tone': 'professional',
+            'auto_generate_image': True,
+            'show_score_details': True,
+            'theme': 'dark'
+        }
+
+
+def get_user_preference(key: str, default=None):
+    """Get a user preference value"""
+    prefs = st.session_state.get('user_preferences', {})
+    return prefs.get(key, default)
+
+
+def set_user_preference(key: str, value):
+    """Set a user preference value"""
+    if 'user_preferences' not in st.session_state:
+        st.session_state.user_preferences = {}
+    st.session_state.user_preferences[key] = value
 
 
 def add_to_history(post_data: Dict):
@@ -49,74 +124,96 @@ def add_to_history(post_data: Dict):
 
 
 def show_sidebar():
-    """Show sidebar with post history and controls"""
+    """Show sidebar with GNX branding and post history"""
     with st.sidebar:
-        st.markdown("## 📚 Post History")
-        st.markdown(f"**Total Posts:** {len(st.session_state.post_history)}")
+        # GNX Branding Header
+        st.markdown("""
+        <div style='text-align:center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;'>
+            <h2 style='margin:0; color:#a78bfa; font-size:1.5rem;'>GNX</h2>
+            <p style='margin:0; color:rgba(255,255,255,0.7); font-size:0.85rem;'>Content Intelligence System</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Show user menu (logout, profile)
+        show_user_menu()
+        
+        # Quick stats row
+        if st.session_state.post_history:
+            total_posts = len(st.session_state.post_history)
+            avg_score = sum(p.get('virality_score', 0) for p in st.session_state.post_history) / total_posts
+            st.markdown(f"""
+            <div style='display:flex; justify-content:space-around; padding:10px 0; margin-bottom:15px; background:rgba(255,255,255,0.05); border-radius:8px;'>
+                <div style='text-align:center;'>
+                    <div style='font-size:1.2rem; font-weight:bold; color:white;'>{total_posts}</div>
+                    <div style='font-size:0.7rem; color:rgba(255,255,255,0.6);'>Posts</div>
+                </div>
+                <div style='text-align:center;'>
+                    <div style='font-size:1.2rem; font-weight:bold; color:#a78bfa;'>{avg_score:.0f}</div>
+                    <div style='font-size:0.7rem; color:rgba(255,255,255,0.6);'>Avg Score</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # PROMINENT COMPARE BUTTON
+        if len(st.session_state.post_history) >= 2:
+            if st.button("📊 Compare Posts", use_container_width=True, type="primary" if st.session_state.compare_mode else "secondary"):
+                st.session_state.compare_mode = not st.session_state.compare_mode
+                if not st.session_state.compare_mode:
+                    st.session_state.compare_posts = []
+                st.rerun()
+            
+            if st.session_state.compare_mode:
+                st.info(f"Select {2 - len(st.session_state.compare_posts)} more posts")
+        
+        st.markdown("---")
+        st.markdown("**📝 Post History**")
         
         if st.session_state.post_history:
-            st.markdown("---")
-            
-            # Compare mode toggle
-            if st.checkbox("📊 Compare Mode", value=st.session_state.compare_mode):
-                st.session_state.compare_mode = True
-                st.info("Select 2 posts to compare")
-            else:
-                st.session_state.compare_mode = False
-                st.session_state.compare_posts = []
-            
-            st.markdown("---")
-            
-            # Show history (most recent first)
+            # Show history (most recent first) - Score at TOP
             for idx, post in enumerate(reversed(st.session_state.post_history)):
                 actual_idx = len(st.session_state.post_history) - 1 - idx
+                score = post.get('virality_score', 0)
                 
-                with st.expander(
-                    f"Post #{post['id']} - Score: {post.get('virality_score', 0)}/100",
-                    expanded=(actual_idx == 0)  # Expand most recent
-                ):
-                    # Show timestamp
-                    timestamp = datetime.fromisoformat(post['timestamp'])
-                    st.caption(f"🕒 {timestamp.strftime('%I:%M %p')}")
-                    
-                    # Show topic/style
-                    st.caption(f"📝 {post.get('topic', 'N/A')[:50]}...")
-                    st.caption(f"🎨 {post.get('style', 'N/A')}")
-                    
-                    # Show score with color
-                    score = post.get('virality_score', 0)
-                    if score >= 80:
-                        st.success(f"⭐ Score: {score}/100")
-                    elif score >= 70:
-                        st.info(f"✓ Score: {score}/100")
+                # Score badge color
+                score_color = "#22c55e" if score >= 80 else "#eab308" if score >= 70 else "#ef4444"
+                
+                # Compact post card with score at top
+                st.markdown(f"""
+                <div style='background:rgba(255,255,255,0.05); border-radius:8px; padding:10px; margin-bottom:8px; border-left:3px solid {score_color};'>
+                    <div style='display:flex; justify-content:space-between; align-items:center;'>
+                        <span style='font-size:1.1rem; font-weight:bold; color:{score_color};'>{score}/100</span>
+                        <span style='font-size:0.7rem; color:rgba(255,255,255,0.5);'>#{post['id']}</span>
+                    </div>
+                    <div style='font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'>
+                        {post.get('topic', 'N/A')[:40]}...
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Action buttons
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("👁️ View", key=f"view_{actual_idx}", use_container_width=True):
+                        st.session_state.selected_post_idx = actual_idx
+                        st.session_state.compare_mode = False
+                        st.rerun()
+                with col2:
+                    if st.session_state.compare_mode:
+                        is_selected = actual_idx in st.session_state.compare_posts
+                        if st.button("✓" if is_selected else "Select", key=f"select_{actual_idx}", use_container_width=True):
+                            if actual_idx not in st.session_state.compare_posts:
+                                st.session_state.compare_posts.append(actual_idx)
+                                if len(st.session_state.compare_posts) == 2:
+                                    st.rerun()
                     else:
-                        st.warning(f"⚠ Score: {score}/100")
-                    
-                    # Action buttons
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        if st.button("👁️ View", key=f"view_{actual_idx}"):
+                        if st.button("🔄", key=f"improve_{actual_idx}", use_container_width=True):
                             st.session_state.selected_post_idx = actual_idx
-                            st.session_state.compare_mode = False
+                            st.session_state.show_improve_form = True
                             st.rerun()
-                    
-                    with col2:
-                        if st.session_state.compare_mode:
-                            if st.button("✓ Select", key=f"select_{actual_idx}"):
-                                if actual_idx not in st.session_state.compare_posts:
-                                    st.session_state.compare_posts.append(actual_idx)
-                                    if len(st.session_state.compare_posts) == 2:
-                                        st.rerun()
-                        else:
-                            if st.button("🔄 Improve", key=f"improve_{actual_idx}"):
-                                st.session_state.selected_post_idx = actual_idx
-                                st.session_state.show_improve_form = True
-                                st.rerun()
             
-            # Clear history button
+            # Clear history button at bottom
             st.markdown("---")
-            if st.button("🗑️ Clear History", type="secondary"):
+            if st.button("🗑️ Clear All", type="secondary", use_container_width=True):
                 st.session_state.post_history = []
                 st.session_state.selected_post_idx = None
                 st.session_state.compare_posts = []
@@ -124,7 +221,7 @@ def show_sidebar():
                 st.session_state.show_improve_form = False
                 st.rerun()
         else:
-            st.info("No posts yet. Generate your first post!")
+            st.caption("No posts yet. Generate your first!")
 
 
 def generate_post_async(
@@ -396,9 +493,62 @@ def show_comparison_view(post1: Dict, post2: Dict):
         st.rerun()
 
 
-def show_generate_tab():
-    """Show content generation interface"""
+def show_dashboard_header():
+    """Show the glassmorphic dashboard header"""
+    current_user = get_current_user()
+    if not current_user:
+        return
+
+    # User avatar (use Dicebear if no image)
+    avatar_url = current_user.get('image_url') or f"https://api.dicebear.com/7.x/avataaars/svg?seed={current_user.get('first_name', 'User')}"
     
+    st.markdown(f"""
+    <div class="glass-card animate-fade-in" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; margin-bottom: 30px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: rgba(139, 92, 246, 0.2); padding: 8px; border-radius: 50%;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 17L12 22L22 17" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div>
+                <h1 style="margin: 0; font-size: 1.5rem; font-weight: 700; color: white;">CIS Dashboard</h1>
+                <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.6);">Content Intelligence System</p>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+             <div style="text-align: right;">
+                <p style="margin: 0; color: white; font-weight: 600;">{current_user.get('first_name', 'User')} {current_user.get('last_name', '')}</p>
+                <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.6);">{current_user.get('email', '')}</p>
+            </div>
+            <img src="{avatar_url}" 
+                 style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(139, 92, 246, 0.5);">
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Metrics Section
+    cols = st.columns(4)
+    
+    # Only show real metrics - just post count
+    st.markdown(f"""
+    <div class="glass-card animate-fade-in" style="padding: 20px; text-align: center; max-width: 300px;">
+        <p style="color: rgba(255,255,255,0.6); font-size: 0.875rem; margin: 0;">Posts Generated</p>
+        <p style="font-size: 2.5rem; font-weight: 700; color: white; margin: 10px 0 0 0;">{st.session_state.gen_count}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+
+
+def show_generate_tab():
+    """Show content generation interface - compact layout"""
+    
+    # Only show stats when posts exist (removed redundant header)
+
     # Check if we're in comparison mode
     if st.session_state.compare_mode and len(st.session_state.compare_posts) == 2:
         idx1, idx2 = st.session_state.compare_posts
@@ -410,6 +560,11 @@ def show_generate_tab():
     
     # Check if we're viewing a specific post
     if st.session_state.selected_post_idx is not None:
+        # Bounds check - reset if index is out of range
+        if st.session_state.selected_post_idx >= len(st.session_state.post_history):
+            st.session_state.selected_post_idx = None
+            st.rerun()
+        
         post = st.session_state.post_history[st.session_state.selected_post_idx]
         st.markdown(f"## 👁️ Viewing Post #{post['id']}")
         
@@ -434,34 +589,45 @@ def show_generate_tab():
                     st.session_state.show_improve_form = False
                     st.rerun()
                 
-                if submitted and feedback:
-                    # Track improvement iterations
-                    improvement_count = post.get('improvement_count', 0) + 1
-                    previous_score = post.get('virality_score', 0)
-                    
-                    # Show model escalation message
-                    if improvement_count >= 2 and previous_score < 80:
-                        st.info("🧠 Activating advanced model for deeper analysis (score-based escalation)...")
-                    
-                    with st.spinner("🤖 Gemini is improving your post..."):
+                if submitted:
+                    if not feedback or not feedback.strip():
+                        st.error("❌ Please provide improvement feedback")
+                    else:
+                        # SECURITY: Sanitize feedback input
                         try:
-                            data = generate_post_async(
-                                post.get('topic', ''),
-                                post.get('style', 'Professional'),
-                                improvement_feedback=feedback,
-                                improvement_count=improvement_count,
-                                previous_score=previous_score
-                            )
-                            add_to_history(data)
-                            st.success("✅ Improved post generated successfully!")
-                            st.session_state.selected_post_idx = len(st.session_state.post_history) - 1
-                            st.session_state.show_improve_form = False
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"❌ Error while improving post: {str(e)}")
-                            import traceback
-                            with st.expander("Error Details"):
-                                st.code(traceback.format_exc())
+                            sanitized_feedback = sanitize_feedback(feedback)
+                            safe_feedback = escape_for_prompt(sanitized_feedback)
+                            
+                            # Track improvement iterations
+                            improvement_count = post.get('improvement_count', 0) + 1
+                            previous_score = post.get('virality_score', 0)
+                            
+                            # Show model escalation message
+                            if improvement_count >= 2 and previous_score < 80:
+                                st.info("🧠 Activating advanced model for deeper analysis (score-based escalation)...")
+                            
+                            with st.spinner("🤖 Gemini is improving your post..."):
+                                try:
+                                    data = generate_post_async(
+                                        post.get('topic', ''),
+                                        post.get('style', 'Professional'),
+                                        improvement_feedback=safe_feedback,
+                                        improvement_count=improvement_count,
+                                        previous_score=previous_score
+                                    )
+                                    add_to_history(data)
+                                    st.success("✅ Improved post generated successfully!")
+                                    st.session_state.selected_post_idx = len(st.session_state.post_history) - 1
+                                    st.session_state.show_improve_form = False
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ Error while improving post: {str(e)}")
+                                    import traceback
+                                    with st.expander("Error Details"):
+                                        st.code(traceback.format_exc())
+                        except ValueError as ve:
+                            st.error(f"❌ Invalid feedback: {str(ve)}")
+                            st.info("💡 Please check your feedback and try again.")
         else:
             # Normal post detail view
             show_post_detail(post)
@@ -476,8 +642,7 @@ def show_generate_tab():
         return
     
     # Main generation interface
-    st.markdown("## 🤖 Generate LinkedIn Post")
-    st.info(f"🤖 **Content Model**: {GeminiConfig.CONTENT_MODEL} | **Scoring Model**: {GeminiConfig.SCORING_MODEL}")
+    st.markdown("## Generate LinkedIn Post")
     
     with st.form(key="gen_form"):
         topic = st.text_area(
@@ -498,23 +663,59 @@ def show_generate_tab():
             st.caption("• Include key points you want to cover")
             st.caption("• Mention target audience if relevant")
         
-        submitted = st.form_submit_button("🚀 Generate Post", use_container_width=True, type="primary")
+        submitted = st.form_submit_button("Generate Post", use_container_width=True, type="primary")
         
-        if submitted and topic:
-            st.session_state.gen_count += 1
-            
-            with st.spinner("🤖 Gemini is crafting your viral post..."):
-                try:
-                    data = generate_post_async(topic, style)
-                    add_to_history(data)
-                    st.success("✅ Post generated successfully!")
-                    st.session_state.selected_post_idx = len(st.session_state.post_history) - 1
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error: {str(e)}")
-                    import traceback
-                    with st.expander("Error Details"):
-                        st.code(traceback.format_exc())
+        if submitted:
+            if not topic or not topic.strip():
+                st.error("❌ Please enter a topic for your post")
+            else:
+                # RATE LIMITING: Check if user can generate
+                user_id = current_user.get('user_id', 'anonymous')
+                is_allowed, limit_info = check_generation_limit(user_id)
+                
+                if not is_allowed:
+                    st.error(format_retry_message(limit_info))
+                    st.info(f"💡 Limit: {limit_info['limit']} posts per minute")
+                else:
+                    # Show remaining quota
+                    st.info(f"📊 {limit_info['remaining']} generations remaining this minute")
+                    
+                    # SECURITY: Sanitize and validate input
+                    try:
+                        # Sanitize topic
+                        sanitized_topic = sanitize_topic(topic)
+                        
+                        # Check content safety
+                        is_safe, unsafe_reason = is_safe_for_generation(sanitized_topic)
+                        if not is_safe:
+                            st.error(f"🚫 Content moderation failed: {unsafe_reason}")
+                            st.warning("Please revise your topic to comply with our content policy.")
+                        else:
+                            # Escape for LLM prompt to prevent prompt injection
+                            safe_topic = escape_for_prompt(sanitized_topic)
+                            
+                            st.session_state.gen_count += 1
+                            
+                            with st.spinner("🤖 Gemini is crafting your viral post..."):
+                                try:
+                                    data = generate_post_async(safe_topic, style)
+                                    
+                                    # CACHING: Cache the generated post
+                                    cache_key = f"post:{user_id}:{len(st.session_state.post_history)}"
+                                    cache_set(cache_key, data, ttl=3600)  # Cache for 1 hour
+                                    
+                                    add_to_history(data)
+                                    st.success("✅ Post generated successfully!")
+                                    st.session_state.selected_post_idx = len(st.session_state.post_history) - 1
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ Error: {str(e)}")
+                                    import traceback
+                                    with st.expander("Error Details"):
+                                        st.code(traceback.format_exc())
+                    except ValueError as ve:
+                        st.error(f"❌ Invalid input: {str(ve)}")
+                        st.info("💡 Please check your input and try again.")
 
 
 def show_about_tab():
@@ -590,9 +791,35 @@ def main():
     # Show sidebar
     show_sidebar()
     
-    # Header
-    st.title("🚀 CIS - Content Intelligence System")
-    st.markdown("*AI-Powered LinkedIn Content Generation with Gemini*")
+    # Clean header with GNX branding and About in header row
+    header_col1, header_col2, header_col3 = st.columns([3, 1, 1])
+    with header_col1:
+        st.markdown("""<h1 style='margin:0; font-size:1.8rem;'>
+            <span style='color:#a78bfa;'>GNX</span> - 
+            <span style='color:white;'>Content Intelligence System</span>
+        </h1>
+        <p style='color: rgba(255,255,255,0.6); margin:0; font-size:0.9rem;'>AI-Powered LinkedIn Content Generation</p>
+        """, unsafe_allow_html=True)
+    with header_col2:
+        if st.button("📖 About", use_container_width=True, type="secondary"):
+            st.session_state.show_about_modal = True
+    with header_col3:
+        current_user = get_current_user()
+        if current_user:
+            avatar_url = current_user.get('image_url') or f"https://api.dicebear.com/7.x/avataaars/svg?seed={current_user.get('first_name', 'User')}"
+            full_name = f"{current_user.get('first_name', 'User')} {current_user.get('last_name', '')}".strip()
+            email = current_user.get('email', '')
+            st.markdown(f"""
+            <div style='display:flex; align-items:center; justify-content:flex-end; gap:12px;'>
+                <div style='text-align:right;'>
+                    <span style='color:white; font-weight:600; font-size:0.95rem;'>{full_name}</span><br/>
+                    <span style='color:rgba(255,255,255,0.6); font-size:0.75rem;'>{email}</span>
+                </div>
+                <img src="{avatar_url}" 
+                     style="width:42px; height:42px; border-radius:50%; border:2px solid rgba(139, 92, 246, 0.6); background:#1e1e32;"
+                     alt="User Avatar">
+            </div>
+            """, unsafe_allow_html=True)
     
     # Stats bar
     if st.session_state.post_history:
@@ -615,14 +842,16 @@ def main():
         
         st.markdown("---")
     
-    # Main tabs
-    tab1, tab2 = st.tabs(["🤖 Generate", "📖 About"])
-    
-    with tab1:
+    # Show About modal if triggered from header button
+    if st.session_state.get('show_about_modal', False):
+        with st.expander("📖 About GNX Content Intelligence System", expanded=True):
+            show_about_tab()
+            if st.button("❌ Close", use_container_width=True):
+                st.session_state.show_about_modal = False
+                st.rerun()
+    else:
+        # Main content - Generate view
         show_generate_tab()
-    
-    with tab2:
-        show_about_tab()
 
 
 if __name__ == "__main__":

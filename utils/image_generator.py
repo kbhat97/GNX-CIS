@@ -39,7 +39,13 @@ def create_branded_image(text: str, author_name: str, subtitle: str = "SAP Progr
 
         # Extract and clean hook text
         hook_text = text.split('\n')[0].replace('**', '')
-        hook_text = emoji.demojize(hook_text, delimiters=("", ""))
+        # Remove emojis completely (not demojize which leaves text like 'fire')
+        hook_text = emoji.replace_emoji(hook_text, replace='')
+        hook_text = hook_text.strip()
+        
+        # Ensure first letter is capitalized
+        if hook_text:
+            hook_text = hook_text[0].upper() + hook_text[1:] if len(hook_text) > 1 else hook_text.upper()
         
         # Smart truncation at sentence boundaries
         if len(hook_text) > IMAGE_HOOK_LIMIT:
