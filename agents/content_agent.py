@@ -5,6 +5,30 @@ from utils.gemini_config import GeminiConfig
 from utils.logger import log_agent_action, log_error
 from utils.json_parser import parse_llm_json_response
 
+# Detailed style definitions to prevent hallucination
+STYLE_DEFINITIONS = {
+    "professional": {
+        "name": "Professional",
+        "instructions": "Use formal but accessible language. Focus on expertise and credibility. Include data points and industry insights. Maintain executive-level tone. Avoid slang or overly casual expressions. Write as a respected industry expert addressing peers."
+    },
+    "technical": {
+        "name": "Technical",
+        "instructions": "Include specific numbers, metrics, and technical details. Use industry terminology appropriately. Focus on how/why things work. Include frameworks, methodologies, or processes. Reference tools, technologies, or systems. Be precise and data-driven."
+    },
+    "inspirational": {
+        "name": "Inspirational",
+        "instructions": "Share personal growth stories or lessons learned. Use emotionally resonant language. Include calls to action for self-improvement. Focus on overcoming challenges. End with hope or a forward-looking message. Make readers feel motivated to take action."
+    },
+    "thought_leadership": {
+        "name": "Thought Leadership",
+        "instructions": "Take a strong, possibly controversial stance. Challenge conventional wisdom. Make bold predictions about the future. Position yourself as ahead of the curve. Back up claims with unique insights or experience. Be provocative but substantive."
+    },
+    "storytelling": {
+        "name": "Storytelling",
+        "instructions": "Open with a specific moment or scene. Use sensory details and dialogue where appropriate. Build tension and resolution. Connect personal experience to broader lessons. Make readers feel like they're there with you. Use narrative arc."
+    }
+}
+
 class ContentAgent(BaseAgent):
     """Generates and improves post content based on a topic and historical context."""
     
@@ -22,6 +46,14 @@ class ContentAgent(BaseAgent):
                     flat_list.append(str(value))
                     break
         return flat_list
+    
+    def _get_style_instructions(self, style: str) -> str:
+        """Get detailed instructions for the requested style"""
+        style_key = style.lower().replace(" ", "_")
+        if style_key in STYLE_DEFINITIONS:
+            return STYLE_DEFINITIONS[style_key]["instructions"]
+        # Fallback to professional if unknown style
+        return STYLE_DEFINITIONS["professional"]["instructions"]
 
     async def generate_post_text(self, topic: str, use_history: bool, user_id: str, style: str = "Professional", profile: Dict[str, Any] = None) -> Dict[str, Any]:
         try:
@@ -30,12 +62,35 @@ class ContentAgent(BaseAgent):
                 # TODO: Replace this with a message bus request to the HistoryAgent
                 log_agent_action("ContentAgent", "History analysis via message bus (not implemented)", f"User ID: {user_id}")
 
+            # Get detailed style instructions
+            style_instructions = self._get_style_instructions(style)
+            
+            # Build persona context
+            persona_name = "Professional thought leader"
+            persona_traits = []
+            target_audience = "Business professionals"
+            writing_tone = "Professional & Engaging"
+            
+            if profile:
+                persona_traits = profile.get('personality_traits', [])
+                if persona_traits:
+                    persona_name = persona_traits[0]
+                target_audience = profile.get('target_audience', target_audience)
+                writing_tone = profile.get('writing_tone', writing_tone)
+
             # Enhanced prompt for viral LinkedIn content with Gemini 2.5 Flash
             prompt = f"""You are an expert LinkedIn content strategist creating high-engagement posts.
 
 TOPIC: "{topic}"
-STYLE: {style}
-PERSONA: {profile.get('personality_traits', ['Professional thought leader'])[0] if profile else 'Professional thought leader'}
+
+═══════════════════════════════════════════════════════════════════
+STYLE: {style.title()}
+STYLE INSTRUCTIONS: {style_instructions}
+═══════════════════════════════════════════════════════════════════
+
+PERSONA: {persona_name}
+TONE: {writing_tone}
+AUDIENCE: {target_audience}
 
 CREATE A VIRAL LINKEDIN POST WITH:
 
@@ -70,8 +125,7 @@ CREATE A VIRAL LINKEDIN POST WITH:
 
 5. **HASHTAGS**: Include 5-7 relevant hashtags at the end
 
-TONE: {profile.get('writing_tone', 'Professional & Engaging') if profile else 'Professional & Engaging'}
-AUDIENCE: {profile.get('target_audience', 'Business professionals') if profile else 'Business professionals'}
+IMPORTANT: Follow the STYLE INSTRUCTIONS exactly. The content must feel authentically {style.lower()}.
 
 Return ONLY valid JSON:
 {{
@@ -82,7 +136,7 @@ Return ONLY valid JSON:
             response = await self.model.generate_content_async(prompt)
             error_payload = {"post_text": "Error generating content.", "reasoning": "JSON parsing failed."}
             result = parse_llm_json_response(response.text, error_payload)
-            log_agent_action("ContentAgent", "✅ Post text generated with Gemini 2.5 Flash", f"Topic: {topic}")
+            log_agent_action("ContentAgent", "✅ Post text generated with Gemini 2.5 Flash", f"Topic: {topic}, Style: {style}")
             return result
         except Exception as e:
             log_error(e, "Content generation")
