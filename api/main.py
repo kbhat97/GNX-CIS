@@ -68,10 +68,15 @@ class GenerateRequest(BaseModel):
     topic: str = Field(..., min_length=3, max_length=2000, description="Topic to generate content about")
     style: str = Field(default="professional", description="Writing style")
     persona: Optional[str] = Field(default=None, description="Optional persona to write as")
+    generate_image: bool = Field(default=False, description="Whether to generate AI image (set True only on final confirmation)")
 
 class ImproveRequest(BaseModel):
     original_content: str = Field(..., description="Original post content to improve")
     feedback: str = Field(..., description="Feedback for improvement")
+
+class GenerateImageRequest(BaseModel):
+    content: str = Field(..., description="Post content to create image for")
+    style: str = Field(default="professional", description="Writing style for image template")
 
 class PostResponse(BaseModel):
     id: str
@@ -157,35 +162,39 @@ async def generate_post(request: GenerateRequest):
         # Score the content (async method)
         score_result = await virality_agent.score_post(post_text)
         
-        # Generate image - try AI first, fallback to static
+        # Generate image ONLY if explicitly requested (deferred generation for cost savings)
         image_url = None
-        try:
-            author_name = request.persona or "GNX Content Intelligence"
-            hook = post_text.split('\n')[0] if post_text else ""
-            
-            # Try Nano Banana AI image generation first (with full content for dynamic prompts)
-            image_path = await generate_ai_image(
-                hook_text=hook,
-                topic=clean_topic,
-                style=request.style,
-                full_content=post_text  # Pass full content for smarter image generation
-            )
-            
-            # Fallback to static branded image if AI fails
-            if not image_path:
-                print("Falling back to static branded image")
-                image_path = create_branded_image(
-                    text=post_text,
-                    author_name=author_name,
-                    subtitle=f"{request.style.title()} Content | AI Generated"
+        if request.generate_image:
+            try:
+                author_name = request.persona or "GNX Content Intelligence"
+                hook = post_text.split('\n')[0] if post_text else ""
+                
+                # Try Nano Banana AI image generation first (with full content for dynamic prompts)
+                print(f"🎨 User requested image generation for style: {request.style}")
+                image_path = await generate_ai_image(
+                    hook_text=hook,
+                    topic=clean_topic,
+                    style=request.style,
+                    full_content=post_text  # Pass full content for smarter image generation
                 )
-            
-            if image_path:
-                # Convert to URL path for serving
-                filename = os.path.basename(image_path)
-                image_url = f"/static/outputs/{filename}"
-        except Exception as img_err:
-            print(f"Image generation warning: {img_err}")
+                
+                # Fallback to static branded image if AI fails
+                if not image_path:
+                    print("Falling back to static branded image")
+                    image_path = create_branded_image(
+                        text=post_text,
+                        author_name=author_name,
+                        subtitle=f"{request.style.title()} Content | AI Generated"
+                    )
+                
+                if image_path:
+                    # Convert to URL path for serving
+                    filename = os.path.basename(image_path)
+                    image_url = f"/static/outputs/{filename}"
+            except Exception as img_err:
+                print(f"Image generation warning: {img_err}")
+        else:
+            print("📝 Skipping image generation (deferred mode - user can generate later)")
         
         # Create response
         post_id = f"post_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -254,6 +263,41 @@ async def improve_post(request: ImproveRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Improvement error: {str(e)}")
 
+
+@app.post("/api/generate-image")
+async def generate_image_for_post(request: GenerateImageRequest):
+    """
+    Generate an AI image for finalized post content (on-demand).
+    Use this after post is confirmed to save API costs.
+    """
+    try:
+        hook = request.content.split('\n')[0] if request.content else ""
+        
+        print(f"🎨 On-demand image generation for style: {request.style}")
+        image_path = await generate_ai_image(
+            hook_text=hook,
+            topic="User finalized post",
+            style=request.style,
+            full_content=request.content
+        )
+        
+        # Fallback to static branded image if AI fails
+        if not image_path:
+            print("Falling back to static branded image")
+            image_path = create_branded_image(
+                text=request.content,
+                author_name="GNX Content Intelligence",
+                subtitle=f"{request.style.title()} Content | AI Generated"
+            )
+        
+        if image_path:
+            filename = os.path.basename(image_path)
+            return {"image_url": f"/static/outputs/{filename}", "success": True}
+        else:
+            raise HTTPException(status_code=500, detail="Image generation failed")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image generation error: {str(e)}")
 
 @app.get("/api/styles")
 async def get_styles():

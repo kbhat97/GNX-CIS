@@ -104,19 +104,103 @@ header {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 24px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   margin-bottom: 20px;
+  position: relative;
 }
 
 .glass-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 40px rgba(139, 92, 246, 0.15), 0 0 20px rgba(147, 51, 234, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+/* Gradient border glow effect */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(145deg, rgba(167, 139, 250, 0.3), rgba(244, 114, 182, 0.1), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.glass-card:hover::before {
+  opacity: 1;
 }
 
 /* Streamlit Container/Column fixes for glass effect */
 [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
   gap: 1rem;
+}
+
+/* Sidebar glass effect */
+[data-testid="stSidebar"] {
+  background: rgba(10, 10, 26, 0.95) !important;
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-testid="stSidebar"] > div {
+  background: transparent !important;
+}
+
+/* Metrics with gradient accent */
+[data-testid="stMetric"] {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+[data-testid="stMetric"]:hover {
+  border-color: rgba(139, 92, 246, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-testid="stMetricValue"] {
+  color: white !important;
+  font-weight: 700;
+}
+
+[data-testid="stMetricLabel"] {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Tabs styling */
+.stTabs [data-baseweb="tab-list"] {
+  gap: 8px;
+  background: transparent;
+}
+
+.stTabs [data-baseweb="tab"] {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.stTabs [aria-selected="true"] {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.3), rgba(147, 51, 234, 0.3)) !important;
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  color: white !important;
 }
 
 /* Buttons */

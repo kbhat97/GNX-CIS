@@ -48,7 +48,16 @@ Generate viral LinkedIn posts with AI, score them for engagement potential, and 
 - Branded 1200x675 LinkedIn images
 - Custom Poppins typography
 - Professional layouts
+- **Download/Save generated images** with one click 🆕
 - Local storage (no cloud dependencies)
+
+### 💾 **Persistent Storage** 🆕
+
+- **Supabase integration** for database persistence
+- Auto-save all generated posts to cloud database
+- **Restore posts on page reload** - never lose your work
+- User-specific data isolation
+- Cross-device access to your content library
 
 ### 🔐 **Authentication & Security**
 
@@ -57,7 +66,7 @@ Generate viral LinkedIn posts with AI, score them for engagement potential, and 
 - Input sanitization & prompt injection prevention
 - Content moderation with profanity/spam detection
 
-### � **Premium UI/UX**
+### 💎 **Premium UI/UX**
 
 - Glassmorphism dark theme
 - GNX branded header with user avatar
@@ -67,15 +76,15 @@ Generate viral LinkedIn posts with AI, score them for engagement potential, and 
 
 ---
 
-## �🏗️ Architecture
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Streamlit Dashboard                   │
-│  (http://localhost:8501)                                │
-│  - Post generation UI                                   │
-│  - History & comparison                                 │
-│  - Improvement workflow                                 │
+│              HTML Dashboard (TailwindCSS)                │
+│  (dashboard/app.html)                                   │
+│  - Glassmorphism UI                                     │
+│  - Real-time post generation                            │
+│  - Supabase JS client integration                       │
 └─────────────┬───────────────────────────────────────────┘
               │
               ▼
@@ -94,6 +103,15 @@ Generate viral LinkedIn posts with AI, score them for engagement potential, and 
 │  │ContentAgent  │  │ViralityAgent │  │ImageGenerator│ │
 │  │  (Gemini)    │  │  (Gemini)    │  │    (PIL)     │ │
 │  └──────────────┘  └──────────────┘  └──────────────┘ │
+└─────────────────────────────────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────────────────────────┐
+│                Supabase (PostgreSQL) 🆕                 │
+│  - User management (users table)                        │
+│  - Post storage (posts table)                           │
+│  - Persistent state across sessions                     │
+│  - Real-time sync                                       │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -219,11 +237,19 @@ SCORING_MODEL = "gemini-2.0-flash-exp"  # Fast & accurate scoring
 # Required
 GOOGLE_API_KEY=your_gemini_api_key_here
 
-# Optional (for production features)
-SUPABASE_URL=your_supabase_url
+# Supabase (Required for persistent storage) 🆕
+SUPABASE_URL=https://ijwmgwirhorksepabgpj.supabase.co
 SUPABASE_KEY=your_supabase_anon_key
+
+# Optional (for production features)
 CLERK_SECRET_KEY=your_clerk_secret
 ```
+
+### **Supabase Setup** 🆕
+
+1. Run the database migration: `database/migrations/add_dashboard_columns.sql`
+2. See full setup guide: `database/SUPABASE_SETUP.md`
+3. Posts will auto-save and restore on reload
 
 ---
 
@@ -303,26 +329,34 @@ GNX-CIS/
 - [x] Accessibility compliance (WCAG)
 - [x] Mobile responsive
 
-### **Phase 4: Coming Soon** 📋
+### **Phase 4: Database & Persistence** ✅ COMPLETE 🆕
 
-- [ ] Supabase persistence
+- [x] Supabase PostgreSQL integration
+- [x] Auto-save posts to database
+- [x] Restore state on page reload
+- [x] User-specific data isolation
+- [x] Download generated images
+
+### **Phase 5: Coming Soon** 📋
+
 - [ ] LinkedIn API integration
 - [ ] Analytics dashboard
 - [ ] A/B testing mode
+- [ ] Multi-user collaboration
 
 ---
 
 ## 📊 Tech Stack
 
-| Component     | Technology              | Purpose                |
-| ------------- | ----------------------- | ---------------------- |
-| **Frontend**  | Streamlit               | Interactive dashboard  |
-| **Backend**   | FastAPI                 | RESTful API            |
-| **AI Models** | Google Gemini 2.5 Flash | Content generation     |
-| **Scoring**   | Google Gemini 2.0 Flash | Virality prediction    |
-| **Images**    | PIL (Pillow)            | Branded image creation |
-| **Database**  | Supabase (planned)      | User data persistence  |
-| **Auth**      | Clerk (configured)      | User authentication    |
+| Component     | Technology               | Purpose                 |
+| ------------- | ------------------------ | ----------------------- |
+| **Frontend**  | HTML + TailwindCSS 🆕    | Glassmorphism dashboard |
+| **Backend**   | FastAPI                  | RESTful API             |
+| **AI Models** | Google Gemini 2.5 Flash  | Content generation      |
+| **Scoring**   | Google Gemini 2.0 Flash  | Virality prediction     |
+| **Images**    | PIL (Pillow)             | Branded image creation  |
+| **Database**  | Supabase (PostgreSQL) 🆕 | Persistent storage      |
+| **Auth**      | Clerk (configured)       | User authentication     |
 
 ---
 
@@ -383,8 +417,8 @@ This project is part of the GNX AIS ecosystem.
 
 ```bash
 # Development
-streamlit run dashboard.py                      # Start dashboard
-uvicorn main:app --reload                      # Start API
+open dashboard/app.html                         # Open dashboard (no server needed for UI)
+uvicorn main:app --reload                       # Start API backend (optional)
 
 # Testing
 python verify_models.py                         # Verify Gemini configuration
@@ -392,15 +426,16 @@ python diagnose_empty_posts.py                  # Debug generation issues
 python test_dashboard_features.py               # Run feature tests
 
 # Production
-streamlit run dashboard.py --server.port 8501  # Production dashboard
-uvicorn main:app --host 0.0.0.0 --port 8080    # Production API
+uvicorn main:app --host 0.0.0.0 --port 8080     # Production API
+# Serve dashboard/app.html via any web server
 ```
 
 ---
 
 **Built with ❤️ by the GNX AIS Team**
 
-**Status**: ✅ Production Ready (99% Complete)  
-**Version**: 2.1  
+**Status**: ✅ Production Ready (Phase 4 Complete - 100%)  
+**Version**: 3.0 🆕  
 **Tests**: 37 Passing  
-**Last Updated**: December 5, 2025
+**New Features**: Supabase Persistence + Image Download  
+**Last Updated**: December 8, 2025

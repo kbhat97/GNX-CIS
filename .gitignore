@@ -69,6 +69,7 @@ diagnose_*.py
 verify_*.py
 test_*.txt
 *_output.txt
+extra_ignore/
 
 # Test files
 test_*.py

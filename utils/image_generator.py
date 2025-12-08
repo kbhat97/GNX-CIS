@@ -1,5 +1,6 @@
 import os
 import textwrap
+import re
 from PIL import Image, ImageDraw, ImageFont
 import uuid
 from datetime import datetime
@@ -17,16 +18,192 @@ except ImportError:
 
 IMAGE_HOOK_LIMIT = 250  # Increased for complete sentences
 
+# ═══════════════════════════════════════════════════════════════════
+# STYLE-BASED IMAGE PROMPT LIBRARY
+# Each style maps to a specialized visual template
+# ═══════════════════════════════════════════════════════════════════
+
+# Quality rules appended to ALL image prompts
+IMAGE_QUALITY_RULES = """
+
+=== CRITICAL QUALITY RULES (MUST FOLLOW) ===
+1. SPELLING: Every word must be spelled CORRECTLY. Double-check all text before rendering.
+2. NO TRUNCATED TEXT: All text must be fully visible - no text cut off at edges or running outside the image.
+3. MARGINS: Keep at least 40px padding from all edges. No text or elements should touch the border.
+4. COMPLETE SENTENCES: Every text element must be a complete word or phrase - no half-words.
+5. READABLE: All text must be large enough to read clearly (minimum 16pt equivalent).
+6. NO DUPLICATES: Each text element should appear ONLY ONCE in the image.
+7. ASPECT RATIO: Image must be exactly 16:9 (1200x675 pixels) - landscape orientation.
+"""
+
+IMAGE_PROMPT_LIBRARY = {
+    "storytelling": """Create a HANDWRITTEN SKETCH STYLE INFOGRAPHIC that tells a visual story:
+
+=== CONTENT TO VISUALIZE ===
+{content}
+
+=== DESIGN SPECIFICATIONS ===
+STYLE: Handwritten sketch on cream/white paper, like a consultant explaining on a whiteboard
+FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
+ASPECT RATIO: Must be exactly 16:9 horizontal/landscape
+BACKGROUND: Clean white or light cream paper texture with subtle texture
+
+=== REQUIRED VISUAL ELEMENTS ===
+1. HEADLINE at top: "{headline}" (handwritten style, bold)
+2. NARRATIVE FLOW showing the story progression:
+   - Use curved arrows (→) connecting story beats
+   - Show "before" → "transformation" → "after" journey
+   - Include small character sketches (stick figures with expressions)
+3. KEY MOMENTS highlighted in speech bubbles or callout boxes
+4. EMOTIONAL MARKERS: Use faces/emojis to show feelings at each stage
+5. METRICS in circles: {metrics}
+6. CALL TO ACTION at bottom with engagement question
+
+=== HANDWRITTEN STYLE ===
+- Black ink with blue/red accents for emphasis
+- Varying line thickness like real hand drawing
+- Annotations with arrows pointing to key insights
+- Small doodles and icons related to the story
+- Make it feel personal and authentic
+
+DO NOT use stock photos or photorealistic images. MUST look hand-drawn.""",
+
+    "technical": """Create a HANDWRITTEN TECHNICAL SKETCH that explains this concept:
+
+=== CONTENT TO VISUALIZE ===
+{content}
+
+=== DESIGN SPECIFICATIONS ===
+STYLE: Hand-drawn technical diagram on whiteboard/paper, like an engineer sketching on a whiteboard
+FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
+ASPECT RATIO: Must be exactly 16:9 horizontal/landscape
+BACKGROUND: White or cream paper with subtle texture
+
+=== REQUIRED VISUAL ELEMENTS ===
+1. TITLE at top: "{headline}" (handwritten but legible)
+2. HAND-DRAWN FLOWCHART showing the process:
+   - Sketched rectangles for processes
+   - Hand-drawn diamonds for decision points
+   - Sketched cylinders for databases
+   - Arrows with handwritten labels
+3. NUMBERED STEPS in circles
+4. SKETCHED ICONS for tools/technologies
+5. METRICS in hand-circled callouts: {metrics}
+6. Simple legend with hand-drawn symbols
+
+=== SKETCH STYLE ===
+- Black ink with blue/green accents
+- Slightly imperfect lines (hand-drawn look)
+- Handwritten labels and annotations
+- Grid paper or whiteboard texture
+- Feels like an expert explaining at a whiteboard
+
+DO NOT use stock photos. MUST look hand-sketched and authentic.""",
+
+    "thought_leadership": """Create a HANDWRITTEN THOUGHT LEADERSHIP SKETCH with bold insights:
+
+=== CONTENT TO VISUALIZE ===
+{content}
+
+=== DESIGN SPECIFICATIONS ===
+STYLE: Hand-sketched bold statement graphic, like a CEO presenting on whiteboard
+FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
+ASPECT RATIO: Must be exactly 16:9 horizontal/landscape
+BACKGROUND: White or cream paper with bold hand-drawn elements
+
+=== REQUIRED VISUAL ELEMENTS ===
+1. MAIN STATEMENT at center: "{headline}" (large, bold, handwritten)
+2. CONTRARIAN ELEMENT: Hand-drawn "X" over myth, arrow to truth
+3. KEY POINTS as 3-4 hand-drawn bullet callouts with sketched icons
+4. METRICS in bold hand-drawn circles: {metrics}
+5. VISUAL HIERARCHY: Main point biggest, supporting points smaller
+6. PROVOCATIVE QUESTION at bottom with hand-drawn underline
+
+=== SKETCH STYLE ===
+- Bold black ink with blue/red accents for emphasis
+- Large, confident handwritten text
+- Hand-drawn boxes, circles, and arrows
+- Simple sketched icons for visual impact
+- Make it look like an expert's bold presentation
+
+DO NOT use stock photos. MUST look hand-drawn and impactful.""",
+
+    "inspirational": """Create a HANDWRITTEN INSPIRATIONAL JOURNEY sketch:
+
+=== CONTENT TO VISUALIZE ===
+{content}
+
+=== DESIGN SPECIFICATIONS ===
+STYLE: Hand-drawn motivational journey, like a coach sketching your success path
+FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
+ASPECT RATIO: Must be exactly 16:9 horizontal/landscape
+BACKGROUND: White or cream paper with warm hand-drawn elements
+
+=== REQUIRED VISUAL ELEMENTS ===
+1. HEADLINE at top: "{headline}" (inspiring, handwritten style)
+2. TRANSFORMATION JOURNEY (hand-drawn):
+   - Sketched figure on left showing "before" (small, struggling)
+   - Hand-drawn winding path/mountain in middle with milestones
+   - Triumphant figure on right showing "after" (success!)
+3. MILESTONE MARKERS along the path (numbered circles)
+4. MOTIVATIONAL PHRASES in hand-drawn speech bubbles
+5. METRICS as hand-drawn achievement badges: {metrics}
+6. CALL TO ACTION at bottom with hand-drawn arrow
+
+=== SKETCH STYLE ===
+- Black ink with warm color accents (orange, gold, red)
+- Hand-drawn hearts, stars, and growth symbols
+- Upward-pointing arrows and elements
+- Stick figures with expressive faces
+- Feels warm, personal, and achievable
+
+DO NOT use stock photos. MUST look hand-sketched and motivating.""",
+
+    "professional": """Create a HANDWRITTEN BUSINESS INFOGRAPHIC sketch:
+
+=== CONTENT TO VISUALIZE ===
+{content}
+
+=== DESIGN SPECIFICATIONS ===
+STYLE: Hand-drawn business infographic, like a consultant's whiteboard explanation
+FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
+ASPECT RATIO: Must be exactly 16:9 horizontal/landscape
+BACKGROUND: White or cream paper with grid lines (like graph paper)
+
+=== REQUIRED VISUAL ELEMENTS ===
+1. HEADLINE at top: "{headline}" (professional handwritten)
+2. DATA VISUALIZATION (hand-sketched):
+   - Hand-drawn bar charts or line graphs
+   - Before/After comparison with arrows
+   - ROI stats in circled callouts
+3. KEY INSIGHTS as 3-4 hand-drawn icon+text pairs
+4. METRICS prominently in hand-drawn circles: {metrics}
+5. Simple icons (lightbulb, chart, checkmark)
+6. TAKEAWAY at bottom with hand-drawn box
+
+=== SKETCH STYLE ===
+- Black ink with blue accent color
+- Clean but hand-drawn lines
+- Simple sketched charts and graphs
+- Professional handwritten fonts
+- Looks like a consultant explaining at whiteboard
+
+DO NOT use stock photos. MUST look hand-sketched and professional."""
+}
+
+# Default fallback template
+DEFAULT_IMAGE_PROMPT = IMAGE_PROMPT_LIBRARY["storytelling"]
+
 
 async def generate_ai_image(hook_text: str, topic: str, style: str = "professional", full_content: str = None) -> str:
     """
     Generate an AI image using Gemini 2.5 Flash Image (Nano Banana).
-    Creates dynamic, content-aware prompts for handwritten sketch-style infographics.
+    Uses style-based prompt library for specialized visuals.
     
     Args:
         hook_text: The main hook/headline to feature
         topic: The overall topic for context
-        style: The writing style (professional, technical, etc.)
+        style: The writing style (storytelling, technical, thought_leadership, inspirational, professional)
         full_content: The complete post content for deeper analysis
         
     Returns:
@@ -49,65 +226,33 @@ async def generate_ai_image(hook_text: str, topic: str, style: str = "profession
         content_to_analyze = full_content or f"{topic}\n\n{hook_text}"
         
         # Extract key elements for dynamic prompt
-        # Find percentages/metrics
-        import re
         metrics = re.findall(r'\d+%|\$[\d,]+[KMB]?|\d+x|\d+\+', content_to_analyze)
-        metrics_text = ", ".join(metrics[:5]) if metrics else "key insights"
+        metrics_text = ", ".join(metrics[:5]) if metrics else "key insights and data points"
         
-        # Find hashtags for topic keywords
-        hashtags = re.findall(r'#(\w+)', content_to_analyze)
-        keywords = ", ".join(hashtags[:5]) if hashtags else "business, technology, innovation"
-        
-        # Clean the hook for display
-        clean_hook = hook_text.replace('**', '').replace('\n', ' ').strip()
-        if len(clean_hook) > 120:
-            clean_hook = clean_hook[:120] + "..."
-        
-        # Extract first sentence as main headline
-        first_sentence = content_to_analyze.split('.')[0].replace('**', '').strip()
+        # Extract first sentence as main headline (cleaned up)
+        sentences = content_to_analyze.split('.')
+        first_sentence = sentences[0].replace('**', '').replace('\n', ' ').strip()
         if len(first_sentence) > 100:
             first_sentence = first_sentence[:100] + "..."
         
-        # Build a dynamic, content-aware prompt for handwritten sketch infographic
-        prompt = f"""Create a HANDWRITTEN SKETCH STYLE INFOGRAPHIC that visually explains this topic:
-
-=== CONTENT TO VISUALIZE ===
-{content_to_analyze[:1500]}
-
-=== DESIGN SPECIFICATIONS ===
-STYLE: Handwritten sketch on whiteboard/paper, like a consultant's explanation drawing
-FORMAT: Landscape 1200x675 (LinkedIn optimal)
-BACKGROUND: Clean white or light cream paper texture
-
-=== REQUIRED VISUAL ELEMENTS ===
-1. HEADLINE at top: "{first_sentence}"
-2. FLOW DIAGRAM showing the main concept progression:
-   - Use arrows (→) to connect ideas
-   - Use boxes, clouds, or circles to group concepts
-   - Show cause-and-effect relationships
-3. KEY METRICS to highlight: {metrics_text}
-   - Put percentages in circles or callout boxes
-   - Make numbers stand out with underlines or bold
-4. ICONS/SKETCHES for key concepts:
-   - Draw simple icons related to: {keywords}
-   - Use handwritten labels
-5. CALL TO ACTION at bottom with the main question/engagement prompt
-
-=== HANDWRITTEN STYLE GUIDELINES ===
-- Use black/dark ink with occasional accent colors (blue, red for emphasis)
-- Vary line thickness like real hand drawing
-- Include annotations and handwritten labels
-- Add arrows, brackets, underlines for emphasis
-- Make it look like an expert explaining on a whiteboard
-- Include small doodles/icons relevant to the topic
-
-=== DO NOT ===
-- Do NOT use stock photos or photorealistic images
-- Do NOT use generic corporate graphics
-- Do NOT make it look computer-generated
-- MUST look hand-drawn and authentic
-
-Create a visually engaging handwritten infographic that someone would want to save and share."""
+        # Remove first sentence from content to avoid duplication in image
+        remaining_content = '.'.join(sentences[1:]).strip() if len(sentences) > 1 else content_to_analyze
+        
+        # Get the appropriate prompt template based on style
+        style_key = style.lower().replace(" ", "_")
+        prompt_template = IMAGE_PROMPT_LIBRARY.get(style_key, DEFAULT_IMAGE_PROMPT)
+        
+        # Fill in the template with dynamic content (using remaining_content to avoid headline duplication)
+        prompt = prompt_template.format(
+            content=remaining_content[:1500],
+            headline=first_sentence,
+            metrics=metrics_text
+        )
+        
+        # Append quality rules to ensure spelling, margins, and text visibility
+        prompt += IMAGE_QUALITY_RULES
+        
+        print(f"🎨 Generating {style_key} style image with Nano Banana...")
 
         # Generate image using Nano Banana
         response = await client.aio.models.generate_content(
@@ -127,7 +272,8 @@ Create a visually engaging handwritten infographic that someone would want to sa
                 # Use as_image() method to get PIL Image directly
                 try:
                     image = part.as_image()
-                    filename = f"ai_post_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.png"
+                    # Include style name in filename for easy identification
+                    filename = f"ai_post_{style_key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.png"
                     output_path = os.path.join(OUTPUT_DIR, filename)
                     image.save(output_path)
                     print(f"✅ Nano Banana AI image generated: {filename}")

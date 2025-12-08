@@ -791,15 +791,31 @@ def main():
     # Show sidebar
     show_sidebar()
     
-    # Clean header with GNX branding and About in header row
+    # ═══════════════════════════════════════════════════════════════════
+    # GLASSMORPHIC HEADER - Matches Angular template design
+    # ═══════════════════════════════════════════════════════════════════
+    st.markdown("""
+    <div class="glass-card" style="padding: 16px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <!-- Logo & Title -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+                <path d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
+            </svg>
+            <div>
+                <span style="font-size: 1.25rem; font-weight: 700; color: white;">GNX</span>
+                <span style="font-size: 1.25rem; font-weight: 400; color: rgba(255,255,255,0.7);"> Dashboard</span>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Header row with nav and user profile
     header_col1, header_col2, header_col3 = st.columns([3, 1, 1])
     with header_col1:
-        st.markdown("""<h1 style='margin:0; font-size:1.8rem;'>
-            <span style='color:#a78bfa;'>GNX</span> - 
-            <span style='color:white;'>Content Intelligence System</span>
-        </h1>
-        <p style='color: rgba(255,255,255,0.6); margin:0; font-size:0.9rem;'>AI-Powered LinkedIn Content Generation</p>
-        """, unsafe_allow_html=True)
+        st.markdown("""<h1 style='margin:0; font-size: 2rem; font-weight: 700;'>
+            <span style='color:white;'>Dashboard</span>
+        </h1>""", unsafe_allow_html=True)
     with header_col2:
         if st.button("📖 About", use_container_width=True, type="secondary"):
             st.session_state.show_about_modal = True
@@ -821,26 +837,62 @@ def main():
             </div>
             """, unsafe_allow_html=True)
     
-    # Stats bar
-    if st.session_state.post_history:
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Posts", len(st.session_state.post_history))
-        with col2:
-            avg_score = sum(
-                p.get('virality_score', 0) for p in st.session_state.post_history
-            ) / len(st.session_state.post_history)
-            st.metric("Avg Score", f"{avg_score:.1f}/100")
-        with col3:
-            max_score = max(p.get('virality_score', 0) for p in st.session_state.post_history)
-            st.metric("Best Score", f"{max_score}/100")
-        with col4:
-            excellent_count = sum(
-                1 for p in st.session_state.post_history if p.get('virality_score', 0) >= 80
-            )
-            st.metric("Excellent Posts", f"{excellent_count}/{len(st.session_state.post_history)}")
-        
-        st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # METRICS GRID - 4 Premium Cards (Matches Angular template)
+    # ═══════════════════════════════════════════════════════════════════
+    col1, col2, col3, col4 = st.columns(4)
+    
+    total_posts = len(st.session_state.post_history)
+    avg_score = sum(p.get('virality_score', 0) for p in st.session_state.post_history) / max(total_posts, 1)
+    excellent_count = sum(1 for p in st.session_state.post_history if p.get('virality_score', 0) >= 80)
+    api_usage = min(st.session_state.gen_count * 10, 100)  # Simulated API usage
+    
+    with col1:
+        st.markdown(f"""
+        <div class="glass-card animate-fade-in" style="animation-delay: 0ms;">
+            <p style="font-size: 0.875rem; color: rgba(255,255,255,0.6); margin: 0;">Posts Generated</p>
+            <p style="font-size: 2rem; font-weight: 700; color: white; margin: 8px 0;">{total_posts}</p>
+            <p style="font-size: 0.75rem; color: #86efac; margin: 0;">+{st.session_state.gen_count} today</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        score_color = "#86efac" if avg_score >= 75 else "#fde047" if avg_score >= 60 else "#f87171"
+        st.markdown(f"""
+        <div class="glass-card animate-fade-in" style="animation-delay: 100ms;">
+            <p style="font-size: 0.875rem; color: rgba(255,255,255,0.6); margin: 0;">Average Score</p>
+            <p style="font-size: 2rem; font-weight: 700; color: white; margin: 8px 0;">{avg_score:.1f}<span style="font-size:1rem; color:rgba(255,255,255,0.5);">/100</span></p>
+            <p style="font-size: 0.75rem; color: {score_color}; margin: 0;">{'Excellent' if avg_score >= 80 else 'Good' if avg_score >= 70 else 'Improving'}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="glass-card animate-fade-in" style="animation-delay: 200ms;">
+            <p style="font-size: 0.875rem; color: rgba(255,255,255,0.6); margin: 0;">Excellent Posts</p>
+            <p style="font-size: 2rem; font-weight: 700; color: white; margin: 8px 0;">{excellent_count}</p>
+            <p style="font-size: 0.75rem; color: #a78bfa; margin: 0;">Score 80+</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div class="glass-card animate-fade-in" style="animation-delay: 300ms;">
+            <p style="font-size: 0.875rem; color: rgba(255,255,255,0.6); margin: 0;">API Credits Used</p>
+            <p style="font-size: 2rem; font-weight: 700; color: white; margin: 8px 0;">{api_usage}%</p>
+            <div style="width: 100%; background: rgba(255,255,255,0.1); border-radius: 9999px; height: 8px; margin-top: 8px;">
+                <div style="width: {api_usage}%; background: linear-gradient(to right, #8b5cf6, #d946ef); height: 100%; border-radius: 9999px;"></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # MAIN CONTENT AREA
+    # ═══════════════════════════════════════════════════════════════════
     
     # Show About modal if triggered from header button
     if st.session_state.get('show_about_modal', False):

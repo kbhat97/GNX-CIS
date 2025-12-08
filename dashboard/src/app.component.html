@@ -1,0 +1,7 @@
+<main>
+  @if (isLoggedIn()) {
+    <app-dashboard (logout)="handleLogout()"></app-dashboard>
+  } @else {
+    <app-login (loginSuccess)="handleLoginSuccess()"></app-login>
+  }
+</main>
