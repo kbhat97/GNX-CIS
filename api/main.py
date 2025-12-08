@@ -24,7 +24,7 @@ from agents.virality_agent import ViralityAgent
 from utils.gemini_config import GeminiConfig
 from utils.sanitizer import sanitize_topic, sanitize_feedback
 from utils.content_filter import is_safe_for_generation
-from utils.image_generator import create_branded_image
+from utils.image_generator import create_branded_image, generate_ai_image
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -157,15 +157,29 @@ async def generate_post(request: GenerateRequest):
         # Score the content (async method)
         score_result = await virality_agent.score_post(post_text)
         
-        # Generate branded image
+        # Generate image - try AI first, fallback to static
         image_url = None
         try:
             author_name = request.persona or "GNX Content Intelligence"
-            image_path = create_branded_image(
-                text=post_text,
-                author_name=author_name,
-                subtitle=f"{request.style.title()} Content | AI Generated"
+            hook = post_text.split('\n')[0] if post_text else ""
+            
+            # Try Nano Banana AI image generation first (with full content for dynamic prompts)
+            image_path = await generate_ai_image(
+                hook_text=hook,
+                topic=clean_topic,
+                style=request.style,
+                full_content=post_text  # Pass full content for smarter image generation
             )
+            
+            # Fallback to static branded image if AI fails
+            if not image_path:
+                print("Falling back to static branded image")
+                image_path = create_branded_image(
+                    text=post_text,
+                    author_name=author_name,
+                    subtitle=f"{request.style.title()} Content | AI Generated"
+                )
+            
             if image_path:
                 # Convert to URL path for serving
                 filename = os.path.basename(image_path)

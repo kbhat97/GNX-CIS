@@ -4,10 +4,157 @@ from PIL import Image, ImageDraw, ImageFont
 import uuid
 from datetime import datetime
 import emoji
+import base64
+import io
+
+# Try to import google genai for Nano Banana support
+try:
+    from google import genai
+    from google.genai import types
+    NANO_BANANA_AVAILABLE = True
+except ImportError:
+    NANO_BANANA_AVAILABLE = False
 
 IMAGE_HOOK_LIMIT = 250  # Increased for complete sentences
 
-def create_branded_image(text: str, author_name: str, subtitle: str = "SAP Program Leader | AI Founder") -> str:
+
+async def generate_ai_image(hook_text: str, topic: str, style: str = "professional", full_content: str = None) -> str:
+    """
+    Generate an AI image using Gemini 2.5 Flash Image (Nano Banana).
+    Creates dynamic, content-aware prompts for handwritten sketch-style infographics.
+    
+    Args:
+        hook_text: The main hook/headline to feature
+        topic: The overall topic for context
+        style: The writing style (professional, technical, etc.)
+        full_content: The complete post content for deeper analysis
+        
+    Returns:
+        Path to the saved image, or None if generation fails
+    """
+    if not NANO_BANANA_AVAILABLE:
+        print("Nano Banana not available - google-genai package not installed")
+        return None
+        
+    try:
+        # Initialize client with API key from environment
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            print("GOOGLE_API_KEY not found for Nano Banana")
+            return None
+            
+        client = genai.Client(api_key=api_key)
+        
+        # Use full content if available, otherwise use topic + hook
+        content_to_analyze = full_content or f"{topic}\n\n{hook_text}"
+        
+        # Extract key elements for dynamic prompt
+        # Find percentages/metrics
+        import re
+        metrics = re.findall(r'\d+%|\$[\d,]+[KMB]?|\d+x|\d+\+', content_to_analyze)
+        metrics_text = ", ".join(metrics[:5]) if metrics else "key insights"
+        
+        # Find hashtags for topic keywords
+        hashtags = re.findall(r'#(\w+)', content_to_analyze)
+        keywords = ", ".join(hashtags[:5]) if hashtags else "business, technology, innovation"
+        
+        # Clean the hook for display
+        clean_hook = hook_text.replace('**', '').replace('\n', ' ').strip()
+        if len(clean_hook) > 120:
+            clean_hook = clean_hook[:120] + "..."
+        
+        # Extract first sentence as main headline
+        first_sentence = content_to_analyze.split('.')[0].replace('**', '').strip()
+        if len(first_sentence) > 100:
+            first_sentence = first_sentence[:100] + "..."
+        
+        # Build a dynamic, content-aware prompt for handwritten sketch infographic
+        prompt = f"""Create a HANDWRITTEN SKETCH STYLE INFOGRAPHIC that visually explains this topic:
+
+=== CONTENT TO VISUALIZE ===
+{content_to_analyze[:1500]}
+
+=== DESIGN SPECIFICATIONS ===
+STYLE: Handwritten sketch on whiteboard/paper, like a consultant's explanation drawing
+FORMAT: Landscape 1200x675 (LinkedIn optimal)
+BACKGROUND: Clean white or light cream paper texture
+
+=== REQUIRED VISUAL ELEMENTS ===
+1. HEADLINE at top: "{first_sentence}"
+2. FLOW DIAGRAM showing the main concept progression:
+   - Use arrows (→) to connect ideas
+   - Use boxes, clouds, or circles to group concepts
+   - Show cause-and-effect relationships
+3. KEY METRICS to highlight: {metrics_text}
+   - Put percentages in circles or callout boxes
+   - Make numbers stand out with underlines or bold
+4. ICONS/SKETCHES for key concepts:
+   - Draw simple icons related to: {keywords}
+   - Use handwritten labels
+5. CALL TO ACTION at bottom with the main question/engagement prompt
+
+=== HANDWRITTEN STYLE GUIDELINES ===
+- Use black/dark ink with occasional accent colors (blue, red for emphasis)
+- Vary line thickness like real hand drawing
+- Include annotations and handwritten labels
+- Add arrows, brackets, underlines for emphasis
+- Make it look like an expert explaining on a whiteboard
+- Include small doodles/icons relevant to the topic
+
+=== DO NOT ===
+- Do NOT use stock photos or photorealistic images
+- Do NOT use generic corporate graphics
+- Do NOT make it look computer-generated
+- MUST look hand-drawn and authentic
+
+Create a visually engaging handwritten infographic that someone would want to save and share."""
+
+        # Generate image using Nano Banana
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-flash-image",
+            contents=[prompt],
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE", "TEXT"]
+            )
+        )
+        
+        # Extract image from response
+        OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "outputs")
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        
+        for part in response.candidates[0].content.parts:
+            if hasattr(part, 'inline_data') and part.inline_data is not None:
+                # Use as_image() method to get PIL Image directly
+                try:
+                    image = part.as_image()
+                    filename = f"ai_post_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.png"
+                    output_path = os.path.join(OUTPUT_DIR, filename)
+                    image.save(output_path)
+                    print(f"✅ Nano Banana AI image generated: {filename}")
+                    return os.path.abspath(output_path)
+                except AttributeError:
+                    # Fallback: try raw data approach
+                    image_data = part.inline_data.data
+                    if isinstance(image_data, str):
+                        # Base64 encoded string
+                        image_data = base64.b64decode(image_data)
+                    filename = f"ai_post_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.png"
+                    output_path = os.path.join(OUTPUT_DIR, filename)
+                    with open(output_path, 'wb') as f:
+                        f.write(image_data)
+                    print(f"✅ Nano Banana AI image generated (raw): {filename}")
+                    return os.path.abspath(output_path)
+        
+        print("No image data in Nano Banana response")
+        return None
+        
+    except Exception as e:
+        print(f"Nano Banana image generation error: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def create_branded_image(text: str, author_name: str, subtitle: str = "SAP Program Leader | Founder at GNX") -> str:
     """Create a branded LinkedIn image with CENTER-ALIGNED text and professional design"""
     try:
         W, H = 1200, 675
