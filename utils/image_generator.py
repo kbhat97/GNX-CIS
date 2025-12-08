@@ -29,11 +29,13 @@ IMAGE_QUALITY_RULES = """
 === CRITICAL QUALITY RULES (MUST FOLLOW) ===
 1. SPELLING: Every word must be spelled CORRECTLY. Double-check all text before rendering.
 2. NO TRUNCATED TEXT: All text must be fully visible - no text cut off at edges or running outside the image.
-3. MARGINS: Keep at least 40px padding from all edges. No text or elements should touch the border.
+3. MARGINS: Keep at least 60px padding from all edges. No text or elements should touch the border.
 4. COMPLETE SENTENCES: Every text element must be a complete word or phrase - no half-words.
 5. READABLE: All text must be large enough to read clearly (minimum 16pt equivalent).
 6. NO DUPLICATES: Each text element should appear ONLY ONCE in the image.
 7. ASPECT RATIO: Image must be exactly 16:9 (1200x675 pixels) - landscape orientation.
+8. LINE LENGTH: Maximum 50 characters per line of text. Break long text into multiple shorter lines.
+9. TEXT FITTING: Ensure ALL text fits within the visible area. If text is too long, wrap to next line or reduce font size.
 """
 
 IMAGE_PROMPT_LIBRARY = {
@@ -50,6 +52,10 @@ BACKGROUND: Clean white or light cream paper texture with subtle texture
 
 === REQUIRED VISUAL ELEMENTS ===
 1. HEADLINE at top: "{headline}" (handwritten style, bold)
+   - CRITICAL: If headline is longer than 50 characters, MUST wrap into 2-3 SHORT lines
+   - Each line MAXIMUM 50 characters
+   - Center-align the wrapped headline
+   - Ensure ALL text is visible with 60px margins from edges
 2. NARRATIVE FLOW showing the story progression:
    - Use curved arrows (→) connecting story beats
    - Show "before" → "transformation" → "after" journey
@@ -81,6 +87,9 @@ BACKGROUND: White or cream paper with subtle texture
 
 === REQUIRED VISUAL ELEMENTS ===
 1. TITLE at top: "{headline}" (handwritten but legible)
+   - CRITICAL: If headline is longer than 50 characters, MUST wrap into 2-3 SHORT lines
+   - Each line MAXIMUM 50 characters
+   - Ensure ALL text is visible with 60px margins from edges
 2. HAND-DRAWN FLOWCHART showing the process:
    - Sketched rectangles for processes
    - Hand-drawn diamonds for decision points
@@ -113,6 +122,10 @@ BACKGROUND: White or cream paper with bold hand-drawn elements
 
 === REQUIRED VISUAL ELEMENTS ===
 1. MAIN STATEMENT at center: "{headline}" (large, bold, handwritten)
+   - CRITICAL: If headline is longer than 50 characters, MUST wrap into 2-3 SHORT lines
+   - Each line MAXIMUM 50 characters
+   - Center-align the wrapped headline
+   - Ensure ALL text is visible with 60px margins from edges
 2. CONTRARIAN ELEMENT: Hand-drawn "X" over myth, arrow to truth
 3. KEY POINTS as 3-4 hand-drawn bullet callouts with sketched icons
 4. METRICS in bold hand-drawn circles: {metrics}
@@ -141,6 +154,10 @@ BACKGROUND: White or cream paper with warm hand-drawn elements
 
 === REQUIRED VISUAL ELEMENTS ===
 1. HEADLINE at top: "{headline}" (inspiring, handwritten style)
+   - CRITICAL: If headline is longer than 50 characters, MUST wrap into 2-3 SHORT lines
+   - Each line MAXIMUM 50 characters
+   - Center-align the wrapped headline
+   - Ensure ALL text is visible with 60px margins from edges
 2. TRANSFORMATION JOURNEY (hand-drawn):
    - Sketched figure on left showing "before" (small, struggling)
    - Hand-drawn winding path/mountain in middle with milestones
@@ -172,6 +189,10 @@ BACKGROUND: White or cream paper with grid lines (like graph paper)
 
 === REQUIRED VISUAL ELEMENTS ===
 1. HEADLINE at top: "{headline}" (professional handwritten)
+   - CRITICAL: If headline is longer than 50 characters, MUST wrap into 2-3 SHORT lines
+   - Each line MAXIMUM 50 characters
+   - Center-align the wrapped headline
+   - Ensure ALL text is visible with 60px margins from edges
 2. DATA VISUALIZATION (hand-sketched):
    - Hand-drawn bar charts or line graphs
    - Before/After comparison with arrows
@@ -232,8 +253,8 @@ async def generate_ai_image(hook_text: str, topic: str, style: str = "profession
         # Extract first sentence as main headline (cleaned up)
         sentences = content_to_analyze.split('.')
         first_sentence = sentences[0].replace('**', '').replace('\n', ' ').strip()
-        if len(first_sentence) > 100:
-            first_sentence = first_sentence[:100] + "..."
+        if len(first_sentence) > 60:
+            first_sentence = first_sentence[:60] + "..."
         
         # Remove first sentence from content to avoid duplication in image
         remaining_content = '.'.join(sentences[1:]).strip() if len(sentences) > 1 else content_to_analyze

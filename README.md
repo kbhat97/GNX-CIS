@@ -43,13 +43,22 @@ Generate viral LinkedIn posts with AI, score them for engagement potential, and 
 - Best performing posts
 - Excellent posts count (80+ score)
 
-### 🖼️ **Image Generation**
+### 🖼️ **AI Image Generation** 🆕
 
-- Branded 1200x675 LinkedIn images
-- Custom Poppins typography
-- Professional layouts
-- **Download/Save generated images** with one click 🆕
-- Local storage (no cloud dependencies)
+- **Gemini 2.5 Flash Image (Nano Banana)** - AI-powered image creation
+- 5 style-specific handwritten sketch templates:
+  - Professional: Business infographics with data visualization
+  - Technical: Flowcharts and system diagrams
+  - Thought Leadership: Bold statement graphics
+  - Inspirational: Journey/transformation sketches
+  - Storytelling: Narrative-driven visual stories
+- **3-Layer Text Cutoff Prevention**:
+  - Layer 1: 60-character headline truncation
+  - Layer 2: Max 50 chars/line with auto-wrapping
+  - Layer 3: 60px margins for safe spacing
+- Branded 1200x675 LinkedIn format (16:9)
+- **Download/Save generated images** with one click
+- Fallback to static branded images if AI generation fails
 
 ### 💾 **Persistent Storage** 🆕
 
@@ -348,15 +357,16 @@ GNX-CIS/
 
 ## 📊 Tech Stack
 
-| Component     | Technology               | Purpose                 |
-| ------------- | ------------------------ | ----------------------- |
-| **Frontend**  | HTML + TailwindCSS 🆕    | Glassmorphism dashboard |
-| **Backend**   | FastAPI                  | RESTful API             |
-| **AI Models** | Google Gemini 2.5 Flash  | Content generation      |
-| **Scoring**   | Google Gemini 2.0 Flash  | Virality prediction     |
-| **Images**    | PIL (Pillow)             | Branded image creation  |
-| **Database**  | Supabase (PostgreSQL) 🆕 | Persistent storage      |
-| **Auth**      | Clerk (configured)       | User authentication     |
+| Component     | Technology                | Purpose                 |
+| ------------- | ------------------------- | ----------------------- |
+| **Frontend**  | HTML + TailwindCSS 🆕     | Glassmorphism dashboard |
+| **Backend**   | FastAPI                   | RESTful API             |
+| **AI Models** | Google Gemini 2.5 Flash   | Content generation      |
+| **Scoring**   | Google Gemini 2.0 Flash   | Virality prediction     |
+| **Images**    | Gemini 2.5 Flash Image 🆕 | AI sketch generation    |
+| **Fallback**  | PIL (Pillow)              | Static branded images   |
+| **Database**  | Supabase (PostgreSQL) 🆕  | Persistent storage      |
+| **Auth**      | Clerk (configured)        | User authentication     |
 
 ---
 
@@ -374,7 +384,7 @@ Contributions are welcome! Please follow these guidelines:
 
 ## 📄 License
 
-This project is part of the GNX AIS ecosystem.
+This project is part of the GNX CIS ecosystem.
 
 ---
 
@@ -432,10 +442,10 @@ uvicorn main:app --host 0.0.0.0 --port 8080     # Production API
 
 ---
 
-**Built with ❤️ by the GNX AIS Team**
+**Built with ❤️ by the GNX CIS Team**
 
 **Status**: ✅ Production Ready (Phase 4 Complete - 100%)  
-**Version**: 3.0 🆕  
+**Version**: 3.1 🆕  
 **Tests**: 37 Passing  
-**New Features**: Supabase Persistence + Image Download  
+**New Features**: AI Image Generation (Nano Banana) + Text Cutoff Prevention  
 **Last Updated**: December 8, 2025
