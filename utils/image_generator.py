@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 import emoji
 
-IMAGE_HOOK_LIMIT = 180  # Increased for fuller sentences
+IMAGE_HOOK_LIMIT = 250  # Increased for complete sentences
 
 def create_branded_image(text: str, author_name: str, subtitle: str = "SAP Program Leader | AI Founder") -> str:
     """Create a branded LinkedIn image with CENTER-ALIGNED text and professional design"""
@@ -47,20 +47,33 @@ def create_branded_image(text: str, author_name: str, subtitle: str = "SAP Progr
         if hook_text:
             hook_text = hook_text[0].upper() + hook_text[1:] if len(hook_text) > 1 else hook_text.upper()
         
-        # Smart truncation at sentence boundaries
+        # Smart truncation at sentence/clause boundaries
         if len(hook_text) > IMAGE_HOOK_LIMIT:
             truncated = hook_text[:IMAGE_HOOK_LIMIT]
-            found_sentence = False
-            for punct in ['. ', '! ', '? ']:
+            found_boundary = False
+            
+            # Try to find sentence-ending punctuation
+            for punct in ['. ', '! ', '? ', ': ', '; ', '— ', '– ']:
                 last_punct = truncated.rfind(punct)
-                if last_punct > IMAGE_HOOK_LIMIT // 2:
+                if last_punct > IMAGE_HOOK_LIMIT // 3:  # Allow finding earlier boundaries
                     hook_text = truncated[:last_punct + 1].strip()
-                    found_sentence = True
+                    found_boundary = True
                     break
-            if not found_sentence:
+            
+            # If no sentence boundary, try finding comma for clause boundary
+            if not found_boundary:
+                last_comma = truncated.rfind(', ')
+                if last_comma > IMAGE_HOOK_LIMIT // 2:
+                    hook_text = truncated[:last_comma].strip() + "..."
+                    found_boundary = True
+            
+            # Last resort: truncate at last word and add ellipsis
+            if not found_boundary:
                 last_space = truncated.rfind(' ')
                 if last_space > 0:
                     hook_text = truncated[:last_space].strip() + "..."
+                else:
+                    hook_text = truncated.strip() + "..."
         
         # Layout constants
         BOTTOM_SECTION_HEIGHT = 120
