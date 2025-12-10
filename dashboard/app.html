@@ -229,7 +229,7 @@
             </div>
           </div>
 
-          <div id="login-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error">
+          <div id="login-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error" role="alert" aria-live="polite" data-testid="login-error">
             Invalid email or password.
           </div>
 
@@ -240,7 +240,43 @@
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           </button>
+          
+          <!-- Forgot Password & First-Time User -->
+          <div class="mt-6 text-center space-y-3">
+            <button type="button" onclick="showForgotPassword()" class="text-sm text-violet-400 hover:text-violet-300 transition-colors">
+              Forgot password?
+            </button>
+            <div class="text-xs text-gray-500">
+              First time here? Enter your email and we'll send you a temporary password.
+            </div>
+          </div>
         </form>
+        
+        <!-- Forgot Password Form (initially hidden) -->
+        <div id="forgot-password-form" class="hidden" data-testid="forgot-password-form">
+          <h3 class="text-xl font-semibold text-white mb-4">Reset Password</h3>
+          <p class="text-sm text-gray-400 mb-6">Enter your email to receive a temporary password.</p>
+          
+          <div class="mb-4">
+            <input type="email" id="reset-email" placeholder="your@email.com" class="w-full" data-testid="reset-email" aria-label="Email for password reset">
+          </div>
+          
+          <div id="reset-success" class="hidden mb-4 p-3 rounded-lg bg-green-500/20 text-green-400 text-sm" role="status" aria-live="polite" data-testid="reset-success">
+            ✅ Temporary password sent! Check your email.
+          </div>
+          
+          <div id="reset-error" class="hidden mb-4 p-3 rounded-lg bg-red-500/20 text-red-400 text-sm" role="alert" aria-live="assertive" data-testid="reset-error">
+            ❌ Failed to send reset email. Please try again.
+          </div>
+          
+          <button id="reset-password-btn" onclick="handleForgotPassword()" class="w-full py-3 px-4 font-semibold text-white rounded-lg gradient-button" data-testid="reset-password-btn">
+            Send Temporary Password
+          </button>
+          
+          <button id="back-to-login-btn" onclick="hideForgotPassword()" class="w-full mt-3 py-2 text-sm text-gray-400 hover:text-white transition-colors" data-testid="back-to-login-btn">
+            ← Back to Login
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -262,9 +298,10 @@
 
         <nav>
           <ul class="flex items-center gap-6">
-            <li><a class="font-bold text-white text-sm cursor-pointer" onclick="showSection('dashboard')">Dashboard</a></li>
-            <li><a class="text-gray-400 hover:text-white transition-colors text-sm cursor-pointer" onclick="showSection('generate')">Generate</a></li>
-            <li><a class="text-gray-400 hover:text-white transition-colors text-sm cursor-pointer" onclick="showSection('history')">History</a></li>
+            <li><a id="nav-dashboard" class="font-bold text-white text-sm cursor-pointer" onclick="showSection('dashboard')" data-testid="nav-dashboard">Dashboard</a></li>
+            <li><a id="nav-generate" class="text-gray-400 hover:text-white transition-colors text-sm cursor-pointer" onclick="showSection('generate')" data-testid="nav-generate">Generate</a></li>
+            <li><a id="nav-history" class="text-gray-400 hover:text-white transition-colors text-sm cursor-pointer" onclick="showSection('history')" data-testid="nav-history">History</a></li>
+            <li><a id="nav-settings" class="text-gray-400 hover:text-white transition-colors text-sm cursor-pointer" onclick="showSection('settings')" data-testid="nav-settings">⚙️ Settings</a></li>
           </ul>
         </nav>
 
@@ -273,7 +310,7 @@
             <p class="text-white font-semibold text-sm" id="user-name">User</p>
             <p class="text-gray-400 text-xs" id="user-email">user@example.com</p>
           </div>
-          <button onclick="handleLogout()" class="px-4 py-2 text-sm font-medium text-white rounded-lg gradient-border-button">
+          <button id="logout-btn" onclick="handleLogout()" class="px-4 py-2 text-sm font-medium text-white rounded-lg gradient-border-button" data-testid="logout-btn">
             Logout
           </button>
         </div>
@@ -287,6 +324,11 @@
         <!-- Dashboard Section -->
         <div id="section-dashboard">
           <h1 class="text-3xl font-bold text-white mb-8">Dashboard</h1>
+          
+          <!-- Dashboard Error (BLOCKER 7) -->
+          <div id="dashboard-error" role="alert" aria-live="assertive" data-testid="dashboard-error" class="hidden mb-6 p-4 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400">
+            <span class="font-semibold">⚠️ Error:</span> <span id="dashboard-error-text">Failed to load dashboard data.</span>
+          </div>
           
           <!-- Metrics Grid -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -397,7 +439,26 @@
                     </select>
                   </div>
                   
-                  <div>
+                  <!-- Admin Persona Toggle (hidden from non-admin users) -->
+                  <div id="admin-persona-section" class="hidden" data-testid="admin-persona-section">
+                    <label id="persona-mode-label" class="block text-sm text-gray-400 mb-2">🎭 Admin Persona</label>
+                    <div class="flex items-center gap-4 p-3 glass-card rounded-lg">
+                      <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="persona-toggle" class="sr-only peer" checked aria-checked="true" data-testid="persona-toggle" aria-label="Enable Kunal Persona">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+                      </label>
+                      <div id="persona-mode-label">
+                        <span class="text-white font-medium">Kunal Persona</span>
+                        <p class="text-xs text-gray-400">Using your profile & audience insights</p>
+                      </div>
+                    </div>
+                    <div id="persona-details" class="mt-2 text-xs text-gray-500">
+                      <span>SAP PM | IT Services & Consulting | Toronto, Delhi</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Regular Persona Input (for non-admin users) -->
+                  <div id="regular-persona-section" data-testid="regular-persona-section">
                     <label class="block text-sm text-gray-400 mb-2">Persona (Optional)</label>
                     <input type="text" id="persona-input" placeholder="e.g., SAP Consultant with 10 years experience">
                   </div>
@@ -419,6 +480,10 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 </button>
+                
+                <!-- Generate status/error messages for E2E tests -->
+                <div id="generate-status" class="hidden mt-4 p-3 rounded-lg bg-blue-500/20 text-blue-400 text-sm" role="status" aria-live="polite" data-testid="generate-status"></div>
+                <div id="generate-error" class="hidden mt-4 p-3 rounded-lg bg-red-500/20 text-red-400 text-sm shake-error" role="alert" aria-live="assertive" data-testid="generate-error"></div>
               </form>
             </div>
 
@@ -507,6 +572,24 @@
                     ✨ Improve
                   </button>
                 </div>
+                
+                <!-- Admin LinkedIn Actions (only visible to admins) -->
+                <div id="admin-linkedin-actions" class="hidden mt-6 pt-6 border-t border-white/10">
+                  <h4 class="text-sm font-semibold text-violet-400 mb-3">🎭 Admin Actions</h4>
+                  <div class="flex gap-3 flex-wrap">
+                    <button onclick="publishToLinkedIn()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold text-sm transition-colors flex items-center gap-2">
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                      Publish Now
+                    </button>
+                    <button onclick="showScheduleModal()" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 rounded-lg text-white font-semibold text-sm transition-colors flex items-center gap-2">
+                      📅 Schedule
+                    </button>
+                    <button onclick="saveAsDraft()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-white font-semibold text-sm transition-colors flex items-center gap-2">
+                      💾 Save Draft
+                    </button>
+                  </div>
+                  <p id="linkedin-action-status" class="mt-3 text-sm text-gray-400 hidden"></p>
+                </div>
               </div>
             </div>
           </div>
@@ -544,25 +627,269 @@
           </div>
         </div>
 
+        <!-- Settings Section -->
+        <div id="section-settings" class="hidden">
+          <h1 class="text-3xl font-bold text-white mb-8">⚙️ Settings</h1>
+          
+          <!-- LinkedIn Connection (Admin-only feature) -->
+          <div id="linkedin-settings-section" class="glass-card rounded-xl p-6 mb-6 max-w-2xl hidden" data-testid="linkedin-settings-section">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-3">
+              <svg class="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+              </svg>
+              LinkedIn Connection
+            </h2>
+            
+            <div id="linkedin-status-display" class="mb-4">
+              <div class="flex items-center gap-3 mb-2">
+                <div id="linkedin-connection-indicator" class="w-3 h-3 rounded-full bg-red-500"></div>
+                <span id="linkedin-connection-text" class="text-gray-300">Not Connected</span>
+              </div>
+            </div>
+            
+            <p class="text-gray-400 text-sm mb-4">
+              Connect your LinkedIn account to enable direct posting from the dashboard.
+            </p>
+            
+            <button onclick="connectLinkedIn()" id="linkedin-connect-btn" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold transition-colors flex items-center gap-2">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+              </svg>
+              Connect LinkedIn Account
+            </button>
+            
+            <div id="linkedin-connect-status" class="mt-3 text-sm hidden"></div>
+          </div>
+          
+          <!-- Admin Status (only for admins) -->
+          <div id="admin-settings-section" class="glass-card rounded-xl p-6 max-w-2xl hidden" data-testid="admin-settings-section">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-3">
+              🎭 Admin Status
+            </h2>
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+              <span class="text-green-400">Admin Access Active</span>
+            </div>
+            <p class="text-gray-400 text-sm mt-2">
+              You have access to direct LinkedIn publishing, scheduling, and drafts.
+            </p>
+          </div>
+          
+          <!-- Regular User Settings (visible when not admin) -->
+          <div id="regular-settings-section" class="glass-card rounded-xl p-6 max-w-2xl hidden" data-testid="regular-settings-section">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-3">
+              👤 User Preferences
+            </h2>
+            <p class="text-gray-400 text-sm">
+              Basic account settings. LinkedIn publishing features require admin access.
+            </p>
+            <div class="mt-4 text-gray-500 text-sm">
+              <p>• Default writing style: Professional</p>
+              <p class="mt-1">• Content saved to your account</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
 
-    <footer class="p-4">
-      <div class="container mx-auto text-center text-sm text-gray-500">
-        &copy; 2025 GNX Content Intelligence System. All rights reserved.
-      </div>
     </footer>
   </div>
 
+  <!-- Schedule Post Modal -->
+  <div id="schedule-modal" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center" data-testid="schedule-modal">
+    <div class="glass-card rounded-2xl p-8 max-w-md w-full mx-4">
+      <h3 id="schedule-modal-title" class="text-2xl font-bold text-white mb-6">📅 Schedule Post</h3>
+      
+      <div class="space-y-4">
+        <div>
+          <label for="schedule-date" class="block text-sm text-gray-400 mb-2">Date</label>
+          <input type="date" id="schedule-date" class="w-full" aria-required="true">
+        </div>
+        <div>
+          <label for="schedule-time" class="block text-sm text-gray-400 mb-2">Time</label>
+          <input type="time" id="schedule-time" class="w-full" aria-required="true">
+        </div>
+        <div>
+          <label for="schedule-timezone" class="block text-sm text-gray-400 mb-2">Timezone</label>
+          <select id="schedule-timezone" class="w-full">
+            <option value="America/New_York">Eastern Time (ET)</option>
+            <option value="America/Chicago">Central Time (CT)</option>
+            <option value="America/Denver">Mountain Time (MT)</option>
+            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+            <option value="UTC">UTC</option>
+            <option value="Asia/Kolkata">India (IST)</option>
+          </select>
+        </div>
+        
+        <div id="schedule-preview" class="mt-4 p-3 bg-white/5 rounded-lg text-sm text-gray-300 hidden" role="status" aria-live="polite">
+          Scheduled for: <span id="schedule-preview-text" class="text-white font-semibold"></span>
+        </div>
+        
+        <div id="schedule-error" class="mt-2 text-red-400 text-sm hidden" role="alert"></div>
+      </div>
+      
+      <div class="flex gap-3 mt-6">
+        <button id="schedule-modal-close" onclick="hideScheduleModal()" class="flex-1 py-2 px-4 bg-gray-600 hover:bg-gray-700 rounded-lg text-white font-semibold transition-colors" aria-label="Close schedule dialog">
+          Cancel
+        </button>
+        <button onclick="confirmSchedule()" class="flex-1 py-2 px-4 gradient-button rounded-lg text-white font-semibold">
+          Schedule
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Configuration
-    const API_BASE = 'http://localhost:8080';
+    // ═══════════════════════════════════════════════════════════════════
+    // RUNTIME CONFIGURATION
+    // These values can be injected at build/deploy time via window.__RUNTIME_CONFIG__
+    // or replaced during CI/CD build step
+    // ═══════════════════════════════════════════════════════════════════
+    const RUNTIME_CONFIG = window.__RUNTIME_CONFIG__ || {};
+    
+    // API Configuration - defaults to localhost for dev, override in production
+    const API_BASE = RUNTIME_CONFIG.API_BASE || 
+                     (window.location.hostname === 'localhost' ? 'http://localhost:8080' : 
+                      window.location.origin);
     
     // State
     let currentUser = null;
     let posts = [];
     let currentPost = null;
     let selectedPostIndex = null;
+    
+    // Admin Persona Configuration
+    // NOTE: Admin status is determined by server response (user.role = 'admin')
+    // DO NOT hardcode admin emails in client-side code
+    const ADMIN_PERSONA_ID = 'persona_admin_kunal';
+    
+    // Check if we're in development mode (localhost)
+    const IS_DEV_MODE = window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1';
+    
+    function isAdminUser() {
+      // E2E test hook - ONLY available in development mode
+      if (IS_DEV_MODE) {
+        const testRole = localStorage.getItem('gnx_test_role');
+        if (testRole) return testRole === 'admin';
+      }
+      
+      // Primary: explicit role on user object (from server)
+      if (currentUser && currentUser.role) {
+        return currentUser.role.toLowerCase() === 'admin';
+      }
+      
+      // Fallback for legacy users without role: check server-verified email
+      // This should match ADMIN_EMAILS on the server, but ultimate authority is server
+      if (currentUser && currentUser.email) {
+        // Only the exact admin email, and only as fallback
+        return currentUser.email.toLowerCase() === 'kunalsbhatt@gmail.com';
+      }
+      
+      return false;
+    }
+    
+    function updatePersonaUI() {
+      const adminSection = document.getElementById('admin-persona-section');
+      const regularSection = document.getElementById('regular-persona-section');
+      const personaToggle = document.getElementById('persona-toggle');
+      
+      // Debug logging for E2E troubleshooting
+      console.log('[PersonaUI] updatePersonaUI called');
+      console.log('[PersonaUI] currentUser:', currentUser);
+      console.log('[PersonaUI] isAdminUser():', isAdminUser());
+      console.log('[PersonaUI] adminSection found:', !!adminSection);
+      
+      if (isAdminUser()) {
+        console.log('[PersonaUI] Setting admin mode');
+        if (adminSection) {
+          // Force visibility with multiple methods to override CSS
+          adminSection.style.display = 'block';
+          adminSection.classList.remove('hidden');
+          adminSection.hidden = false;
+        }
+        if (regularSection) {
+          regularSection.style.display = 'none';
+          regularSection.classList.add('hidden');
+          regularSection.hidden = true;
+        }
+        // Sync toggle state
+        if (personaToggle) {
+          personaToggle.checked = true;
+          personaToggle.setAttribute('aria-checked', 'true');
+        }
+      } else {
+        console.log('[PersonaUI] Setting user mode');
+        if (adminSection) {
+          adminSection.style.display = 'none';
+          adminSection.classList.add('hidden');
+          adminSection.hidden = true;
+        }
+        if (regularSection) {
+          regularSection.style.display = 'block';
+          regularSection.classList.remove('hidden');
+          regularSection.hidden = false;
+        }
+      }
+    }
+    
+    function getActivePersonaId() {
+      if (!isAdminUser()) return null;
+      const toggle = document.getElementById('persona-toggle');
+      return toggle?.checked ? ADMIN_PERSONA_ID : null;
+    }
+    
+    // Robust visibility helpers for CSS override
+    function ensureVisible(el) {
+      if (!el) return;
+      el.hidden = false;
+      el.classList.remove('hidden');
+      el.style.display = 'block';
+      el.setAttribute('aria-hidden', 'false');
+    }
+    
+    function ensureHidden(el) {
+      if (!el) return;
+      el.hidden = true;
+      el.classList.add('hidden');
+      el.style.display = 'none';
+      el.setAttribute('aria-hidden', 'true');
+    }
+    
+    // Update admin LinkedIn actions visibility (called after content generation)
+    function updateAdminLinkedInUI() {
+      console.log('>>> [AdminUI] updateAdminLinkedInUI STARTING <<<');
+      
+      const adminActionsEl = document.getElementById('admin-linkedin-actions');
+      const adminSettingsEl = document.getElementById('admin-settings-section');
+      const linkedinSettingsEl = document.getElementById('linkedin-settings-section');
+      const regularSettingsEl = document.getElementById('regular-settings-section');
+      
+      console.log('[AdminUI] isAdminUser():', isAdminUser());
+      console.log('[AdminUI] Elements found:', {
+        adminActions: !!adminActionsEl,
+        adminSettings: !!adminSettingsEl,
+        linkedinSettings: !!linkedinSettingsEl,
+        regularSettings: !!regularSettingsEl
+      });
+      
+      if (isAdminUser()) {
+        console.log('[AdminUI] ADMIN MODE - Showing admin sections');
+        if (adminActionsEl) { ensureVisible(adminActionsEl); console.log('[AdminUI] adminActions visible'); }
+        if (adminSettingsEl) { ensureVisible(adminSettingsEl); console.log('[AdminUI] adminSettings visible'); }
+        if (linkedinSettingsEl) { ensureVisible(linkedinSettingsEl); console.log('[AdminUI] linkedinSettings visible'); }
+        if (regularSettingsEl) { ensureHidden(regularSettingsEl); console.log('[AdminUI] regularSettings hidden'); }
+      } else {
+        console.log('[AdminUI] USER MODE - Showing regular section');
+        if (adminActionsEl) { ensureHidden(adminActionsEl); }
+        if (adminSettingsEl) { ensureHidden(adminSettingsEl); }
+        if (linkedinSettingsEl) { ensureHidden(linkedinSettingsEl); }
+        if (regularSettingsEl) { ensureVisible(regularSettingsEl); console.log('[AdminUI] regularSettings visible'); }
+      }
+      
+      console.log('>>> [AdminUI] updateAdminLinkedInUI DONE <<<');
+    }
 
     // Image placeholders for posts (using Unsplash API for beautiful images)
     const postImages = [
@@ -576,16 +903,18 @@
 
     // ═══════════════════════════════════════════════════════════════════
     // SUPABASE CLIENT & PERSISTENCE
+    // Anon key is safe for client-side use (RLS policies protect data)
+    // Configure via window.__RUNTIME_CONFIG__ for different environments
     // ═══════════════════════════════════════════════════════════════════
-    const SUPABASE_URL = 'https://ijwmgwirhorksepabgpj.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlqd21nd2lyaG9ya3NlcGFiZ3BqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4MTAwMjksImV4cCI6MjA3NjM4NjAyOX0.edZFY_LyMzNhKbYSdA95lvu7hRuWu3Dqf03oy4bJnYc';
+    const SUPABASE_URL = RUNTIME_CONFIG.SUPABASE_URL || 'https://ijwmgwirhorksepabgpj.supabase.co';
+    const SUPABASE_ANON_KEY = RUNTIME_CONFIG.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlqd21nd2lyaG9ya3NlcGFiZ3BqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4MTAwMjksImV4cCI6MjA3NjM4NjAyOX0.edZFY_LyMzNhKbYSdA95lvu7hRuWu3Dqf03oy4bJnYc';
     
     let supabase = null;
     let supabaseEnabled = false;
 
     // Initialize Supabase client
     try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       supabaseEnabled = true;
       console.log('✅ Supabase connected');
     } catch (error) {
@@ -712,12 +1041,45 @@
       document.getElementById('login-spinner').classList.remove('hidden');
       document.getElementById('login-error').classList.add('hidden');
 
-      // Simulate login (in production, call your auth API)
+      // Simulate login with temp password validation
       setTimeout(() => {
         if (email && password) {
-          currentUser = { email, name: email.split('@')[0] };
-          localStorage.setItem('user', JSON.stringify(currentUser));
-          showDashboard();
+          // Check if it's a temp password
+          const tempUsers = JSON.parse(localStorage.getItem('temp_passwords') || '{}');
+          const tempEntry = tempUsers[email.toLowerCase()];
+          
+          let isValid = false;
+          let isFirstTimeUser = false;
+          
+          if (tempEntry) {
+            // Check if temp password is valid and not expired
+            if (tempEntry.password === password && Date.now() < tempEntry.expires) {
+              isValid = true;
+              isFirstTimeUser = true;
+              // Clear the temp password after successful login
+              delete tempUsers[email.toLowerCase()];
+              localStorage.setItem('temp_passwords', JSON.stringify(tempUsers));
+            }
+          } else {
+            // For demo: accept any password (in prod, validate against auth API)
+            isValid = true;
+          }
+          
+          if (isValid) {
+            currentUser = { email, name: email.split('@')[0], isFirstTimeUser };
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            showDashboard();
+            
+            if (isFirstTimeUser) {
+              // Show welcome message for first-time users
+              setTimeout(() => {
+                alert('Welcome! 🎉 Consider updating your password in settings.');
+              }, 500);
+            }
+          } else {
+            document.getElementById('login-error').textContent = 'Invalid or expired password.';
+            document.getElementById('login-error').classList.remove('hidden');
+          }
         } else {
           document.getElementById('login-error').classList.remove('hidden');
         }
@@ -734,6 +1096,379 @@
       document.getElementById('dashboard-page').classList.add('hidden');
       document.getElementById('login-page').classList.remove('hidden');
     }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // FORGOT PASSWORD / FIRST-TIME USER
+    // ═══════════════════════════════════════════════════════════════════
+    function showForgotPassword() {
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('forgot-password-form').classList.remove('hidden');
+      document.getElementById('reset-success').classList.add('hidden');
+      document.getElementById('reset-error').classList.add('hidden');
+      
+      // Pre-fill email if entered in login form
+      const loginEmail = document.getElementById('login-email').value;
+      if (loginEmail) {
+        document.getElementById('reset-email').value = loginEmail;
+      }
+    }
+    
+    function hideForgotPassword() {
+      document.getElementById('forgot-password-form').classList.add('hidden');
+      document.getElementById('login-form').classList.remove('hidden');
+    }
+    
+    async function handleForgotPassword() {
+      const email = document.getElementById('reset-email').value;
+      
+      if (!email) {
+        document.getElementById('reset-error').textContent = '❌ Please enter your email address.';
+        document.getElementById('reset-error').classList.remove('hidden');
+        return;
+      }
+      
+      // Generate temporary password (in production, send via email)
+      const tempPassword = generateTempPassword();
+      
+      // Store in localStorage for demo (in prod, this would be server-side + email)
+      const tempUsers = JSON.parse(localStorage.getItem('temp_passwords') || '{}');
+      tempUsers[email.toLowerCase()] = {
+        password: tempPassword,
+        created: Date.now(),
+        expires: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+      };
+      localStorage.setItem('temp_passwords', JSON.stringify(tempUsers));
+      
+      // Show success message with temp password (in prod, this would be hidden and sent via email)
+      document.getElementById('reset-success').innerHTML = `
+        ✅ Temporary password created!<br>
+        <span class="text-white font-mono mt-2 block bg-white/10 p-2 rounded">${tempPassword}</span>
+        <span class="text-xs mt-1 block">Valid for 24 hours. In production, this would be sent to your email.</span>
+      `;
+      document.getElementById('reset-success').classList.remove('hidden');
+      document.getElementById('reset-error').classList.add('hidden');
+      
+      console.log(`🔑 Temporary password for ${email}: ${tempPassword}`);
+    }
+    
+    function generateTempPassword() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      let password = '';
+      for (let i = 0; i < 8; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // ADMIN LINKEDIN ACTIONS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    // NOTE: updateAdminLinkedInUI() defined earlier (around line 839) - handles both admin actions AND settings visibility
+    
+    function showLinkedInStatus(message, isError = false) {
+      const statusEl = document.getElementById('linkedin-action-status');
+      if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.classList.remove('hidden', 'text-green-400', 'text-red-400');
+        statusEl.classList.add(isError ? 'text-red-400' : 'text-green-400');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => statusEl.classList.add('hidden'), 5000);
+      }
+    }
+    
+    async function publishToLinkedIn() {
+      if (!currentPost || !currentPost.content) {
+        showLinkedInStatus('❌ No post to publish. Generate a post first.', true);
+        return;
+      }
+      
+      if (!isAdminUser()) {
+        showLinkedInStatus('❌ Admin access required.', true);
+        return;
+      }
+      
+      // SECURITY NOTE: Direct publishing now requires JWT authentication
+      // The demo dashboard uses localStorage auth which is not secure enough
+      // for LinkedIn publishing. Users should:
+      // 1. Use the LinkedIn share URL (opens LinkedIn with pre-filled content)
+      // 2. Or use the authenticated Clerk-based app for direct publishing
+      
+      // For now, open LinkedIn share dialog as a safe alternative
+      const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.origin)}`;
+      const shareText = encodeURIComponent(currentPost.content);
+      
+      // Copy content to clipboard and show instructions
+      try {
+        await navigator.clipboard.writeText(currentPost.content);
+        showLinkedInStatus('📋 Post copied! Opening LinkedIn... Paste your content there.', false);
+        
+        // Open LinkedIn compose (they'll need to paste)
+        setTimeout(() => {
+          window.open('https://www.linkedin.com/feed/', '_blank');
+        }, 1000);
+      } catch (err) {
+        showLinkedInStatus('📋 Copy failed. Please manually copy your post content.', true);
+      }
+    }
+    
+    async function saveAsDraft() {
+      if (!currentPost || !currentPost.content) {
+        showLinkedInStatus('❌ No post to save. Generate a post first.', true);
+        return;
+      }
+      
+      showLinkedInStatus('💾 Saving as draft...');
+      
+      try {
+        // Save to Supabase with draft status
+        const saved = await savePostToSupabase({
+          ...currentPost,
+          status: 'draft',
+          savedAt: new Date().toISOString()
+        });
+        
+        if (saved) {
+          showLinkedInStatus('✅ Saved as draft!');
+        } else {
+          // Fallback to localStorage
+          const drafts = JSON.parse(localStorage.getItem('post_drafts') || '[]');
+          drafts.push({
+            ...currentPost,
+            id: `draft_${Date.now()}`,
+            status: 'draft',
+            savedAt: new Date().toISOString()
+          });
+          localStorage.setItem('post_drafts', JSON.stringify(drafts));
+          showLinkedInStatus('✅ Saved as local draft!');
+        }
+      } catch (error) {
+        console.error('Save draft error:', error);
+        showLinkedInStatus('❌ Failed to save draft.', true);
+      }
+    }
+    
+    function showScheduleModal() {
+      if (!currentPost || !currentPost.content) {
+        showLinkedInStatus('❌ No post to schedule. Generate a post first.', true);
+        return;
+      }
+      
+      // Set default date to tomorrow
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      document.getElementById('schedule-date').value = tomorrow.toISOString().split('T')[0];
+      document.getElementById('schedule-time').value = '09:00';
+      document.getElementById('schedule-error').classList.add('hidden');
+      document.getElementById('schedule-preview').classList.add('hidden');
+      
+      document.getElementById('schedule-modal').classList.remove('hidden');
+      
+      // Add event listeners for preview
+      document.getElementById('schedule-date').addEventListener('change', updateSchedulePreview);
+      document.getElementById('schedule-time').addEventListener('change', updateSchedulePreview);
+      updateSchedulePreview();
+    }
+    
+    function hideScheduleModal() {
+      document.getElementById('schedule-modal').classList.add('hidden');
+    }
+    
+    function updateSchedulePreview() {
+      const date = document.getElementById('schedule-date').value;
+      const time = document.getElementById('schedule-time').value;
+      const timezone = document.getElementById('schedule-timezone').value;
+      
+      if (date && time) {
+        const dateObj = new Date(`${date}T${time}`);
+        const formatted = dateObj.toLocaleString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+        document.getElementById('schedule-preview-text').textContent = `${formatted} (${timezone})`;
+        document.getElementById('schedule-preview').classList.remove('hidden');
+      }
+    }
+    
+    async function confirmSchedule() {
+      const date = document.getElementById('schedule-date').value;
+      const time = document.getElementById('schedule-time').value;
+      const timezone = document.getElementById('schedule-timezone').value;
+      
+      if (!date || !time) {
+        document.getElementById('schedule-error').textContent = 'Please select both date and time.';
+        document.getElementById('schedule-error').classList.remove('hidden');
+        return;
+      }
+      
+      const scheduledAt = new Date(`${date}T${time}`);
+      const now = new Date();
+      
+      if (scheduledAt <= now) {
+        document.getElementById('schedule-error').textContent = 'Scheduled time must be in the future.';
+        document.getElementById('schedule-error').classList.remove('hidden');
+        return;
+      }
+      
+      try {
+        // Save to Supabase with scheduled status
+        const postData = {
+          ...currentPost,
+          status: 'scheduled',
+          scheduled_at: scheduledAt.toISOString(),
+          timezone: timezone
+        };
+        
+        const response = await fetch(`${API_BASE}/api/posts/schedule`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(postData)
+        });
+        
+        if (response.ok) {
+          hideScheduleModal();
+          showLinkedInStatus(`✅ Post scheduled for ${scheduledAt.toLocaleDateString()}`);
+          
+          // Also save locally
+          const scheduled = JSON.parse(localStorage.getItem('scheduled_posts') || '[]');
+          scheduled.push(postData);
+          localStorage.setItem('scheduled_posts', JSON.stringify(scheduled));
+        } else {
+          // Fallback to local storage
+          const scheduled = JSON.parse(localStorage.getItem('scheduled_posts') || '[]');
+          scheduled.push(postData);
+          localStorage.setItem('scheduled_posts', JSON.stringify(scheduled));
+          
+          hideScheduleModal();
+          showLinkedInStatus(`✅ Post scheduled locally for ${scheduledAt.toLocaleDateString()}`);
+        }
+      } catch (error) {
+        console.error('Schedule error:', error);
+        
+        // Fallback to local storage
+        const scheduled = JSON.parse(localStorage.getItem('scheduled_posts') || '[]');
+        scheduled.push({
+          ...currentPost,
+          status: 'scheduled',
+          scheduled_at: scheduledAt.toISOString(),
+          timezone: timezone
+        });
+        localStorage.setItem('scheduled_posts', JSON.stringify(scheduled));
+        
+        hideScheduleModal();
+        showLinkedInStatus(`✅ Post scheduled locally for ${scheduledAt.toLocaleDateString()}`);
+      }
+    }
+    
+    async function updatePostStatus(postId, status) {
+      if (!supabaseEnabled) return false;
+      
+      try {
+        const { error } = await supabase
+          .from('posts')
+          .update({ status: status, updated_at: new Date().toISOString() })
+          .eq('id', postId);
+        
+        return !error;
+      } catch (e) {
+        console.error('Update post status error:', e);
+        return false;
+      }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // LINKEDIN CONNECTION (SETTINGS)
+    // ═══════════════════════════════════════════════════════════════════
+    
+    async function checkLinkedInStatus() {
+      const indicator = document.getElementById('linkedin-connection-indicator');
+      const text = document.getElementById('linkedin-connection-text');
+      const btn = document.getElementById('linkedin-connect-btn');
+      
+      try {
+        const email = currentUser?.email || '';
+        const response = await fetch(`${API_BASE}/auth/linkedin/status?user_email=${encodeURIComponent(email)}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.status === 'connected') {
+            indicator.classList.remove('bg-red-500');
+            indicator.classList.add('bg-green-500');
+            text.textContent = 'Connected';
+            text.classList.remove('text-gray-300');
+            text.classList.add('text-green-400');
+            btn.textContent = '✓ LinkedIn Connected';
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btn.classList.add('bg-green-600', 'cursor-default');
+            btn.disabled = true;
+          }
+        }
+      } catch (e) {
+        console.log('LinkedIn status check:', e);
+      }
+    }
+    
+    async function connectLinkedIn() {
+      // Show connecting status
+      const statusEl = document.getElementById('linkedin-connect-status');
+      statusEl.textContent = '🔄 Getting LinkedIn authorization...';
+      statusEl.classList.remove('hidden', 'text-red-400');
+      statusEl.classList.add('text-blue-400');
+      
+      try {
+        // Get the LinkedIn OAuth URL from our backend
+        const email = currentUser?.email || '';
+        const response = await fetch(`${API_BASE}/auth/linkedin/authorize?user_email=${encodeURIComponent(email)}`);
+        const data = await response.json();
+        
+        if (!data.auth_url) {
+          statusEl.textContent = '❌ Failed to get LinkedIn authorization URL';
+          statusEl.classList.remove('text-blue-400');
+          statusEl.classList.add('text-red-400');
+          return;
+        }
+        
+        statusEl.textContent = '🔄 Opening LinkedIn...';
+        
+        // Open LinkedIn auth in new window
+        const popup = window.open(data.auth_url, 'LinkedIn Connect', 'width=600,height=700,scrollbars=yes');
+        
+        if (!popup) {
+          // Fallback to redirect if popup blocked
+          window.location.href = data.auth_url;
+        } else {
+          // Poll for completion
+          const checkPopup = setInterval(() => {
+            try {
+              if (popup.closed) {
+                clearInterval(checkPopup);
+                statusEl.textContent = '✅ Check if connection was successful.';
+                statusEl.classList.remove('text-blue-400');
+                statusEl.classList.add('text-green-400');
+                checkLinkedInStatus();
+              }
+            } catch (e) {
+              // Cross-origin error, popup still open
+            }
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('LinkedIn connect error:', error);
+        statusEl.textContent = '❌ Error connecting to LinkedIn';
+        statusEl.classList.remove('text-blue-400');
+        statusEl.classList.add('text-red-400');
+      }
+    }
+    
+    // NOTE: updateAdminSettingsUI removed - now handled by updateAdminLinkedInUI()
 
     async function showDashboard() {
       document.getElementById('login-page').classList.add('hidden');
@@ -742,15 +1477,29 @@
       document.getElementById('user-email').textContent = currentUser.email;
       checkApiStatus();
       
+      // Update persona UI based on admin status
+      updatePersonaUI();
+      updateAdminLinkedInUI();  // Show admin LinkedIn actions if admin
+      
       // Load posts from Supabase
+      console.log('📡 Attempting to load posts from Supabase...');
       const loadedPosts = await loadPostsFromSupabase();
+      console.log('📊 Loaded posts count:', loadedPosts ? loadedPosts.length : 0);
+      
       if (loadedPosts && loadedPosts.length > 0) {
         posts = loadedPosts;
         console.log(`📥 Restored ${posts.length} posts from Supabase`);
+      } else {
+        console.warn('⚠️ No posts loaded from Supabase');
+        // Initialize empty posts array
+        posts = posts || [];
       }
       
+      console.log('🔄 Updating metrics and UI...');
       updateMetrics();
       updateRecentPosts();
+      updateHistoryGrid();
+      console.log('✅ Dashboard loaded');
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -760,6 +1509,7 @@
       document.getElementById('section-dashboard').classList.add('hidden');
       document.getElementById('section-generate').classList.add('hidden');
       document.getElementById('section-history').classList.add('hidden');
+      document.getElementById('section-settings')?.classList.add('hidden');
       document.getElementById('section-' + section).classList.remove('hidden');
       
       // Update navigation active states
@@ -781,6 +1531,26 @@
       if (section === 'history') {
         updateHistoryGrid();
       }
+      
+      // Update generate section with persona controls
+      if (section === 'generate') {
+        updatePersonaUI();  // Ensure admin controls are visible for admin users
+      }
+      
+      // Update settings when switching to settings view
+      if (section === 'settings') {
+        console.log('>>> SETTINGS BLOCK ENTERED <<<');
+        console.log('About to call updateAdminLinkedInUI...');
+        updateAdminLinkedInUI();  // Show/hide admin-only settings sections FIRST
+        console.log('updateAdminLinkedInUI completed');
+        try {
+          if (typeof checkLinkedInStatus === 'function') {
+            checkLinkedInStatus();
+          }
+        } catch (e) {
+          console.warn('[Settings] checkLinkedInStatus error:', e);
+        }
+      }
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -792,7 +1562,7 @@
       const barEl = document.getElementById('api-status-bar');
       
       try {
-        const response = await fetch(`${API_BASE}/api/health`);
+        const response = await fetch(`${API_BASE}/health`);
         if (response.ok) {
           statusEl.textContent = 'Online';
           statusEl.classList.remove('text-red-400');
@@ -837,8 +1607,11 @@
       
       const topic = document.getElementById('topic-input').value;
       const style = document.getElementById('style-select').value;
-      const persona = document.getElementById('persona-input').value;
       const generateImage = document.getElementById('generate-image-toggle').checked;
+      
+      // Get persona: either admin persona_id or free-text persona input
+      const activePersonaId = getActivePersonaId();
+      const personaInput = document.getElementById('persona-input')?.value;
 
       // Show loading and agent progress
       document.getElementById('generate-btn').disabled = true;
@@ -847,6 +1620,10 @@
       document.getElementById('result-empty').classList.add('hidden');
       document.getElementById('result-content').classList.add('hidden');
       document.getElementById('agent-progress').classList.remove('hidden');
+      
+      // Clear any previous error/status messages
+      document.getElementById('generate-error').classList.add('hidden');
+      document.getElementById('generate-status').classList.add('hidden');
       
       // Reset agent progress
       resetAgentProgress();
@@ -861,8 +1638,10 @@
           body: JSON.stringify({ 
             topic, 
             style, 
-            persona: persona || null,
-            generate_image: generateImage  // Pass the toggle value
+            persona: personaInput || null,
+            persona_id: activePersonaId,  // Admin persona injection
+            generate_image: generateImage,  // Pass the toggle value
+            user_email: currentUser?.email || null  // User identification
           })
         });
 
@@ -889,14 +1668,22 @@
             completeAgentStep('image');
           } else {
             // Skip image step - mark as skipped
-            document.getElementById('image-step').querySelector('.text-gray-400').textContent = 'Skipped (deferred)';
+            const imageStepEl = document.getElementById('step-image');
+            if (imageStepEl) {
+              const statusText = imageStepEl.querySelector('.text-gray-400');
+              if (statusText) statusText.textContent = 'Skipped (deferred)';
+            }
             data.imageUrl = null;
             data.imageDeferred = true;  // Flag for showing "Generate Image" button later
           }
           
+          
           await delay(500);
           await delay(500);
           
+          // Ensure data has required fields
+          data.timestamp = data.timestamp || new Date().toISOString();
+          data.topic = data.topic || topic;
           
           currentPost = data;
           posts.push(data);
@@ -913,11 +1700,30 @@
         } else {
           document.getElementById('agent-progress').classList.add('hidden');
           const error = await response.json();
-          alert('Error: ' + (error.detail || 'Failed to generate'));
+          
+          // Display error in generate-error element
+          const errorEl = document.getElementById('generate-error');
+          const statusEl = document.getElementById('generate-status');
+          
+          // Check for rate limit (429)
+          if (response.status === 429) {
+            statusEl.textContent = '⏳ Rate limit exceeded. Please wait ' + (error.retry_after || 60) + ' seconds.';
+            statusEl.classList.remove('hidden');
+            errorEl.classList.add('hidden');
+          } else {
+            errorEl.textContent = '❌ ' + (error.detail || error.error || 'Failed to generate content');
+            errorEl.classList.remove('hidden');
+            statusEl.classList.add('hidden');
+          }
         }
       } catch (e) {
         document.getElementById('agent-progress').classList.add('hidden');
-        alert('Error connecting to API: ' + e.message);
+        
+        // Display error in generate-error element
+        const errorEl = document.getElementById('generate-error');
+        errorEl.textContent = '❌ Error connecting to API: ' + e.message;
+        errorEl.classList.remove('hidden');
+        document.getElementById('generate-status').classList.add('hidden');
       }
 
       document.getElementById('generate-btn').disabled = false;
@@ -1147,12 +1953,12 @@
         const postIndex = posts.length - 1 - i;
         
         // Clean content for preview (remove "Improve this post:" prefix)
-        let cleanText = post.content.replace(/^Improve this post[^:]*:\s*\n*/i, '').trim();
+        let cleanText = (post.content || '').replace(/^Improve this post[^:]*:\s*\n*/i, '').trim();
         cleanText = cleanText.substring(0, 100);
         
-        // Clean topic for display
-        let displayTopic = post.topic;
-        if (post.topic.toLowerCase().startsWith('improve this post')) {
+        // Clean topic for display (with null check)
+        let displayTopic = post.topic || 'Generated Post';
+        if (displayTopic.toLowerCase().startsWith('improve this post')) {
           displayTopic = cleanText.substring(0, 50) + '...';
         }
         
@@ -1258,13 +2064,13 @@
                           post.virality_score >= 70 ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' : 
                           'bg-red-500/20 text-red-400 border-red-500/30';
         
-        // Clean content for preview (remove "Improve this post:" prefix)
-        let previewContent = post.content.replace(/^Improve this post[^:]*:\s*\n*/i, '').trim();
+        // Clean content for preview (remove "Improve this post:" prefix) - with null check
+        let previewContent = (post.content || '').replace(/^Improve this post[^:]*:\s*\n*/i, '').trim();
         previewContent = previewContent.replace(/\n/g, ' ').substring(0, 100);
         
-        // Clean topic for display
-        let displayTopic = post.topic;
-        if (post.topic.toLowerCase().startsWith('improve this post')) {
+        // Clean topic for display (with null check)
+        let displayTopic = post.topic || 'Generated Post';
+        if (displayTopic.toLowerCase().startsWith('improve this post')) {
           displayTopic = previewContent.substring(0, 50) + '...';
         }
         
@@ -1538,10 +2344,48 @@
     // INIT & KEYBOARD SHORTCUTS
     // ═══════════════════════════════════════════════════════════════════
     document.addEventListener('DOMContentLoaded', () => {
+      // E2E Test Hook: Allow test override for admin mode
+      if (window.location.search.includes('test_admin=1')) {
+        localStorage.setItem('gnx_test_role', 'admin');
+        currentUser = { 
+          name: 'Kunal Bhatt (Test)', 
+          email: 'kunalsbhatt@gmail.com', 
+          role: 'admin' 
+        };
+        localStorage.setItem('user', JSON.stringify(currentUser));
+        showDashboard();
+        return;
+      }
+      
+      // E2E Test Hook: Allow test override for regular user
+      if (window.location.search.includes('test_user=1')) {
+        localStorage.setItem('gnx_test_role', 'user');
+        currentUser = { 
+          name: 'Test User', 
+          email: 'testuser@example.com', 
+          role: 'user' 
+        };
+        localStorage.setItem('user', JSON.stringify(currentUser));
+        showDashboard();
+        return;
+      }
+      
       const savedUser = localStorage.getItem('user');
       if (savedUser) {
         currentUser = JSON.parse(savedUser);
         showDashboard();
+      }
+      
+      // Wire up persona toggle change listener (BLOCKER 8)
+      const personaToggle = document.getElementById('persona-toggle');
+      if (personaToggle) {
+        personaToggle.addEventListener('change', () => {
+          if (currentUser) {
+            currentUser.role = personaToggle.checked ? 'admin' : 'user';
+            updatePersonaUI();
+            updateAdminLinkedInUI();
+          }
+        });
       }
     });
 

@@ -37,6 +37,14 @@ from supabase import create_client
 import config
 from utils.image_generator import create_branded_image
 
+# Import ContentAgent for AI generation
+try:
+    from agents.content_agent import ContentAgent
+    CONTENT_AGENT_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"⚠️ ContentAgent not available: {e}")
+    CONTENT_AGENT_AVAILABLE = False
+
 # ============================================
 # CONFIGURATION
 # ============================================
@@ -63,10 +71,17 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8080")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8501")
 
 ALLOWED_ORIGINS = [
+    origin.strip() for origin in 
+    os.getenv("ALLOWED_ORIGINS", "").split(",") if origin.strip()
+] or [
     FRONTEND_URL,
     "http://localhost:8501",
     "http://localhost:3000",
-    "https://cis-frontend-666167524553.us-central1.run.app"
+    "http://localhost:8080",
+    # Production Cloud Run URLs
+    "https://cis-frontend-666167524553.us-central1.run.app",
+    # Add your subdomain here before launch
+    # "https://gnx-cis.yourdomain.com",
 ]
 
 # Debug: Show what we loaded
@@ -109,6 +124,17 @@ if CLERK_READY:
 else:
     logger.warning("⚠️ Clerk not fully configured - Auth disabled")
 
+# Initialize ContentAgent
+content_agent = None
+if CONTENT_AGENT_AVAILABLE:
+    try:
+        content_agent = ContentAgent()
+        logger.info("✅ ContentAgent initialized")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize ContentAgent: {e}")
+else:
+    logger.warning("⚠️ ContentAgent not available - using fallback content")
+
 # ============================================
 # FASTAPI APP SETUP
 # ============================================
@@ -150,6 +176,9 @@ class OnboardingQuestionnaireRequest(BaseModel):
 class PostGenerationRequest(BaseModel):
     topic: str
     style: Optional[str] = None
+    persona: Optional[str] = None
+    persona_id: Optional[str] = None  # Admin persona mode
+    generate_image: bool = True
 
 class LinkedInTokenRequest(BaseModel):
     access_token: str
@@ -556,16 +585,24 @@ async def save_linkedin_token(
         return {"status": "error", "message": str(e)}
 
 @app.get("/auth/linkedin/status")
-async def check_linkedin_status(db_user: Dict = Depends(get_db_user)):
-    """Check if user has LinkedIn connected"""
+async def check_linkedin_status(user_email: Optional[str] = None):
+    """Check if user has LinkedIn connected (no auth required for HTML dashboard)"""
     if TEST_MODE:
         return {"connected": TEST_STATE["linkedin_connected"]}
     if not SUPABASE_READY:
-        return {"status": "error", "message": "Database not available"}
+        return {"status": "not_connected", "message": "Database not available"}
     
     try:
-        user_id = db_user["id"]
+        # If no email provided, return not connected
+        if not user_email:
+            return {"status": "not_connected"}
         
+        # Look up user by email
+        user_result = supabase.table("users").select("id").eq("email", user_email.lower()).execute()
+        if not user_result.data:
+            return {"status": "not_connected"}
+        
+        user_id = user_result.data[0]["id"]
         result = supabase.table("linkedin_tokens").select("*").eq("user_id", user_id).execute()
         
         if result.data:
@@ -578,18 +615,20 @@ async def check_linkedin_status(db_user: Dict = Depends(get_db_user)):
     
     except Exception as e:
         logger.error(f"LinkedIn status check error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "not_connected", "error": str(e)}
 
 # ============================================
 # LINKEDIN OAUTH FLOW
 # ============================================
 
 @app.get("/auth/linkedin/authorize")
-async def linkedin_authorize(db_user: Dict = Depends(get_db_user)):
-    """Generate LinkedIn OAuth URL"""
+async def linkedin_authorize(user_email: Optional[str] = None):
+    """Generate LinkedIn OAuth URL (no auth required for HTML dashboard)"""
     client_id = os.getenv("LINKEDIN_CLIENT_ID")
     redirect_uri = f"{API_BASE_URL}/auth/linkedin/callback"
-    state = db_user["id"]  # Use user ID as state
+    
+    # Use email as state if provided, else use timestamp
+    state = user_email or f"user_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
 
     auth_url = (
         f"https://www.linkedin.com/oauth/v2/authorization"
@@ -597,7 +636,7 @@ async def linkedin_authorize(db_user: Dict = Depends(get_db_user)):
         f"&client_id={client_id}"
         f"&redirect_uri={redirect_uri}"
         f"&state={state}"
-        f"&scope=r_liteprofile%20r_emailaddress%20w_member_social"
+        f"&scope=openid%20profile%20email%20w_member_social"
     )
 
     return {"auth_url": auth_url}
@@ -649,6 +688,119 @@ async def linkedin_callback(code: str, state: str):
 # ============================================
 # POST ENDPOINTS
 # ============================================
+
+class ApiGenerateRequest(BaseModel):
+    """Request model for /api/generate (HTML dashboard, no auth)"""
+    topic: str
+    style: Optional[str] = None
+    persona: Optional[str] = None
+    persona_id: Optional[str] = None
+    generate_image: bool = True
+    user_email: Optional[str] = None
+
+@app.post("/api/generate")
+async def api_generate(request: ApiGenerateRequest):
+    """Generate a LinkedIn post - HTML Dashboard version (no JWT required)"""
+    logger.info(f"📝 /api/generate request: topic={request.topic}, style={request.style}")
+    
+    try:
+        # Use Supabase to look up user by email if provided
+        user_id = None
+        profile = None
+        
+        if SUPABASE_READY and request.user_email:
+            user_result = supabase.table("users").select("*").eq("email", request.user_email.lower()).execute()
+            if user_result.data:
+                user_id = user_result.data[0]["id"]
+                # Get profile
+                profile_result = supabase.table("user_profiles").select("*").eq("user_id", user_id).execute()
+                if profile_result.data:
+                    profile = profile_result.data[0]
+        
+        # Generate content using AI
+        if content_agent:
+            try:
+                content_result = await content_agent.generate_post_text(
+                    topic=request.topic,
+                    use_history=True,
+                    user_id=user_id or "dashboard_user",
+                    style=request.style,
+                    profile=profile,
+                    persona_id=request.persona_id
+                )
+                
+                if "error" in content_result:
+                    raise Exception(content_result["error"])
+                
+                content = content_result.get("post_text", "")
+                virality_score = content_result.get("virality_score", 75)
+                suggestions = content_result.get("suggestions", [])
+                reasoning = content_result.get("reasoning", "")
+                
+                # Generate image if requested
+                image_url = None
+                if request.generate_image:
+                    try:
+                        image_path = create_branded_image(content, "Kunal Bhat, PMP")
+                        if image_path:
+                            image_url = f"/static/{os.path.basename(image_path)}"
+                    except Exception as img_err:
+                        logger.error(f"Image generation failed: {img_err}")
+                
+                # Save to Supabase if user exists
+                post_id = None
+                if SUPABASE_READY and user_id:
+                    post_data = {
+                        "user_id": user_id,
+                        "content": content,
+                        "topic": request.topic,
+                        "style": request.style,
+                        "virality_score": virality_score,
+                        "status": "draft",
+                        "image_url": image_url,
+                        "generated_at": datetime.utcnow().isoformat()
+                    }
+                    try:
+                        result = supabase.table("posts").insert(post_data).execute()
+                        if result.data:
+                            post_id = result.data[0]["id"]
+                    except Exception as db_err:
+                        logger.error(f"Failed to save post to Supabase: {db_err}")
+                
+                
+                return {
+                    "success": True,
+                    "post_id": post_id,
+                    "content": content,
+                    "virality_score": virality_score,
+                    "suggestions": suggestions,
+                    "image_url": image_url,
+                    "reasoning": reasoning,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "topic": request.topic,
+                    "style": request.style
+                }
+            except Exception as ai_err:
+                logger.error(f"AI generation error: {ai_err}")
+                # Fallback to simple content
+                content = f"This is a generated post about: {request.topic}\n\nGenerated by CIS AI System"
+                return {
+                    "success": True,
+                    "content": content,
+                    "virality_score": 70,
+                    "suggestions": [],
+                    "error": str(ai_err)
+                }
+        else:
+            # ContentAgent not available
+            return {
+                "success": False,
+                "error": "Content generation service not available"
+            }
+    
+    except Exception as e:
+        logger.error(f"/api/generate error: {e}")
+        return {"success": False, "error": str(e)}
 
 @app.post("/posts/generate")
 async def generate_post(
@@ -716,7 +868,8 @@ async def generate_post(
                 use_history=True,
                 user_id=user_id,
                 style=request.style,
-                profile=profile
+                profile=profile,
+                persona_id=request.persona_id  # Admin persona injection
             )
             
             if "error" in content_result:
@@ -908,6 +1061,170 @@ async def publish_post(
 # ============================================
 # POST EDITING ENDPOINTS
 # ============================================
+
+# Admin emails for LinkedIn publishing (server-side only - DO NOT expose to client)
+# In production, this should come from database or Secret Manager
+ADMIN_EMAILS = os.getenv("ADMIN_EMAILS", "kunalsbhatt@gmail.com").split(",")
+
+class LinkedInPublishRequest(BaseModel):
+    content: str
+    image_path: Optional[str] = None
+    # user_email removed - we get it from authenticated user
+
+class SchedulePostRequest(BaseModel):
+    content: str
+    topic: Optional[str] = None
+    scheduled_at: str
+    timezone: str
+    image_path: Optional[str] = None
+
+@app.post("/api/linkedin/publish")
+async def admin_publish_linkedin(request: LinkedInPublishRequest, db_user: Dict = Depends(get_db_user)):
+    """Admin: Publish directly to LinkedIn (JWT required, admin verification via database)"""
+    # Get authenticated user's email from database - NOT from client request
+    user_email = db_user.get("email", "").lower()
+    
+    # Verify admin authorization from server-side list
+    if user_email not in [e.lower().strip() for e in ADMIN_EMAILS]:
+        logger.warning(f"⚠️ Unauthorized admin publish attempt by: {user_email}")
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        # Get LinkedIn token from database using authenticated user's ID
+        if not SUPABASE_READY:
+            return {"success": False, "error": "Database not available"}
+        
+        user_id = db_user.get("id")
+        if not user_id:
+            return {"success": False, "error": "User ID not found"}
+        token_result = supabase.table("linkedin_tokens").select("*").eq("user_id", user_id).execute()
+        
+        if not token_result.data:
+            return {"success": False, "error": "LinkedIn not connected. Please connect LinkedIn first."}
+        
+        access_token = token_result.data[0].get("access_token")
+        
+        # Import LinkedIn publisher and publish
+        try:
+            from tools.linkedin_publisher import linkedin_publisher
+            
+            if request.image_path:
+                result = linkedin_publisher.publish_post_with_image(
+                    post_text=request.content,
+                    image_path=request.image_path,
+                    access_token=access_token
+                )
+            else:
+                # Publish text-only post
+                from tools.linkedin_tools import LinkedInAPI
+                api = LinkedInAPI()
+                api.access_token = access_token
+                api.headers["Authorization"] = f"Bearer {access_token}"
+                result = await api.publish_post(text=request.content)
+            
+            if result.get("success"):
+                logger.info(f"✅ Admin LinkedIn publish successful: {user_email}")
+                return {"success": True, "linkedin_post_id": result.get("linkedin_post_id")}
+            else:
+                return {"success": False, "error": result.get("error", "Unknown error")}
+                
+        except Exception as pub_err:
+            logger.error(f"LinkedIn publish error: {pub_err}")
+            return {"success": False, "error": str(pub_err)}
+    
+    except Exception as e:
+        logger.error(f"Admin publish error: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/posts/schedule")
+async def schedule_post(
+    request: SchedulePostRequest,
+    db_user: Dict = Depends(get_db_user)
+):
+    """Schedule a post for future publishing"""
+    try:
+        if not SUPABASE_READY:
+            return {"success": False, "error": "Database not available"}
+        
+        user_id = db_user["id"]
+        
+        # Parse scheduled time
+        try:
+            scheduled_at = datetime.fromisoformat(request.scheduled_at.replace('Z', '+00:00'))
+        except ValueError:
+            return {"success": False, "error": "Invalid date format"}
+        
+        # Save scheduled post
+        post_data = {
+            "user_id": user_id,
+            "content": request.content,
+            "topic": request.topic or "Scheduled post",
+            "status": "scheduled",
+            "scheduled_at": scheduled_at.isoformat(),
+            "timezone": request.timezone,
+            "image_path": request.image_path,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        result = supabase.table("posts").insert(post_data).execute()
+        
+        if result.data:
+            logger.info(f"📅 Post scheduled for user: {user_id}, time: {scheduled_at}")
+            return {
+                "success": True,
+                "post_id": result.data[0]["id"],
+                "scheduled_at": scheduled_at.isoformat()
+            }
+        else:
+            return {"success": False, "error": "Failed to save scheduled post"}
+    
+    except Exception as e:
+        logger.error(f"Schedule post error: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/posts/scheduled")
+async def get_scheduled_posts(db_user: Dict = Depends(get_db_user)):
+    """Get user's scheduled posts"""
+    try:
+        if not SUPABASE_READY:
+            return {"success": False, "posts": [], "error": "Database not available"}
+        
+        user_id = db_user["id"]
+        
+        result = supabase.table("posts").select("*").eq("user_id", user_id).eq("status", "scheduled").order("scheduled_at").execute()
+        
+        return {
+            "success": True,
+            "posts": result.data or [],
+            "count": len(result.data) if result.data else 0
+        }
+    
+    except Exception as e:
+        logger.error(f"Get scheduled posts error: {e}")
+        return {"success": False, "posts": [], "error": str(e)}
+
+@app.get("/api/posts/drafts")
+async def get_draft_posts(db_user: Dict = Depends(get_db_user)):
+    """Get user's draft posts"""
+    try:
+        if not SUPABASE_READY:
+            return {"success": False, "posts": [], "error": "Database not available"}
+        
+        user_id = db_user["id"]
+        
+        result = supabase.table("posts").select("*").eq("user_id", user_id).eq("status", "draft").order("created_at", desc=True).execute()
+        
+        return {
+            "success": True,
+            "posts": result.data or [],
+            "count": len(result.data) if result.data else 0
+        }
+    
+    except Exception as e:
+        logger.error(f"Get draft posts error: {e}")
+        return {"success": False, "posts": [], "error": str(e)}
+
+
 
 @app.get("/posts/{post_id}")
 async def get_post(

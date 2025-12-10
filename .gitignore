@@ -77,6 +77,9 @@ test_*.py
 fix_*.py
 testsprite_tests/
 
+# Exception: Allow E2E test files
+!tests/e2e/test_*.py
+
 # Development documentation
 CIS_*.md
 STATE_DUMP_*.md
