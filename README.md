@@ -39,7 +39,7 @@ CIS is powered by a proprietary agentic architecture that mimics a dedicated edi
 
 This source code and intellectual property are licensed exclusively for use by authorized GNX partners and clients. Unauthorized reproduction, reverse engineering, or distribution is strictly prohibited.
 
-For enterprise access or deployment inquiries, please contact the GNX Solutions team.
+For enterprise access or deployment inquiries, please contact the GNX Solutions team at Kunalsbhatt@gmail.com
 
 ---
 
