@@ -53,6 +53,14 @@ except ImportError as e:
     logger.warning(f"⚠️ ContentAgent not available: {e}")
     CONTENT_AGENT_AVAILABLE = False
 
+# Import ViralityAgent for SEPARATE scoring (fixes LLM self-evaluation bias)
+try:
+    from agents.virality_agent import ViralityAgent
+    VIRALITY_AGENT_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"⚠️ ViralityAgent not available: {e}")
+    VIRALITY_AGENT_AVAILABLE = False
+
 # ============================================
 # CONFIGURATION
 # ============================================
@@ -142,6 +150,17 @@ if CONTENT_AGENT_AVAILABLE:
         logger.error(f"❌ Failed to initialize ContentAgent: {e}")
 else:
     logger.warning("⚠️ ContentAgent not available - using fallback content")
+
+# Initialize ViralityAgent (SEPARATE scorer to avoid self-evaluation bias)
+virality_agent = None
+if VIRALITY_AGENT_AVAILABLE:
+    try:
+        virality_agent = ViralityAgent()
+        logger.info("✅ ViralityAgent initialized (separate scorer)")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize ViralityAgent: {e}")
+else:
+    logger.warning("⚠️ ViralityAgent not available - will use ContentAgent self-score as fallback")
 
 # ============================================
 # FASTAPI APP SETUP
@@ -764,13 +783,33 @@ async def api_generate(request: ApiGenerateRequest):
                     raise Exception(content_result["error"])
                 
                 content = content_result.get("post_text", "")
-                # NO DEFAULT - AI must provide accurate score (could be 40 or 95)
-                virality_score = content_result.get("virality_score")
-                if virality_score is None:
-                    virality_score = 50  # Minimal fallback only if AI completely fails to score
-                    logger.warning("AI did not return virality_score - using minimal fallback")
-                suggestions = content_result.get("suggestions", [])
                 reasoning = content_result.get("reasoning", "")
+                
+                # SEPARATE SCORING via ViralityAgent (fixes LLM self-evaluation bias)
+                # ContentAgent generates content, ViralityAgent scores it independently
+                virality_score = 50  # Default fallback
+                suggestions = []
+                score_breakdown = {}
+                
+                if virality_agent and content:
+                    try:
+                        logger.info("🎯 Scoring post with separate ViralityAgent (eliminates self-bias)")
+                        score_result = await virality_agent.score_post(content)
+                        virality_score = score_result.get("score", 50)
+                        suggestions = score_result.get("suggestions", [])
+                        score_breakdown = score_result.get("breakdown", {})
+                        logger.info(f"✅ ViralityAgent scored post: {virality_score}/100")
+                    except Exception as score_err:
+                        logger.error(f"ViralityAgent scoring failed: {score_err}")
+                        # Fallback to ContentAgent self-score if ViralityAgent fails
+                        virality_score = content_result.get("virality_score", 50)
+                        suggestions = content_result.get("suggestions", [])
+                        logger.warning("⚠️ Using ContentAgent self-score as fallback")
+                else:
+                    # ViralityAgent not available - use ContentAgent self-score
+                    virality_score = content_result.get("virality_score", 50)
+                    suggestions = content_result.get("suggestions", [])
+                    logger.warning("⚠️ ViralityAgent not available - using self-score")
                 
                 # Generate image if requested (using Nano Banana AI)
                 image_url = None
@@ -888,6 +927,7 @@ async def api_generate(request: ApiGenerateRequest):
                     "post_id": post_id,
                     "content": content,
                     "virality_score": virality_score,
+                    "score_breakdown": score_breakdown,  # Detailed 8-factor breakdown from ViralityAgent
                     "suggestions": suggestions,
                     "image_url": image_url,
                     "reasoning": reasoning,

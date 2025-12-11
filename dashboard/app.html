@@ -11,7 +11,7 @@
   <!-- Production Tailwind CSS (built via: npm run build:css) -->
   <link href="./dist/output.css" rel="stylesheet">
   
-  <!-- DEBUG MODE: Console enabled for troubleshooting -->
+  <!-- Console Log Filter: Suppress known CDN/SDK warnings in production -->
   <script>
     // Only suppress specific CDN/dev warnings, keep all other logs
     (function() {
@@ -869,14 +869,24 @@
                           (window.location.hostname !== 'localhost' && 
                            window.location.hostname !== '127.0.0.1');
     
-    // DEBUG MODE: Logging enabled for troubleshooting
-    // Change to silent functions for production
+    // DEBUG MODE: OFF by default. Can only be enabled via browser console: window.__DEBUG__ = true; location.reload();
+    // This requires dev tools access, so regular users won't see debug logs
+    const DEBUG_MODE = window.__DEBUG__ === true;
+    
+    // Logger: Silent by default (except errors), verbose only when debug enabled via console
     const logger = {
-      log: console.log.bind(console),
-      warn: console.warn.bind(console),
-      error: console.error.bind(console),
-      info: console.info.bind(console)
+      log: DEBUG_MODE ? console.log.bind(console) : () => {},
+      warn: DEBUG_MODE ? console.warn.bind(console) : () => {},
+      error: console.error.bind(console),  // Always show errors
+      info: DEBUG_MODE ? console.info.bind(console) : () => {}
     };
+    
+    // Show clean welcome message
+    if (!DEBUG_MODE) {
+      console.info('%c🚀 GNX CIS v2.0', 'color: #8b5cf6; font-weight: bold; font-size: 14px');
+    } else {
+      console.info('%c🔧 GNX CIS DEBUG MODE', 'color: #fbbf24; font-weight: bold');
+    }
     
     // API Configuration - defaults to localhost for dev, override in production
     const API_BASE = RUNTIME_CONFIG.API_BASE || 
