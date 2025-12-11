@@ -1,6 +1,6 @@
-# GNX CIS
+                                  # GNX CIS
 
-**The Evolution of Content Intelligence.**
+                      **The Evolution of Content Intelligence.**
 
 ---
 
