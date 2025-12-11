@@ -19,7 +19,7 @@ load_dotenv()
 # ============================================
 from fastapi import FastAPI, Depends, HTTPException, status, Header, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
@@ -36,6 +36,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from supabase import create_client
 import config
 from utils.image_generator import create_branded_image
+
+# Rate limiting (CRITICAL for production)
+try:
+    from utils.rate_limiter import check_generation_limit
+    RATE_LIMITER_AVAILABLE = True
+except ImportError:
+    RATE_LIMITER_AVAILABLE = False
+    logger.warning("⚠️ Rate limiter not available - API is vulnerable!")
 
 # Import ContentAgent for AI generation
 try:
@@ -697,11 +705,34 @@ class ApiGenerateRequest(BaseModel):
     persona_id: Optional[str] = None
     generate_image: bool = True
     user_email: Optional[str] = None
+    # For improving existing posts (hybrid history pattern)
+    post_id: Optional[str] = None  # If provided, UPDATE existing post instead of INSERT new
+    expected_version: Optional[int] = None  # For optimistic locking
 
 @app.post("/api/generate")
 async def api_generate(request: ApiGenerateRequest):
     """Generate a LinkedIn post - HTML Dashboard version (no JWT required)"""
     logger.info(f"📝 /api/generate request: topic={request.topic}, style={request.style}")
+    
+    # CRITICAL: Rate limiting to prevent runaway costs (10 per hour)
+    if RATE_LIMITER_AVAILABLE:
+        user_identifier = request.user_email or "anonymous"
+        is_allowed, rate_info = check_generation_limit(user_identifier)
+        if not is_allowed:
+            retry_after = rate_info.get('retry_after', 60)
+            logger.warning(f"⚠️ Rate limit exceeded for {user_identifier}. Retry after {retry_after}s")
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "Rate limit exceeded",
+                    "retry_after": retry_after,
+                    "remaining": 0,
+                    "limit": rate_info.get('limit', 10)
+                }
+            )
+        else:
+            remaining = rate_info.get('remaining', 0)
+            logger.info(f"✅ Rate limit OK for {user_identifier}: {remaining} requests remaining")
     
     try:
         # Use Supabase to look up user by email if provided
@@ -733,37 +764,121 @@ async def api_generate(request: ApiGenerateRequest):
                     raise Exception(content_result["error"])
                 
                 content = content_result.get("post_text", "")
-                virality_score = content_result.get("virality_score", 75)
+                # NO DEFAULT - AI must provide accurate score (could be 40 or 95)
+                virality_score = content_result.get("virality_score")
+                if virality_score is None:
+                    virality_score = 50  # Minimal fallback only if AI completely fails to score
+                    logger.warning("AI did not return virality_score - using minimal fallback")
                 suggestions = content_result.get("suggestions", [])
                 reasoning = content_result.get("reasoning", "")
                 
-                # Generate image if requested
+                # Generate image if requested (using Nano Banana AI)
                 image_url = None
                 if request.generate_image:
                     try:
-                        image_path = create_branded_image(content, "Kunal Bhat, PMP")
+                        # Import and use AI image generator (Nano Banana)
+                        from utils.image_generator import generate_ai_image
+                        
+                        # Extract clean hook for image
+                        hook = content.split('\n')[0].replace('**', '')[:100]
+                        
+                        # Try AI image generation first
+                        image_path = await generate_ai_image(
+                            hook_text=hook,
+                            topic=request.topic,
+                            style=request.style,
+                            full_content=content
+                        )
+                        
                         if image_path:
-                            image_url = f"/static/{os.path.basename(image_path)}"
+                            image_url = f"/static/outputs/{os.path.basename(image_path)}"
+                            logger.info(f"✅ AI image generated: {image_url}")
+                        else:
+                            # Fallback to branded image if AI fails
+                            logger.warning("AI image generation failed, using branded fallback")
+                            fallback_path = create_branded_image(content, "Kunal Bhat, PMP")
+                            if fallback_path:
+                                image_url = f"/static/outputs/{os.path.basename(fallback_path)}"
                     except Exception as img_err:
                         logger.error(f"Image generation failed: {img_err}")
+                        # Try branded fallback
+                        try:
+                            fallback_path = create_branded_image(content, "Kunal Bhat, PMP")
+                            if fallback_path:
+                                image_url = f"/static/outputs/{os.path.basename(fallback_path)}"
+                        except Exception as fallback_err:
+                            logger.error(f"Branded image fallback also failed: {fallback_err}")
                 
                 # Save to Supabase if user exists
-                post_id = None
+                post_id = request.post_id  # Use existing post_id if improving
+                is_improvement = bool(request.post_id)
+                
                 if SUPABASE_READY and user_id:
-                    post_data = {
-                        "user_id": user_id,
-                        "content": content,
-                        "topic": request.topic,
-                        "style": request.style,
-                        "virality_score": virality_score,
-                        "status": "draft",
-                        "image_url": image_url,
-                        "generated_at": datetime.utcnow().isoformat()
-                    }
                     try:
-                        result = supabase.table("posts").insert(post_data).execute()
-                        if result.data:
-                            post_id = result.data[0]["id"]
+                        if is_improvement:
+                            # IMPROVE existing post using RPC (atomic: history + update)
+                            logger.info(f"📝 Improving existing post: {request.post_id}")
+                            
+                            # Call improve_post RPC with retry logic (optimistic locking)
+                            max_retries = 3
+                            for attempt in range(max_retries):
+                                rpc_result = supabase.rpc("improve_post", {
+                                    "p_post_id": request.post_id,
+                                    "p_user_id": user_id,
+                                    "p_new_content": content,
+                                    "p_new_topic": request.topic,
+                                    "p_new_score": virality_score,
+                                    "p_image_url": image_url,
+                                    "p_style": request.style,
+                                    "p_suggestions": suggestions if isinstance(suggestions, list) else [],
+                                    "p_expected_version": request.expected_version
+                                }).execute()
+                                
+                                if rpc_result.data:
+                                    result_data = rpc_result.data
+                                    if result_data.get("success"):
+                                        logger.info(f"✅ Post improved: v{result_data.get('new_version')} (improvement #{result_data.get('improvement_count')})")
+                                        post_id = request.post_id
+                                        break
+                                    elif result_data.get("error") == "version_mismatch":
+                                        logger.warning(f"⚠️ Version mismatch on attempt {attempt+1}, retrying...")
+                                        if attempt < max_retries - 1:
+                                            import asyncio
+                                            await asyncio.sleep(0.1 * (attempt + 1))  # Exponential backoff
+                                            continue
+                                        else:
+                                            logger.error("❌ Version conflict after max retries - concurrent edit detected")
+                                            return {
+                                                "success": False,
+                                                "error": "Concurrent edit detected. Please refresh and try again.",
+                                                "conflict": True
+                                            }
+                                    else:
+                                        logger.error(f"❌ Improve failed: {result_data.get('error')}")
+                                        # Fall through to create new post as fallback
+                                        is_improvement = False
+                                        break
+                        
+                        if not is_improvement:
+                            # CREATE new post (normal flow)
+                            post_data = {
+                                "user_id": user_id,
+                                "content": content,
+                                "topic": request.topic,
+                                "style": request.style,
+                                "virality_score": virality_score,
+                                "status": "draft",
+                                "image_url": image_url,
+                                "suggestions": suggestions if isinstance(suggestions, list) else [],
+                                "generated_at": datetime.utcnow().isoformat(),
+                                "version": 1,
+                                "improvement_count": 0
+                            }
+                            result = supabase.table("posts").insert(post_data).execute()
+                            if result.data:
+                                post_id = result.data[0]["id"]
+                                logger.info(f"✅ New post created: {post_id}")
+                                
                     except Exception as db_err:
                         logger.error(f"Failed to save post to Supabase: {db_err}")
                 
@@ -801,6 +916,141 @@ async def api_generate(request: ApiGenerateRequest):
     except Exception as e:
         logger.error(f"/api/generate error: {e}")
         return {"success": False, "error": str(e)}
+
+
+# ============================================
+# DEFERRED IMAGE GENERATION ENDPOINT
+# ============================================
+class ImageGenerateRequest(BaseModel):
+    """Request model for deferred image generation"""
+    content: str
+    topic: Optional[str] = None
+    style: Optional[str] = "professional"
+    post_id: Optional[str] = None
+
+
+@app.post("/api/generate-image")
+async def api_generate_image(request: ImageGenerateRequest):
+    """Generate an AI image for existing post content (deferred generation)"""
+    logger.info(f"🎨 /api/generate-image request: style={request.style}")
+    
+    try:
+        # Import the AI image generator
+        from utils.image_generator import generate_ai_image
+        
+        # Extract a hook/headline from the content (first line or first 100 chars)
+        content_lines = request.content.strip().split('\n')
+        hook_text = content_lines[0] if content_lines else request.content[:100]
+        
+        # Remove emojis and special chars from hook for cleaner image
+        import re
+        hook_clean = re.sub(r'[^\w\s\-.,!?]', '', hook_text).strip()
+        if len(hook_clean) > 80:
+            hook_clean = hook_clean[:80] + "..."
+        
+        # Generate the AI image (async function - must await)
+        image_path = await generate_ai_image(
+            hook_text=hook_clean,
+            topic=request.topic or "LinkedIn content",
+            style=request.style or "professional",
+            full_content=request.content
+        )
+        
+        if image_path and os.path.exists(image_path):
+            # Return the image URL - images are stored in static/outputs/
+            image_url = f"/static/outputs/{os.path.basename(image_path)}"
+            logger.info(f"✅ Image generated: {image_url}")
+            
+            # Update post in Supabase if post_id provided
+            if request.post_id and SUPABASE_READY:
+                try:
+                    supabase.table("posts").update({
+                        "image_url": image_url
+                    }).eq("id", request.post_id).execute()
+                except Exception as db_err:
+                    logger.warning(f"Failed to update post with image: {db_err}")
+            
+            return {
+                "success": True,
+                "image_url": image_url
+            }
+        else:
+            # Fallback to branded image if AI fails
+            from utils.image_generator import create_branded_image
+            fallback_path = create_branded_image(request.content, "GNX CIS")
+            if fallback_path:
+                image_url = f"/static/outputs/{os.path.basename(fallback_path)}"
+                return {
+                    "success": True,
+                    "image_url": image_url,
+                    "fallback": True
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Image generation failed"
+                }
+    
+    except Exception as e:
+        logger.error(f"/api/generate-image error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+# ============================================
+# IMAGE DOWNLOAD ENDPOINT (CORS-safe)
+# ============================================
+
+@app.get("/api/download-image/{filename}")
+async def download_image(filename: str, download_as: Optional[str] = None):
+    """
+    Download an image file with proper CORS and Content-Disposition headers.
+    This endpoint ensures cross-origin downloads work correctly.
+    
+    Args:
+        filename: The actual filename on disk
+        download_as: Optional custom filename for the download (defaults to original filename)
+    """
+    # Security: Only allow alphanumeric, underscores, hyphens, and .png/.jpg/.jpeg
+    import re
+    if not re.match(r'^[\w\-]+\.(png|jpg|jpeg|webp)$', filename, re.IGNORECASE):
+        raise HTTPException(status_code=400, detail="Invalid filename format")
+    
+    # Look for file in static/outputs directory
+    file_path = os.path.join(static_dir, "outputs", filename)
+    
+    if not os.path.exists(file_path):
+        # Also check static root
+        file_path = os.path.join(static_dir, filename)
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="Image not found")
+    
+    # Determine media type
+    media_type = "image/png"
+    if filename.lower().endswith(('.jpg', '.jpeg')):
+        media_type = "image/jpeg"
+    elif filename.lower().endswith('.webp'):
+        media_type = "image/webp"
+    
+    # Use custom download name if provided, otherwise use original filename
+    # Ensure download name has correct extension
+    final_filename = download_as if download_as else filename
+    if download_as and not download_as.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+        final_filename = download_as + '.png'
+    
+    logger.info(f"📥 Serving download: {filename} as {final_filename}")
+    
+    # Return file with proper headers for download
+    return FileResponse(
+        path=file_path,
+        filename=final_filename,  # This sets Content-Disposition: attachment; filename="..."
+        media_type=media_type,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Expose-Headers": "Content-Disposition",
+            "Cache-Control": "no-cache"
+        }
+    )
+
 
 @app.post("/posts/generate")
 async def generate_post(

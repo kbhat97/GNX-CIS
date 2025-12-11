@@ -4,8 +4,52 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GNX - Content Intelligence System</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Favicon - Inline to prevent 404 -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='65' font-family='Arial' font-size='50' font-weight='bold' fill='white' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
+  
+  <!-- Production Tailwind CSS (built via: npm run build:css) -->
+  <link href="./dist/output.css" rel="stylesheet">
+  
+  <!-- DEBUG MODE: Console enabled for troubleshooting -->
+  <script>
+    // Only suppress specific CDN/dev warnings, keep all other logs
+    (function() {
+      const originalWarn = console.warn;
+      console.warn = function(...args) {
+        const msg = String(args[0] || '');
+        // Only suppress known CDN warnings
+        if (msg.includes('cdn.tailwindcss.com') || msg.includes('Clerk:')) return;
+        originalWarn.apply(console, args);
+      };
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- 
+    TODO PRODUCTION: Replace Clerk test keys with production keys
+    Get production keys from: https://dashboard.clerk.com
+    
+    NOTE: Auto-signin is EXPECTED BEHAVIOR, not a security issue.
+    Clerk uses secure, encrypted cookies to persist sessions (like Google/Apple SSO).
+    User sessions are validated on every page load via JWT.
+  -->
+  
+  <!-- Clerk Configuration - MUST be set BEFORE Clerk.js loads -->
+  <script>
+    // Set Clerk publishable key before the script loads
+    // TODO PRODUCTION: Replace with 'pk_live_...' key
+    window.__clerk_publishable_key = 'pk_test_bmV3LWFhcmR2YXJrLTMzLmNsZXJrLmFjY291bnRzLmRldiQ';
+  </script>
+  
+  <!-- Clerk.js SDK for Production Authentication -->
+  <script 
+    data-clerk-publishable-key="pk_test_bmV3LWFhcmR2YXJrLTMzLmNsZXJrLmFjY291bnRzLmRldiQ"
+    src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
+    crossorigin="anonymous"
+    async>
+  </script>
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     /* ═══════════════════════════════════════════════════════════════════
@@ -147,6 +191,32 @@
       transition: all 0.3s ease;
     }
 
+    /* Checkbox inputs should NOT be 100% width */
+    input[type="checkbox"] {
+      width: auto;
+      padding: 0;
+    }
+
+    /* Dynamic auto-resize textarea */
+    textarea.auto-resize {
+      min-height: 100px;
+      max-height: 400px;
+      overflow-y: auto;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    
+    /* Word counter styling */
+    .word-counter {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.5);
+      text-align: right;
+      margin-top: 4px;
+    }
+    
+    .word-counter.warning { color: #fbbf24; }
+    .word-counter.limit { color: #ef4444; }
+
     input:focus, textarea:focus, select:focus {
       outline: none;
       border-color: #8b5cf6;
@@ -240,41 +310,78 @@
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           </button>
-          
-          <!-- Forgot Password & First-Time User -->
-          <div class="mt-6 text-center space-y-3">
-            <button type="button" onclick="showForgotPassword()" class="text-sm text-violet-400 hover:text-violet-300 transition-colors">
-              Forgot password?
-            </button>
-            <div class="text-xs text-gray-500">
-              First time here? Enter your email and we'll send you a temporary password.
-            </div>
-          </div>
         </form>
         
-        <!-- Forgot Password Form (initially hidden) -->
-        <div id="forgot-password-form" class="hidden" data-testid="forgot-password-form">
-          <h3 class="text-xl font-semibold text-white mb-4">Reset Password</h3>
-          <p class="text-sm text-gray-400 mb-6">Enter your email to receive a temporary password.</p>
-          
-          <div class="mb-4">
-            <input type="email" id="reset-email" placeholder="your@email.com" class="w-full" data-testid="reset-email" aria-label="Email for password reset">
+        <!-- Signup Form (initially hidden) -->
+        <form id="signup-form" onsubmit="handleSignup(event)" class="hidden">
+          <div class="space-y-6">
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">First Name</label>
+              <input type="text" id="signup-firstname" placeholder="John" required>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Email Address</label>
+              <input type="email" id="signup-email" placeholder="your@email.com" required>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Password</label>
+              <input type="password" id="signup-password" placeholder="Min 8 characters" required minlength="8">
+              <p class="text-xs text-gray-500 mt-1">Must be at least 8 characters with letters and numbers</p>
+            </div>
+          </div>
+
+          <div id="signup-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error" role="alert" aria-live="polite" data-testid="signup-error">
+            Error creating account.
+          </div>
+
+          <button type="submit" id="signup-btn" class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
+            <span id="signup-btn-text">Create Account</span>
+            <svg id="signup-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </button>
+        </form>
+
+        <!-- Email Verification Form (initially hidden) -->
+        <form id="verify-form" onsubmit="handleVerifyCode(event)" class="hidden">
+          <div class="text-center mb-6">
+            <svg class="w-16 h-16 mx-auto text-violet-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <h3 class="text-xl font-semibold text-white mb-2">Check Your Email</h3>
+            <p class="text-sm text-gray-400">We sent a 6-digit code to <span id="verify-email-display" class="text-violet-400"></span></p>
           </div>
           
-          <div id="reset-success" class="hidden mb-4 p-3 rounded-lg bg-green-500/20 text-green-400 text-sm" role="status" aria-live="polite" data-testid="reset-success">
-            ✅ Temporary password sent! Check your email.
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Verification Code</label>
+              <input type="text" id="verify-code" placeholder="Enter 6-digit code" required maxlength="6" pattern="[0-9]{6}"
+                     class="text-center text-2xl tracking-widest font-mono">
+            </div>
           </div>
-          
-          <div id="reset-error" class="hidden mb-4 p-3 rounded-lg bg-red-500/20 text-red-400 text-sm" role="alert" aria-live="assertive" data-testid="reset-error">
-            ❌ Failed to send reset email. Please try again.
+
+          <div id="verify-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error" role="alert">
+            Invalid verification code.
           </div>
-          
-          <button id="reset-password-btn" onclick="handleForgotPassword()" class="w-full py-3 px-4 font-semibold text-white rounded-lg gradient-button" data-testid="reset-password-btn">
-            Send Temporary Password
+
+          <button type="submit" id="verify-btn" class="w-full mt-6 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
+            <span id="verify-btn-text">Verify & Continue</span>
+            <svg id="verify-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
           </button>
           
-          <button id="back-to-login-btn" onclick="hideForgotPassword()" class="w-full mt-3 py-2 text-sm text-gray-400 hover:text-white transition-colors" data-testid="back-to-login-btn">
-            ← Back to Login
+          <button type="button" onclick="resendVerificationCode()" class="w-full mt-3 py-2 text-sm text-gray-400 hover:text-white transition-colors">
+            Didn't receive code? Resend
+          </button>
+        </form>
+
+        <!-- Auth Toggle Button -->
+        <div id="auth-toggle-container" class="mt-6 text-center">
+          <button type="button" id="auth-toggle-btn" onclick="toggleAuthForm()" class="text-sm text-violet-400 hover:text-violet-300 transition-colors">
+            Don't have an account? <span class="font-semibold">Sign up</span>
           </button>
         </div>
       </div>
@@ -364,7 +471,7 @@
               <svg id="score-sparkline" class="w-full h-8 opacity-50" viewBox="0 0 100 20">
                 <polyline id="sparkline-path" points="0,15" fill="none" stroke="currentColor" stroke-width="1.5" class="text-violet-400"/>
               </svg>
-              <p class="text-xs text-violet-400">Virality rating</p>
+              <p class="text-xs text-violet-400">Last 10 posts</p>
             </div>
             
             <div class="glass-card rounded-xl p-6 animate-fade-in-up" style="animation-delay: 200ms">
@@ -424,8 +531,15 @@
               <form id="generate-form" onsubmit="handleGenerate(event)">
                 <div class="space-y-6">
                   <div>
-                    <label class="block text-sm text-gray-400 mb-2">Topic *</label>
-                    <textarea id="topic-input" rows="3" placeholder="What do you want to write about? e.g., SAP S/4HANA migration tips..." required></textarea>
+                    <label class="block text-sm text-gray-400 mb-2">Topic / Content *</label>
+                    <textarea 
+                      id="topic-input" 
+                      class="auto-resize" 
+                      placeholder="What do you want to write about? e.g., SAP S/4HANA migration tips...&#10;&#10;You can also paste existing content here to improve it." 
+                      required
+                      oninput="autoResizeTextarea(this); updateWordCount(this);"
+                    ></textarea>
+                    <div id="word-counter" class="word-counter">0 / 2000 words</div>
                   </div>
                   
                   <div>
@@ -465,12 +579,11 @@
                 </div>
 
                 <!-- Image Generation Toggle -->
-                <div class="mt-6 flex items-center gap-3 p-4 glass-card rounded-lg">
-                  <input type="checkbox" id="generate-image-toggle" class="w-5 h-5 rounded border-gray-500 bg-gray-800 text-violet-500 focus:ring-violet-500">
-                  <div>
-                    <label for="generate-image-toggle" class="text-white font-medium cursor-pointer">Generate AI Image</label>
-                    <p class="text-sm text-gray-400">Uncheck to focus on content first. Generate image after finalizing post.</p>
-                  </div>
+                <div class="mt-4">
+                  <label for="generate-image-toggle" class="flex items-center gap-2 cursor-pointer" style="white-space: nowrap;">
+                    <input type="checkbox" id="generate-image-toggle" class="rounded border-gray-600 bg-gray-800 text-violet-500 focus:ring-violet-500 cursor-pointer" style="width: 16px; height: 16px; flex-shrink: 0;">
+                    <span class="text-sm text-gray-300">Generate AI Image</span>
+                  </label>
                 </div>
 
                 <button type="submit" id="generate-btn" class="w-full mt-6 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
@@ -567,6 +680,9 @@
                 <div class="flex gap-4 mt-6">
                   <button onclick="copyToClipboard()" class="flex-1 py-2 px-4 gradient-border-button rounded-lg text-white font-semibold">
                     📋 Copy
+                  </button>
+                  <button onclick="editCurrentPost()" class="flex-1 py-2 px-4 gradient-border-button rounded-lg text-white font-semibold">
+                    ✏️ Edit
                   </button>
                   <button onclick="improvePost()" class="flex-1 py-2 px-4 gradient-button rounded-lg text-white font-semibold">
                     ✨ Improve
@@ -748,16 +864,73 @@
     // ═══════════════════════════════════════════════════════════════════
     const RUNTIME_CONFIG = window.__RUNTIME_CONFIG__ || {};
     
+    // Production detection
+    const IS_PRODUCTION = RUNTIME_CONFIG.IS_PRODUCTION || 
+                          (window.location.hostname !== 'localhost' && 
+                           window.location.hostname !== '127.0.0.1');
+    
+    // DEBUG MODE: Logging enabled for troubleshooting
+    // Change to silent functions for production
+    const logger = {
+      log: console.log.bind(console),
+      warn: console.warn.bind(console),
+      error: console.error.bind(console),
+      info: console.info.bind(console)
+    };
+    
     // API Configuration - defaults to localhost for dev, override in production
     const API_BASE = RUNTIME_CONFIG.API_BASE || 
-                     (window.location.hostname === 'localhost' ? 'http://localhost:8080' : 
+                     (window.location.hostname === 'localhost' ? 'http://localhost:8000' : 
                       window.location.origin);
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // CLERK AUTHENTICATION - PRODUCTION AUTH
+    // ═══════════════════════════════════════════════════════════════════
+    let clerkInstance = null;
+    const CLERK_PUBLISHABLE_KEY = RUNTIME_CONFIG.CLERK_PUBLISHABLE_KEY || 
+      'pk_test_bmV3LWFhcmR2YXJrLTMzLmNsZXJrLmFjY291bnRzLmRldiQ';
+    
+    async function initializeClerk() {
+      try {
+        // Wait for Clerk script to load
+        let attempts = 0;
+        while (!window.Clerk && attempts < 50) {
+          await new Promise(r => setTimeout(r, 100));
+          attempts++;
+        }
+        
+        if (window.Clerk) {
+          await window.Clerk.load({
+            publishableKey: CLERK_PUBLISHABLE_KEY
+          });
+          clerkInstance = window.Clerk;
+          logger.log('[Auth] Clerk initialized successfully');
+          
+          // Check if user is already signed in from previous session
+          if (clerkInstance.user) {
+            currentUser = {
+              email: clerkInstance.user.emailAddresses[0]?.emailAddress,
+              name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
+              clerk_id: clerkInstance.user.id,
+              image_url: clerkInstance.user.imageUrl
+            };
+            logger.log('[Auth] User already signed in:', currentUser.email);
+            showDashboard();
+          }
+        } else {
+          logger.error('[Auth] Clerk failed to load after timeout');
+        }
+      } catch (err) {
+        logger.error('[Auth] Clerk initialization error:', err);
+      }
+    }
     
     // State
     let currentUser = null;
     let posts = [];
     let currentPost = null;
     let selectedPostIndex = null;
+    let improvingPost = null;  // Track post being improved (for hybrid history pattern)
     
     // Admin Persona Configuration
     // NOTE: Admin status is determined by server response (user.role = 'admin')
@@ -796,13 +969,13 @@
       const personaToggle = document.getElementById('persona-toggle');
       
       // Debug logging for E2E troubleshooting
-      console.log('[PersonaUI] updatePersonaUI called');
-      console.log('[PersonaUI] currentUser:', currentUser);
-      console.log('[PersonaUI] isAdminUser():', isAdminUser());
-      console.log('[PersonaUI] adminSection found:', !!adminSection);
+      logger.log('[PersonaUI] updatePersonaUI called');
+      logger.log('[PersonaUI] currentUser:', currentUser);
+      logger.log('[PersonaUI] isAdminUser():', isAdminUser());
+      logger.log('[PersonaUI] adminSection found:', !!adminSection);
       
       if (isAdminUser()) {
-        console.log('[PersonaUI] Setting admin mode');
+        logger.log('[PersonaUI] Setting admin mode');
         if (adminSection) {
           // Force visibility with multiple methods to override CSS
           adminSection.style.display = 'block';
@@ -820,7 +993,7 @@
           personaToggle.setAttribute('aria-checked', 'true');
         }
       } else {
-        console.log('[PersonaUI] Setting user mode');
+        logger.log('[PersonaUI] Setting user mode');
         if (adminSection) {
           adminSection.style.display = 'none';
           adminSection.classList.add('hidden');
@@ -859,15 +1032,15 @@
     
     // Update admin LinkedIn actions visibility (called after content generation)
     function updateAdminLinkedInUI() {
-      console.log('>>> [AdminUI] updateAdminLinkedInUI STARTING <<<');
+      logger.log('>>> [AdminUI] updateAdminLinkedInUI STARTING <<<');
       
       const adminActionsEl = document.getElementById('admin-linkedin-actions');
       const adminSettingsEl = document.getElementById('admin-settings-section');
       const linkedinSettingsEl = document.getElementById('linkedin-settings-section');
       const regularSettingsEl = document.getElementById('regular-settings-section');
       
-      console.log('[AdminUI] isAdminUser():', isAdminUser());
-      console.log('[AdminUI] Elements found:', {
+      logger.log('[AdminUI] isAdminUser():', isAdminUser());
+      logger.log('[AdminUI] Elements found:', {
         adminActions: !!adminActionsEl,
         adminSettings: !!adminSettingsEl,
         linkedinSettings: !!linkedinSettingsEl,
@@ -875,20 +1048,20 @@
       });
       
       if (isAdminUser()) {
-        console.log('[AdminUI] ADMIN MODE - Showing admin sections');
-        if (adminActionsEl) { ensureVisible(adminActionsEl); console.log('[AdminUI] adminActions visible'); }
-        if (adminSettingsEl) { ensureVisible(adminSettingsEl); console.log('[AdminUI] adminSettings visible'); }
-        if (linkedinSettingsEl) { ensureVisible(linkedinSettingsEl); console.log('[AdminUI] linkedinSettings visible'); }
-        if (regularSettingsEl) { ensureHidden(regularSettingsEl); console.log('[AdminUI] regularSettings hidden'); }
+        logger.log('[AdminUI] ADMIN MODE - Showing admin sections');
+        if (adminActionsEl) { ensureVisible(adminActionsEl); logger.log('[AdminUI] adminActions visible'); }
+        if (adminSettingsEl) { ensureVisible(adminSettingsEl); logger.log('[AdminUI] adminSettings visible'); }
+        if (linkedinSettingsEl) { ensureVisible(linkedinSettingsEl); logger.log('[AdminUI] linkedinSettings visible'); }
+        if (regularSettingsEl) { ensureHidden(regularSettingsEl); logger.log('[AdminUI] regularSettings hidden'); }
       } else {
-        console.log('[AdminUI] USER MODE - Showing regular section');
+        logger.log('[AdminUI] USER MODE - Showing regular section');
         if (adminActionsEl) { ensureHidden(adminActionsEl); }
         if (adminSettingsEl) { ensureHidden(adminSettingsEl); }
         if (linkedinSettingsEl) { ensureHidden(linkedinSettingsEl); }
-        if (regularSettingsEl) { ensureVisible(regularSettingsEl); console.log('[AdminUI] regularSettings visible'); }
+        if (regularSettingsEl) { ensureVisible(regularSettingsEl); logger.log('[AdminUI] regularSettings visible'); }
       }
       
-      console.log('>>> [AdminUI] updateAdminLinkedInUI DONE <<<');
+      logger.log('>>> [AdminUI] updateAdminLinkedInUI DONE <<<');
     }
 
     // Image placeholders for posts (using Unsplash API for beautiful images)
@@ -900,6 +1073,54 @@
       'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=400&h=300&fit=crop',
       'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=300&fit=crop'
     ];
+
+    // ═══════════════════════════════════════════════════════════════════
+    // TEXTAREA AUTO-RESIZE & WORD COUNTER
+    // ═══════════════════════════════════════════════════════════════════
+    const WORD_LIMIT = 2000;
+    
+    function autoResizeTextarea(textarea) {
+      // Reset height to auto to get proper scrollHeight
+      textarea.style.height = 'auto';
+      
+      // Set new height based on scrollHeight, respecting min/max from CSS
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 100), 400);
+      textarea.style.height = newHeight + 'px';
+    }
+    
+    function updateWordCount(textarea) {
+      const text = textarea.value.trim();
+      const wordCount = text ? text.split(/\s+/).length : 0;
+      
+      const counterEl = document.getElementById('word-counter');
+      if (counterEl) {
+        counterEl.textContent = `${wordCount} / ${WORD_LIMIT} words`;
+        
+        // Update styling based on count
+        counterEl.classList.remove('warning', 'limit');
+        if (wordCount >= WORD_LIMIT) {
+          counterEl.classList.add('limit');
+        } else if (wordCount >= WORD_LIMIT * 0.8) {
+          counterEl.classList.add('warning');
+        }
+      }
+      
+      // Optional: Prevent exceeding limit (soft limit - just warn)
+      // To enforce hard limit, uncomment below:
+      // if (wordCount > WORD_LIMIT) {
+      //   const words = text.split(/\s+/).slice(0, WORD_LIMIT);
+      //   textarea.value = words.join(' ');
+      // }
+    }
+    
+    // Initialize textarea on page load
+    function initTextarea() {
+      const textarea = document.getElementById('topic-input');
+      if (textarea) {
+        autoResizeTextarea(textarea);
+        updateWordCount(textarea);
+      }
+    }
 
     // ═══════════════════════════════════════════════════════════════════
     // SUPABASE CLIENT & PERSISTENCE
@@ -916,9 +1137,9 @@
     try {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       supabaseEnabled = true;
-      console.log('✅ Supabase connected');
+      logger.log('✅ Supabase connected');
     } catch (error) {
-      console.warn('⚠️ Supabase not available:', error);
+      logger.warn('⚠️ Supabase not available:', error);
       supabaseEnabled = false;
     }
 
@@ -976,10 +1197,10 @@
 
         if (error) throw error;
         
-        console.log('✅ Post saved to Supabase:', data.id);
+        logger.log('✅ Post saved to Supabase:', data.id);
         return data;
       } catch (error) {
-        console.error('❌ Failed to save post to Supabase:', error);
+        logger.error('❌ Failed to save post to Supabase:', error);
         return null;
       }
     }
@@ -1008,93 +1229,424 @@
         if (error) throw error;
 
         // Transform to dashboard format
-        const transformedPosts = loadedPosts.map(p => ({
-          content: p.content,
-          topic: p.topic,
-          virality_score: p.virality_score || 0,
-          suggestions: p.suggestions || [],
-          imageUrl: p.image_url,
-          style: p.style,
-          persona: p.persona,
-          timestamp: p.generated_at || p.created_at
-        }));
+        const transformedPosts = loadedPosts.map(p => {
+          // Fix image URL: prepend API_BASE if it's a relative path
+          // Also fix old URLs that have wrong port (8080 instead of 8000)
+          let imageUrl = p.image_url;
+          if (imageUrl) {
+            if (imageUrl.startsWith('/')) {
+              imageUrl = API_BASE + imageUrl;
+            } else if (imageUrl.includes('localhost:8080')) {
+              // Fix old URLs with wrong port
+              imageUrl = imageUrl.replace('localhost:8080', 'localhost:8000');
+            }
+          }
+          
+          return {
+            id: p.id,  // Required for improve flow
+            content: p.content,
+            topic: p.topic,
+            virality_score: p.virality_score || 0,
+            suggestions: p.suggestions || [],
+            imageUrl: imageUrl,
+            style: p.style,
+            persona: p.persona,
+            timestamp: p.generated_at || p.created_at,
+            // Hybrid history pattern fields
+            version: p.version || 1,
+            improvement_count: p.improvement_count || 0,
+            previous_score: p.previous_score
+          };
+        });
 
-        console.log(`✅ Loaded ${transformedPosts.length} posts from Supabase`);
+        // Debug: Show raw scores from Supabase
+        logger.log('📦 [Supabase] Raw scores from DB:', loadedPosts.map(p => p.virality_score));
+        logger.log(`✅ Loaded ${transformedPosts.length} posts from Supabase`);
         return transformedPosts;
       } catch (error) {
-        console.error('❌ Failed to load posts from Supabase:', error);
+        logger.error('❌ Failed to load posts from Supabase:', error);
         return [];
       }
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // AUTH
+    // AUTH - REAL CLERK AUTHENTICATION
     // ═══════════════════════════════════════════════════════════════════
-    function handleLogin(event) {
+    async function handleLogin(event) {
       event.preventDefault();
-      const email = document.getElementById('login-email').value;
-      const password = document.getElementById('login-password').value;
+      const email = document.getElementById('login-email').value?.trim() || '';
+      const password = document.getElementById('login-password').value || '';
+      
+      // Clear previous errors
+      document.getElementById('login-error').classList.add('hidden');
+      
+      // Validate email format
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!email || !emailRegex.test(email)) {
+        document.getElementById('login-error').textContent = 'Please enter a valid email address.';
+        document.getElementById('login-error').classList.remove('hidden');
+        return;
+      }
+      
+      // Validate password is provided
+      if (!password || password.length < 1) {
+        document.getElementById('login-error').textContent = 'Please enter your password.';
+        document.getElementById('login-error').classList.remove('hidden');
+        return;
+      }
       
       // Show loading
       document.getElementById('login-btn').disabled = true;
       document.getElementById('login-btn-text').textContent = 'Signing In...';
       document.getElementById('login-spinner').classList.remove('hidden');
-      document.getElementById('login-error').classList.add('hidden');
-
-      // Simulate login with temp password validation
-      setTimeout(() => {
-        if (email && password) {
-          // Check if it's a temp password
-          const tempUsers = JSON.parse(localStorage.getItem('temp_passwords') || '{}');
-          const tempEntry = tempUsers[email.toLowerCase()];
-          
-          let isValid = false;
-          let isFirstTimeUser = false;
-          
-          if (tempEntry) {
-            // Check if temp password is valid and not expired
-            if (tempEntry.password === password && Date.now() < tempEntry.expires) {
-              isValid = true;
-              isFirstTimeUser = true;
-              // Clear the temp password after successful login
-              delete tempUsers[email.toLowerCase()];
-              localStorage.setItem('temp_passwords', JSON.stringify(tempUsers));
-            }
-          } else {
-            // For demo: accept any password (in prod, validate against auth API)
-            isValid = true;
-          }
-          
-          if (isValid) {
-            currentUser = { email, name: email.split('@')[0], isFirstTimeUser };
-            localStorage.setItem('user', JSON.stringify(currentUser));
-            showDashboard();
-            
-            if (isFirstTimeUser) {
-              // Show welcome message for first-time users
-              setTimeout(() => {
-                alert('Welcome! 🎉 Consider updating your password in settings.');
-              }, 500);
-            }
-          } else {
-            document.getElementById('login-error').textContent = 'Invalid or expired password.';
-            document.getElementById('login-error').classList.remove('hidden');
-          }
-        } else {
-          document.getElementById('login-error').classList.remove('hidden');
+      
+      try {
+        if (!clerkInstance) {
+          throw new Error('Authentication system loading. Please wait a moment and try again.');
         }
         
+        // Real Clerk sign in
+        const signInAttempt = await clerkInstance.client.signIn.create({
+          identifier: email,
+          password: password,
+        });
+        
+        if (signInAttempt.status === 'complete') {
+          // Set the active session
+          await clerkInstance.setActive({ session: signInAttempt.createdSessionId });
+          
+          // Get user data
+          const user = clerkInstance.user;
+          currentUser = {
+            email: user.emailAddresses[0]?.emailAddress || email,
+            name: user.firstName || email.split('@')[0],
+            clerk_id: user.id,
+            image_url: user.imageUrl
+          };
+          
+          logger.log('[Auth] Login successful:', currentUser.email);
+          showDashboard();
+          await loadPostsFromSupabase();
+          
+        } else {
+          throw new Error('Sign in incomplete. Please verify your email first.');
+        }
+        
+      } catch (err) {
+        logger.error('[Auth] Login error:', err);
+        let errorMessage = 'Invalid email or password.';
+        
+        if (err.errors && err.errors.length > 0) {
+          errorMessage = err.errors[0].longMessage || err.errors[0].message;
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        
+        document.getElementById('login-error').textContent = errorMessage;
+        document.getElementById('login-error').classList.remove('hidden');
+      } finally {
         document.getElementById('login-btn').disabled = false;
         document.getElementById('login-btn-text').textContent = 'Sign In';
         document.getElementById('login-spinner').classList.add('hidden');
-      }, 1000);
+      }
+    }
+    
+    async function handleSignup(event) {
+      event.preventDefault();
+      const firstName = document.getElementById('signup-firstname')?.value?.trim() || '';
+      const email = document.getElementById('signup-email').value?.trim() || '';
+      const password = document.getElementById('signup-password').value || '';
+      
+      // Clear previous errors
+      document.getElementById('signup-error').classList.add('hidden');
+      
+      // ═══════════════════════════════════════════════════════════════════
+      // CLIENT-SIDE VALIDATION
+      // ═══════════════════════════════════════════════════════════════════
+      
+      // Validate first name
+      if (!firstName || firstName.length < 2) {
+        document.getElementById('signup-error').textContent = 'Please enter your first name (at least 2 characters).';
+        document.getElementById('signup-error').classList.remove('hidden');
+        return;
+      }
+      
+      // Validate email format
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!email || !emailRegex.test(email)) {
+        document.getElementById('signup-error').textContent = 'Please enter a valid email address (e.g., name@example.com).';
+        document.getElementById('signup-error').classList.remove('hidden');
+        return;
+      }
+      
+      // Block obviously fake/test emails
+      const blockedDomains = ['test.com', 'fake.com', 'example.com', 'temp.com', 'mailinator.com'];
+      const emailDomain = email.split('@')[1]?.toLowerCase();
+      if (blockedDomains.includes(emailDomain)) {
+        document.getElementById('signup-error').textContent = 'Please use a real email address, not a test/temporary email.';
+        document.getElementById('signup-error').classList.remove('hidden');
+        return;
+      }
+      
+      // Validate password strength
+      if (password.length < 8) {
+        document.getElementById('signup-error').textContent = 'Password must be at least 8 characters long.';
+        document.getElementById('signup-error').classList.remove('hidden');
+        return;
+      }
+      
+      const hasLetter = /[a-zA-Z]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+      if (!hasLetter || !hasNumber) {
+        document.getElementById('signup-error').textContent = 'Password must contain both letters and numbers.';
+        document.getElementById('signup-error').classList.remove('hidden');
+        return;
+      }
+      
+      // Check for common weak passwords
+      const weakPasswords = ['password', '12345678', 'password1', 'qwerty123', 'letmein1'];
+      if (weakPasswords.includes(password.toLowerCase())) {
+        document.getElementById('signup-error').textContent = 'This password is too common. Please choose a stronger password.';
+        document.getElementById('signup-error').classList.remove('hidden');
+        return;
+      }
+      
+      // ═══════════════════════════════════════════════════════════════════
+      // VALIDATION PASSED - PROCEED WITH SIGNUP
+      // ═══════════════════════════════════════════════════════════════════
+      
+      // Show loading
+      document.getElementById('signup-btn').disabled = true;
+      document.getElementById('signup-btn-text').textContent = 'Creating Account...';
+      document.getElementById('signup-spinner').classList.remove('hidden');
+      
+      try {
+        if (!clerkInstance) {
+          throw new Error('Authentication system loading. Please wait a moment and try again.');
+        }
+        
+        // Real Clerk sign up
+        logger.log('[Auth] Attempting signup for:', email);
+        const signUpAttempt = await clerkInstance.client.signUp.create({
+          emailAddress: email,
+          password: password,
+          firstName: firstName
+        });
+        
+        logger.log('[Auth] Signup response status:', signUpAttempt.status);
+        logger.log('[Auth] Signup response:', signUpAttempt);
+        
+        if (signUpAttempt.status === 'complete') {
+          // Auto sign in after signup
+          await clerkInstance.setActive({ session: signUpAttempt.createdSessionId });
+          
+          const user = clerkInstance.user;
+          currentUser = {
+            email: user.emailAddresses[0]?.emailAddress || email,
+            name: user.firstName || firstName || email.split('@')[0],
+            clerk_id: user.id,
+            image_url: user.imageUrl,
+            isFirstTimeUser: true
+          };
+          
+          logger.log('[Auth] Signup successful:', currentUser.email);
+          showDashboard();
+          
+        } else if (signUpAttempt.status === 'missing_requirements') {
+          // Need to send email verification
+          logger.log('[Auth] Email verification required, preparing verification...');
+          
+          // Prepare and send verification email
+          await signUpAttempt.prepareEmailAddressVerification({ strategy: 'email_code' });
+          logger.log('[Auth] Verification email sent!');
+          
+          // Store the signup attempt for later verification
+          window.pendingSignUp = signUpAttempt;
+          window.pendingEmail = email;
+          
+          // Show verification form
+          document.getElementById('signup-form').classList.add('hidden');
+          document.getElementById('login-form').classList.add('hidden');
+          document.getElementById('verify-form').classList.remove('hidden');
+          document.getElementById('auth-toggle-container').classList.add('hidden');
+          document.getElementById('verify-email-display').textContent = email;
+          
+          // Update title
+          const authTitle = document.querySelector('#login-page h2');
+          if (authTitle) authTitle.textContent = 'Verify Email';
+          
+          logger.log('[Auth] Verification form shown');
+          
+        } else {
+          logger.log('[Auth] Unexpected signup status:', signUpAttempt.status);
+          document.getElementById('signup-error').textContent = 
+            'Signup incomplete. Status: ' + signUpAttempt.status;
+          document.getElementById('signup-error').classList.remove('hidden');
+        }
+        
+      } catch (err) {
+        logger.error('[Auth] Signup error:', err);
+        let errorMessage = 'Error creating account. Please try again.';
+        
+        if (err.errors && err.errors.length > 0) {
+          const error = err.errors[0];
+          if (error.code === 'form_identifier_exists') {
+            errorMessage = 'An account with this email already exists. Please sign in.';
+          } else {
+            errorMessage = error.longMessage || error.message;
+          }
+        }
+        
+        document.getElementById('signup-error').textContent = errorMessage;
+        document.getElementById('signup-error').classList.remove('hidden');
+      } finally {
+        document.getElementById('signup-btn').disabled = false;
+        document.getElementById('signup-btn-text').textContent = 'Create Account';
+        document.getElementById('signup-spinner').classList.add('hidden');
+      }
+    }
+    
+    // Handle OTP verification
+    async function handleVerifyCode(event) {
+      event.preventDefault();
+      const code = document.getElementById('verify-code').value?.trim();
+      
+      if (!code || code.length !== 6) {
+        document.getElementById('verify-error').textContent = 'Please enter the 6-digit code from your email.';
+        document.getElementById('verify-error').classList.remove('hidden');
+        return;
+      }
+      
+      // Show loading
+      document.getElementById('verify-btn').disabled = true;
+      document.getElementById('verify-btn-text').textContent = 'Verifying...';
+      document.getElementById('verify-spinner').classList.remove('hidden');
+      document.getElementById('verify-error').classList.add('hidden');
+      
+      try {
+        if (!window.pendingSignUp) {
+          throw new Error('No pending signup. Please start over.');
+        }
+        
+        logger.log('[Auth] Verifying code:', code);
+        
+        // Verify the code
+        const completeSignUp = await window.pendingSignUp.attemptEmailAddressVerification({
+          code: code
+        });
+        
+        logger.log('[Auth] Verification result:', completeSignUp.status);
+        
+        if (completeSignUp.status === 'complete') {
+          // Set active session
+          await clerkInstance.setActive({ session: completeSignUp.createdSessionId });
+          
+          const user = clerkInstance.user;
+          currentUser = {
+            email: user.emailAddresses[0]?.emailAddress || window.pendingEmail,
+            name: user.firstName || window.pendingEmail?.split('@')[0],
+            clerk_id: user.id,
+            image_url: user.imageUrl,
+            isFirstTimeUser: true
+          };
+          
+          logger.log('[Auth] Email verified! User signed in:', currentUser.email);
+          
+          // Clear pending state
+          window.pendingSignUp = null;
+          window.pendingEmail = null;
+          
+          // Show dashboard
+          showDashboard();
+          
+        } else {
+          throw new Error('Verification incomplete. Please try again.');
+        }
+        
+      } catch (err) {
+        logger.error('[Auth] Verification error:', err);
+        let errorMessage = 'Invalid verification code. Please try again.';
+        
+        if (err.errors && err.errors.length > 0) {
+          errorMessage = err.errors[0].longMessage || err.errors[0].message;
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        
+        document.getElementById('verify-error').textContent = errorMessage;
+        document.getElementById('verify-error').classList.remove('hidden');
+      } finally {
+        document.getElementById('verify-btn').disabled = false;
+        document.getElementById('verify-btn-text').textContent = 'Verify & Continue';
+        document.getElementById('verify-spinner').classList.add('hidden');
+      }
+    }
+    
+    // Resend verification code
+    async function resendVerificationCode() {
+      if (!window.pendingSignUp) {
+        alert('Session expired. Please start over.');
+        toggleAuthForm();
+        return;
+      }
+      
+      try {
+        await window.pendingSignUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+        alert('New verification code sent! Check your email.');
+      } catch (err) {
+        logger.error('[Auth] Resend error:', err);
+        alert('Failed to resend code. Please try again.');
+      }
     }
 
-    function handleLogout() {
+    async function handleLogout() {
+      try {
+        if (clerkInstance) {
+          await clerkInstance.signOut();
+        }
+      } catch (err) {
+        logger.error('[Auth] Logout error:', err);
+      }
+      
       currentUser = null;
-      localStorage.removeItem('user');
+      posts = [];
+      currentPost = null;
       document.getElementById('dashboard-page').classList.add('hidden');
       document.getElementById('login-page').classList.remove('hidden');
+      
+      // Clear forms
+      if (document.getElementById('login-email')) {
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
+      }
+    }
+    
+    function toggleAuthForm() {
+      const loginForm = document.getElementById('login-form');
+      const signupForm = document.getElementById('signup-form');
+      const authTitle = document.querySelector('#login-page h2');
+      const authSubtitle = document.querySelector('#login-page .text-violet-300');
+      const toggleBtn = document.getElementById('auth-toggle-btn');
+      
+      if (signupForm.classList.contains('hidden')) {
+        // Show signup
+        loginForm.classList.add('hidden');
+        signupForm.classList.remove('hidden');
+        if (authTitle) authTitle.textContent = 'Create Account';
+        if (authSubtitle) authSubtitle.textContent = 'Join GNX to start generating content';
+        if (toggleBtn) toggleBtn.innerHTML = 'Already have an account? <span class="font-semibold">Sign in</span>';
+      } else {
+        // Show login
+        loginForm.classList.remove('hidden');
+        signupForm.classList.add('hidden');
+        if (authTitle) authTitle.textContent = 'Welcome Back';
+        if (authSubtitle) authSubtitle.textContent = 'Sign in to access your dashboard';
+        if (toggleBtn) toggleBtn.innerHTML = 'Don\'t have an account? <span class="font-semibold">Sign up</span>';
+      }
+      
+      // Clear errors
+      document.getElementById('login-error')?.classList.add('hidden');
+      document.getElementById('signup-error')?.classList.add('hidden');
     }
     
     // ═══════════════════════════════════════════════════════════════════
@@ -1148,7 +1700,7 @@
       document.getElementById('reset-success').classList.remove('hidden');
       document.getElementById('reset-error').classList.add('hidden');
       
-      console.log(`🔑 Temporary password for ${email}: ${tempPassword}`);
+      logger.log(`🔑 Temporary password for ${email}: ${tempPassword}`);
     }
     
     function generateTempPassword() {
@@ -1244,7 +1796,7 @@
           showLinkedInStatus('✅ Saved as local draft!');
         }
       } catch (error) {
-        console.error('Save draft error:', error);
+        logger.error('Save draft error:', error);
         showLinkedInStatus('❌ Failed to save draft.', true);
       }
     }
@@ -1350,7 +1902,7 @@
           showLinkedInStatus(`✅ Post scheduled locally for ${scheduledAt.toLocaleDateString()}`);
         }
       } catch (error) {
-        console.error('Schedule error:', error);
+        logger.error('Schedule error:', error);
         
         // Fallback to local storage
         const scheduled = JSON.parse(localStorage.getItem('scheduled_posts') || '[]');
@@ -1378,7 +1930,7 @@
         
         return !error;
       } catch (e) {
-        console.error('Update post status error:', e);
+        logger.error('Update post status error:', e);
         return false;
       }
     }
@@ -1412,7 +1964,7 @@
           }
         }
       } catch (e) {
-        console.log('LinkedIn status check:', e);
+        logger.log('LinkedIn status check:', e);
       }
     }
     
@@ -1461,7 +2013,7 @@
           }, 1000);
         }
       } catch (error) {
-        console.error('LinkedIn connect error:', error);
+        logger.error('LinkedIn connect error:', error);
         statusEl.textContent = '❌ Error connecting to LinkedIn';
         statusEl.classList.remove('text-blue-400');
         statusEl.classList.add('text-red-400');
@@ -1482,24 +2034,24 @@
       updateAdminLinkedInUI();  // Show admin LinkedIn actions if admin
       
       // Load posts from Supabase
-      console.log('📡 Attempting to load posts from Supabase...');
+      logger.log('📡 Attempting to load posts from Supabase...');
       const loadedPosts = await loadPostsFromSupabase();
-      console.log('📊 Loaded posts count:', loadedPosts ? loadedPosts.length : 0);
+      logger.log('📊 Loaded posts count:', loadedPosts ? loadedPosts.length : 0);
       
       if (loadedPosts && loadedPosts.length > 0) {
         posts = loadedPosts;
-        console.log(`📥 Restored ${posts.length} posts from Supabase`);
+        logger.log(`📥 Restored ${posts.length} posts from Supabase`);
       } else {
-        console.warn('⚠️ No posts loaded from Supabase');
+        logger.warn('⚠️ No posts loaded from Supabase');
         // Initialize empty posts array
         posts = posts || [];
       }
       
-      console.log('🔄 Updating metrics and UI...');
+      logger.log('🔄 Updating metrics and UI...');
       updateMetrics();
       updateRecentPosts();
       updateHistoryGrid();
-      console.log('✅ Dashboard loaded');
+      logger.log('✅ Dashboard loaded');
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -1539,16 +2091,16 @@
       
       // Update settings when switching to settings view
       if (section === 'settings') {
-        console.log('>>> SETTINGS BLOCK ENTERED <<<');
-        console.log('About to call updateAdminLinkedInUI...');
+        logger.log('>>> SETTINGS BLOCK ENTERED <<<');
+        logger.log('About to call updateAdminLinkedInUI...');
         updateAdminLinkedInUI();  // Show/hide admin-only settings sections FIRST
-        console.log('updateAdminLinkedInUI completed');
+        logger.log('updateAdminLinkedInUI completed');
         try {
           if (typeof checkLinkedInStatus === 'function') {
             checkLinkedInStatus();
           }
         } catch (e) {
-          console.warn('[Settings] checkLinkedInStatus error:', e);
+          logger.warn('[Settings] checkLinkedInStatus error:', e);
         }
       }
     }
@@ -1632,17 +2184,27 @@
       await simulateAgentProgress('content', 'ContentAgent generating content...');
 
       try {
+        // Build request body
+        const requestBody = { 
+          topic, 
+          style, 
+          persona: personaInput || null,
+          persona_id: activePersonaId,  // Admin persona injection
+          generate_image: generateImage,  // Pass the toggle value
+          user_email: currentUser?.email || null  // User identification
+        };
+        
+        // If improving existing post, add post_id and version (hybrid history pattern)
+        if (improvingPost && improvingPost.post_id) {
+          requestBody.post_id = improvingPost.post_id;
+          requestBody.expected_version = improvingPost.version;
+          logger.log('📝 [Generate] Improving post:', improvingPost.post_id, 'v' + improvingPost.version);
+        }
+        
         const response = await fetch(`${API_BASE}/api/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            topic, 
-            style, 
-            persona: personaInput || null,
-            persona_id: activePersonaId,  // Admin persona injection
-            generate_image: generateImage,  // Pass the toggle value
-            user_email: currentUser?.email || null  // User identification
-          })
+          body: JSON.stringify(requestBody)
         });
 
         if (response.ok) {
@@ -1686,10 +2248,39 @@
           data.topic = data.topic || topic;
           
           currentPost = data;
-          posts.push(data);
           
-          // Save to Supabase
-          await savePostToSupabase(data);
+          // Handle improve vs new post (hybrid history pattern)
+          if (improvingPost && improvingPost.post_id) {
+            // UPDATE existing post in posts array
+            const postIndex = posts.findIndex(p => 
+              (p.id === improvingPost.post_id) || (p.post_id === improvingPost.post_id)
+            );
+            if (postIndex >= 0) {
+              // Update existing post with new data
+              data.id = improvingPost.post_id;
+              data.improvement_count = (posts[postIndex].improvement_count || 0) + 1;
+              data.previous_score = improvingPost.original_score;
+              data.version = (improvingPost.version || 1) + 1;
+              posts[postIndex] = { ...posts[postIndex], ...data };
+              logger.log('✅ [Improve] Updated existing post in array:', postIndex);
+            } else {
+              // Post not found in local array - add it (shouldn't happen normally)
+              posts.unshift(data);
+              logger.warn('⚠️ [Improve] Post not found in local array, added as new');
+            }
+            // Clear improving state
+            improvingPost = null;
+          } else {
+            // NEW post - add to beginning of array
+            // Ensure it has ID from API response for future improvements
+            data.id = data.post_id || data.id;
+            data.version = data.version || 1;
+            data.improvement_count = data.improvement_count || 0;
+            posts.unshift(data);
+            logger.log('✅ [Generate] Added new post to array, id:', data.id);
+          }
+          
+          // Note: Don't call savePostToSupabase - backend already saved/updated it
           
           // Hide progress, show result
           document.getElementById('agent-progress').classList.add('hidden');
@@ -1727,7 +2318,7 @@
       }
 
       document.getElementById('generate-btn').disabled = false;
-      document.getElementById('generate-btn-text').textContent = '🚀 Generate Post';
+      document.getElementById('generate-btn-text').textContent = 'Generate Post';
       document.getElementById('generate-spinner').classList.add('hidden');
     }
 
@@ -1774,30 +2365,40 @@
       document.getElementById('result-score').className = 'text-2xl font-bold ' + scoreColor;
 
       const suggestionsList = document.getElementById('result-suggestions');
+      const suggestionsSection = suggestionsList?.parentElement;
       suggestionsList.innerHTML = '';
-      (data.suggestions || []).forEach(s => {
-        const li = document.createElement('li');
-        li.textContent = s;
-        suggestionsList.appendChild(li);
-      });
+      
+      logger.log('📋 Suggestions from API:', data.suggestions);
+      
+      const suggestions = data.suggestions || [];
+      if (suggestions.length > 0) {
+        suggestionsSection.classList.remove('hidden');
+        suggestions.forEach(s => {
+          const li = document.createElement('li');
+          li.textContent = s;
+          suggestionsList.appendChild(li);
+        });
+      } else {
+        suggestionsSection.classList.add('hidden');
+      }
       
       // Handle image display or deferred generation button
       const imageContainer = document.getElementById('result-image-container');
       if (imageContainer) {
         if (data.imageUrl) {
-          // Show the generated image with save button
+          // Show the generated image with prominent save button
           imageContainer.innerHTML = `
             <div class="mt-4">
-              <div class="flex items-center justify-between mb-2">
-                <h4 class="text-sm text-gray-400">Generated Image:</h4>
-                <button onclick="saveImage('${data.imageUrl}')" class="flex items-center gap-2 px-3 py-1.5 text-sm bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 rounded-lg transition-all">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-sm font-semibold text-gray-300">Generated Image:</h4>
+                <button onclick="saveImage('${data.imageUrl}')" class="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-all shadow-lg">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                   </svg>
-                  Save Image
+                  💾 Save Image (PNG)
                 </button>
               </div>
-              <img src="${data.imageUrl}" alt="Generated post image" class="rounded-lg max-w-full h-auto shadow-lg">
+              <img src="${data.imageUrl}" alt="Generated post image" class="rounded-lg max-w-full h-auto shadow-lg border border-white/10">
             </div>
           `;
         } else if (data.imageDeferred) {
@@ -1889,68 +2490,113 @@
     function updateMetrics() {
       document.getElementById('metric-posts').textContent = posts.length;
       
-      if (posts.length > 0) {
-        const avgScore = posts.reduce((sum, p) => sum + p.virality_score, 0) / posts.length;
+      // Filter posts with valid virality scores
+      const validPosts = posts.filter(p => p.virality_score && !isNaN(p.virality_score));
+      
+      if (validPosts.length > 0) {
+        // Use last 10 posts for average (matches sparkline), posts are newest-first
+        const recentPosts = validPosts.slice(0, 10);
+        const avgScore = recentPosts.reduce((sum, p) => sum + (p.virality_score || 0), 0) / recentPosts.length;
         document.getElementById('metric-avg-score').textContent = avgScore.toFixed(0);
         
-        const bestScore = Math.max(...posts.map(p => p.virality_score));
+        const bestScore = Math.max(...validPosts.map(p => p.virality_score || 0));
         document.getElementById('metric-best-score').textContent = bestScore;
         
         // Update sparkline
         updateSparkline();
         
-        // Update trend indicator if we have 2+ posts
-        if (posts.length >= 2) {
-          const lastScore = posts[posts.length - 1].virality_score;
-          const prevAvg = posts.slice(0, -1).reduce((sum, p) => sum + p.virality_score, 0) / (posts.length - 1);
-          const diff = lastScore - prevAvg;
+        // Update trend indicator: newest post vs average of previous 9 posts
+        // Posts are newest-first, so validPosts[0] is the NEWEST post
+        if (recentPosts.length >= 2) {
+          const newestScore = recentPosts[0].virality_score || 0;
+          const prevPosts = recentPosts.slice(1); // Previous 9 (or fewer) posts
+          const prevAvg = prevPosts.reduce((sum, p) => sum + (p.virality_score || 0), 0) / prevPosts.length;
+          const diff = newestScore - prevAvg;
+          
+          logger.log('📈 [Trend] Newest score:', newestScore, 'Previous avg:', prevAvg.toFixed(1), 'Diff:', diff.toFixed(1));
           
           const trendEl = document.getElementById('avg-trend');
           const trendValueEl = document.getElementById('avg-trend-value');
+          const arrowSvg = trendEl.querySelector('svg');
           
-          if (diff !== 0) {
+          if (Math.abs(diff) >= 0.5) {
             trendEl.classList.remove('hidden');
             trendEl.classList.add('flex');
             
             if (diff > 0) {
+              // Positive: green, arrow up
               trendEl.classList.remove('bg-red-500/20', 'text-red-400');
               trendEl.classList.add('bg-green-500/20', 'text-green-400');
+              arrowSvg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>';
               trendValueEl.textContent = `+${diff.toFixed(0)}`;
             } else {
+              // Negative: red, arrow down
               trendEl.classList.remove('bg-green-500/20', 'text-green-400');
               trendEl.classList.add('bg-red-500/20', 'text-red-400');
+              arrowSvg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>';
               trendValueEl.textContent = diff.toFixed(0);
             }
+          } else {
+            trendEl.classList.add('hidden');
           }
         }
       }
     }  
     
     function updateSparkline() {
-      if (posts.length < 2) return;
+      const sparklinePath = document.getElementById('sparkline-path');
+      if (!sparklinePath) {
+        logger.log('📊 [Sparkline] Element not found');
+        return;
+      }
       
-      const scores = posts.slice(-10).map(p => p.virality_score);
+      // Filter posts with valid virality scores
+      const validPosts = posts.filter(p => p.virality_score && !isNaN(p.virality_score));
+      logger.log('📊 [Sparkline] Total posts:', posts.length, 'Valid posts:', validPosts.length);
+      
+      if (validPosts.length > 0) {
+        logger.log('📊 [Sparkline] Sample scores:', validPosts.slice(-5).map(p => p.virality_score));
+      }
+      
+      if (validPosts.length < 2) {
+        // Show flat line at average if only 1 post or no posts
+        const avgScore = validPosts.length === 1 ? validPosts[0].virality_score : 50;
+        const normalizedY = 20 - ((avgScore / 100) * 20);
+        const flatPoints = `0,${normalizedY} 100,${normalizedY}`;
+        logger.log('📊 [Sparkline] Flat line (< 2 posts):', flatPoints);
+        sparklinePath.setAttribute('points', flatPoints);
+        return;
+      }
+      
+      // Get RECENT 10 scores (posts are newest-first, so slice first 10 and reverse for chronological order)
+      const recentPosts = validPosts.slice(0, 10).reverse(); // oldest-to-newest for proper graph direction
+      const scores = recentPosts.map(p => p.virality_score || 0);
       const max = Math.max(...scores);
       const min = Math.min(...scores);
       const range = max - min || 1;
       
+      logger.log('📊 [Sparkline] Recent scores (oldest→newest):', scores);
+      logger.log('📊 [Sparkline] Range:', min, '-', max, '(diff:', range, ')');
+      
       const width = 100;
       const height = 20;
       const points = scores.map((score, i) => {
-        const x = (i / (scores.length - 1)) * width;
-        const y = height - ((score - min) / range) * height;
-        return `${x},${y}`;
+        const x = scores.length === 1 ? 50 : (i / (scores.length - 1)) * width;
+        const y = height - ((score - min) / range) * (height - 2) - 1;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
       }).join(' ');
       
-      document.getElementById('sparkline-path').setAttribute('points', points);
+      logger.log('📊 [Sparkline] Points:', points);
+      sparklinePath.setAttribute('points', points);
     }
 
     function updateRecentPosts() {
       const grid = document.getElementById('recent-posts-grid');
       if (posts.length === 0) return;
       
-      grid.innerHTML = posts.slice(-6).reverse().map((post, i) => {
-        const postIndex = posts.length - 1 - i;
+      // Posts are already newest-first from Supabase, so take first 6
+      grid.innerHTML = posts.slice(0, 6).map((post, i) => {
+        const postIndex = i; // Posts are already in correct order
         
         // Clean content for preview (remove "Improve this post:" prefix)
         let cleanText = (post.content || '').replace(/^Improve this post[^:]*:\s*\n*/i, '').trim();
@@ -2081,12 +2727,18 @@
           <!-- Compact Header with Key Info -->
           <div class="p-4 border-b border-white/5">
             <div class="flex items-start justify-between gap-3 mb-2">
-              <h3 class="font-semibold text-white text-base line-clamp-1 flex-1">${displayTopic}</h3>
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <h3 class="font-semibold text-white text-base line-clamp-1">${displayTopic}</h3>
+                ${post.improvement_count > 0 ? `<span class="shrink-0 text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30">v${post.version}</span>` : ''}
+              </div>
               <span class="text-sm px-2.5 py-1 rounded-full font-bold ${scoreClass} border backdrop-blur-sm shrink-0">
                 ${post.virality_score}
               </span>
             </div>
-            <p class="text-xs text-gray-400">${new Date(post.timestamp).toLocaleDateString()} • ${new Date(post.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+            <div class="flex items-center gap-2">
+              <p class="text-xs text-gray-400">${new Date(post.timestamp).toLocaleDateString()} • ${new Date(post.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+              ${post.improvement_count > 0 ? `<span class="text-xs text-violet-400">• ${post.improvement_count}x improved</span>` : ''}
+            </div>
           </div>
           
           <!-- Content Preview (Reduced) -->
@@ -2162,12 +2814,27 @@
                  class="w-full h-48 object-cover rounded-lg mb-4">
           ` : ''}
           
-          <div class="flex items-center gap-4 mb-4">
+          <div class="flex items-center gap-4 mb-4 flex-wrap">
             <span class="text-2xl font-bold ${post.virality_score >= 80 ? 'text-green-400' : post.virality_score >= 60 ? 'text-yellow-400' : 'text-red-400'}">
               ${post.virality_score}/100
             </span>
             <span class="text-gray-400 text-sm">${new Date(post.timestamp).toLocaleString()}</span>
+            ${post.improvement_count > 0 ? `
+              <span class="px-2 py-1 text-xs rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30">
+                v${post.version || 2} • ${post.improvement_count}x improved
+              </span>
+              ${post.previous_score ? `<span class="text-xs text-gray-500">was ${post.previous_score}/100</span>` : ''}
+            ` : ''}
           </div>
+          
+          ${post.improvement_count > 0 && post.id ? `
+            <button onclick="viewPostHistory('${post.id}')" class="w-full mb-4 py-2 px-4 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 rounded-lg text-violet-300 text-sm font-medium transition-all flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              View Original (Before Improvement)
+            </button>
+          ` : ''}
           
           <div class="bg-white/5 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
             <p class="text-white whitespace-pre-wrap text-sm leading-relaxed">${displayContent}</p>
@@ -2184,6 +2851,17 @@
               <ul class="list-disc list-inside text-sm text-gray-300 space-y-1.5">
                 ${post.suggestions.map(s => `<li class="leading-relaxed">${s}</li>`).join('')}
               </ul>
+            </div>
+          ` : ''}
+          
+          ${post.imageUrl ? `
+            <div class="mb-4">
+              <button onclick="saveImage('${post.imageUrl}')" class="w-full py-2.5 px-4 bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/30 rounded-lg text-white font-semibold text-sm transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                💾 Save Image (PNG)
+              </button>
             </div>
           ` : ''}
           
@@ -2216,6 +2894,108 @@
           modal.remove();
           document.body.style.overflow = '';
         }, 200);
+      }
+    }
+    
+    // View post history (original version before improvement)
+    async function viewPostHistory(postId) {
+      if (!postId) return;
+      
+      try {
+        // Fetch history from Supabase RPC
+        const { data: history, error } = await supabase.rpc('get_post_history', { 
+          p_post_id: postId 
+        });
+        
+        if (error) throw error;
+        
+        if (!history || history.length === 0) {
+          alert('No history available for this post.');
+          return;
+        }
+        
+        // Get the most recent history entry (the original before improvement)
+        const original = history[0];
+        
+        // Create history comparison modal
+        const historyModal = document.createElement('div');
+        historyModal.id = 'history-modal';
+        historyModal.className = 'fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in-up';
+        historyModal.style.background = 'rgba(0,0,0,0.9)';
+        historyModal.style.backdropFilter = 'blur(8px)';
+        
+        historyModal.innerHTML = `
+          <div class="glass-card rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-start mb-4">
+              <h2 class="text-2xl font-bold text-white">📜 Post History</h2>
+              <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-white text-3xl leading-none shrink-0 transition-colors">&times;</button>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+              <!-- Original Version -->
+              <div class="bg-white/5 rounded-lg p-4 border border-gray-700">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="px-2 py-1 text-xs rounded-full bg-gray-500/20 text-gray-400 border border-gray-500/30">
+                    Original v${original.version}
+                  </span>
+                  <span class="text-xs text-gray-500">${new Date(original.created_at).toLocaleString()}</span>
+                </div>
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-lg font-bold text-yellow-400">${original.previous_score}/100</span>
+                  <span class="text-xs text-gray-500">score before</span>
+                </div>
+                <div class="max-h-64 overflow-y-auto">
+                  <p class="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">${original.original_content || 'Content not available'}</p>
+                </div>
+              </div>
+              
+              <!-- Current Version -->
+              <div class="bg-green-500/5 rounded-lg p-4 border border-green-500/30">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="px-2 py-1 text-xs rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                    Current v${currentPost.version || original.version + 1}
+                  </span>
+                  <span class="text-xs text-green-500">improved</span>
+                </div>
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-lg font-bold text-green-400">${currentPost.virality_score}/100</span>
+                  <span class="text-xs text-gray-500">score after</span>
+                  <span class="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">
+                    +${currentPost.virality_score - (original.previous_score || 0)}
+                  </span>
+                </div>
+                <div class="max-h-64 overflow-y-auto">
+                  <p class="text-white whitespace-pre-wrap text-sm leading-relaxed">${cleanContent(currentPost.content)}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-4 text-center">
+              <button onclick="closeHistoryModal()" class="px-6 py-2 gradient-button rounded-lg text-white font-semibold">
+                Close History
+              </button>
+            </div>
+          </div>
+        `;
+        
+        historyModal.onclick = (e) => {
+          if (e.target === historyModal) closeHistoryModal();
+        };
+        
+        document.body.appendChild(historyModal);
+        
+      } catch (err) {
+        logger.error('Failed to load post history:', err);
+        alert('Failed to load post history: ' + err.message);
+      }
+    }
+    
+    function closeHistoryModal() {
+      const modal = document.getElementById('history-modal');
+      if (modal) {
+        modal.style.opacity = '0';
+        modal.style.transition = 'opacity 0.2s ease';
+        setTimeout(() => modal.remove(), 200);
       }
     }
 
@@ -2279,6 +3059,15 @@
 
     function improvePost() {
       if (currentPost) {
+        // Set the improving post context (for hybrid history pattern)
+        // This tells handleGenerate to UPDATE instead of INSERT
+        improvingPost = {
+          post_id: currentPost.id || currentPost.post_id,
+          version: currentPost.version || 1,
+          original_score: currentPost.virality_score
+        };
+        logger.log('📝 [Improve] Setting improvingPost:', improvingPost);
+        
         showSection('generate');
         
         // Clean content - remove any existing "Improve this post:" prefix
@@ -2291,92 +3080,190 @@
         }, 300);
       }
     }
+    
+    // Edit the current post content directly
+    function editCurrentPost() {
+      if (!currentPost) return;
+      
+      // Create an editable modal for the post
+      const modal = document.createElement('div');
+      modal.id = 'edit-modal';
+      modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in-up';
+      modal.style.background = 'rgba(0,0,0,0.85)';
+      modal.style.backdropFilter = 'blur(8px)';
+      
+      modal.innerHTML = `
+        <div class="glass-card rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
+          <div class="flex justify-between items-start mb-4">
+            <h2 class="text-2xl font-bold text-white">✏️ Edit Post</h2>
+            <button onclick="closeEditModal()" class="text-gray-400 hover:text-white text-3xl leading-none shrink-0 transition-colors">&times;</button>
+          </div>
+          
+          <textarea id="edit-post-content" class="w-full h-80 bg-white/5 border border-white/20 rounded-lg p-4 text-white resize-none focus:border-violet-500 focus:outline-none">${currentPost.content.replace(/`/g, '\\`')}</textarea>
+          
+          <div class="flex gap-4 mt-6">
+            <button onclick="closeEditModal()" class="flex-1 py-3 px-4 bg-gray-600 hover:bg-gray-700 rounded-lg text-white font-semibold transition-colors">
+              Cancel
+            </button>
+            <button onclick="saveEditedPost()" class="flex-1 py-3 px-4 gradient-button rounded-lg text-white font-semibold">
+              💾 Save Changes
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Click backdrop to close
+      modal.onclick = (e) => {
+        if (e.target === modal) closeEditModal();
+      };
+      
+      document.body.appendChild(modal);
+      document.body.style.overflow = 'hidden';
+      
+      // Focus the textarea
+      setTimeout(() => document.getElementById('edit-post-content')?.focus(), 100);
+    }
+    
+    function closeEditModal() {
+      const modal = document.getElementById('edit-modal');
+      if (modal) {
+        modal.style.opacity = '0';
+        modal.style.transition = 'opacity 0.2s ease';
+        setTimeout(() => {
+          modal.remove();
+          document.body.style.overflow = '';
+        }, 200);
+      }
+    }
+    
+    function saveEditedPost() {
+      const textarea = document.getElementById('edit-post-content');
+      if (textarea && currentPost) {
+        currentPost.content = textarea.value;
+        
+        // Update the display
+        document.getElementById('result-text').textContent = textarea.value;
+        
+        // Update post in posts array if it exists
+        const postIndex = posts.findIndex(p => p.content === currentPost.content || p.timestamp === currentPost.timestamp);
+        if (postIndex >= 0) {
+          posts[postIndex].content = textarea.value;
+        }
+        
+        // Save to Supabase
+        savePostToSupabase(currentPost);
+        
+        closeEditModal();
+        
+        // Show success message
+        const statusEl = document.getElementById('generate-status');
+        if (statusEl) {
+          statusEl.textContent = '✅ Post updated successfully!';
+          statusEl.classList.remove('hidden');
+          setTimeout(() => statusEl.classList.add('hidden'), 3000);
+        }
+      }
+    }
 
-    // Save/Download generated image
+    // Save/Download generated image as PNG
+    // Uses direct link to backend endpoint which sets Content-Disposition header
     async function saveImage(imageUrl) {
       try {
-        // Extract filename from URL or create a timestamp-based name
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-        const filename = `gnx-post-image-${timestamp}.png`;
-        
-        // Fetch the image as a blob
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
-        
-        // Create a temporary download link
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = filename;
-        
-        // Trigger download
-        document.body.appendChild(a);
-        a.click();
-        
-        // Cleanup
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        // Visual feedback
-        const btn = event.target.closest('button');
-        if (btn) {
-          const originalHTML = btn.innerHTML;
-          btn.innerHTML = `
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-            Saved!
-          `;
-          btn.classList.add('bg-green-600/30');
-          setTimeout(() => {
-            btn.innerHTML = originalHTML;
-            btn.classList.remove('bg-green-600/30');
-          }, 2000);
+        // Extract filename from URL
+        let originalFilename;
+        try {
+          const url = new URL(imageUrl, window.location.origin);
+          originalFilename = url.pathname.split('/').pop();
+        } catch (e) {
+          originalFilename = imageUrl.split('/').pop();
         }
+        originalFilename = decodeURIComponent(originalFilename);
+        
+        // Create user-friendly download filename
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const downloadFilename = `gnx-post-image-${timestamp}.png`;
+        
+        logger.log('📥 Original file:', originalFilename);
+        logger.log('📥 Download as:', downloadFilename);
+        
+        // Build download URL with custom filename parameter
+        // The backend will set Content-Disposition: attachment; filename="gnx-post-image-xxx.png"
+        const downloadUrl = `${API_BASE}/api/download-image/${encodeURIComponent(originalFilename)}?download_as=${encodeURIComponent(downloadFilename)}`;
+        
+        logger.log('📥 Download URL:', downloadUrl);
+        
+        // Create an invisible iframe to trigger download without leaving the page
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = downloadUrl;
+        document.body.appendChild(iframe);
+        
+        // Remove iframe after download starts
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          logger.log('✅ Download initiated:', downloadFilename);
+        }, 2000);
+        
+        // Show success feedback
+        const statusEl = document.getElementById('generate-status');
+        if (statusEl) {
+          statusEl.textContent = `✅ Downloading: ${downloadFilename}`;
+          statusEl.classList.remove('hidden');
+          setTimeout(() => statusEl.classList.add('hidden'), 4000);
+        }
+        
       } catch (error) {
-        console.error('Failed to save image:', error);
-        alert('Failed to download image. Please try right-clicking the image and selecting "Save image as..."');
+        logger.error('❌ Download failed:', error);
+        
+        // Fallback: open image in new tab
+        const fullUrl = imageUrl.startsWith('/') ? API_BASE + imageUrl : imageUrl;
+        window.open(fullUrl, '_blank');
+        alert('Auto-download failed. Image opened in new tab - right-click to save.');
       }
     }
 
     // ═══════════════════════════════════════════════════════════════════
     // INIT & KEYBOARD SHORTCUTS
     // ═══════════════════════════════════════════════════════════════════
+    
+    // Session timeout configuration (30 minutes = 1800000ms)
+    const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+    let sessionTimeoutId = null;
+    let lastActivityTime = Date.now();
+    
+    // Reset session timeout on user activity
+    function resetSessionTimeout() {
+      lastActivityTime = Date.now();
+      
+      if (sessionTimeoutId) {
+        clearTimeout(sessionTimeoutId);
+      }
+      
+      if (currentUser) {
+        sessionTimeoutId = setTimeout(() => {
+          // Check if user is still logged in and inactive
+          if (currentUser && (Date.now() - lastActivityTime >= SESSION_TIMEOUT_MS)) {
+            alert('Your session has expired due to inactivity. Please log in again.');
+            handleLogout();
+          }
+        }, SESSION_TIMEOUT_MS);
+      }
+    }
+    
+    // Track user activity for session management
+    ['click', 'keypress', 'scroll', 'mousemove'].forEach(eventType => {
+      document.addEventListener(eventType, () => {
+        if (currentUser) {
+          lastActivityTime = Date.now();
+        }
+      }, { passive: true });
+    });
+    
     document.addEventListener('DOMContentLoaded', () => {
-      // E2E Test Hook: Allow test override for admin mode
-      if (window.location.search.includes('test_admin=1')) {
-        localStorage.setItem('gnx_test_role', 'admin');
-        currentUser = { 
-          name: 'Kunal Bhatt (Test)', 
-          email: 'kunalsbhatt@gmail.com', 
-          role: 'admin' 
-        };
-        localStorage.setItem('user', JSON.stringify(currentUser));
-        showDashboard();
-        return;
-      }
+      // SECURITY: No test logins or backdoors
+      // All authentication must go through Clerk
       
-      // E2E Test Hook: Allow test override for regular user
-      if (window.location.search.includes('test_user=1')) {
-        localStorage.setItem('gnx_test_role', 'user');
-        currentUser = { 
-          name: 'Test User', 
-          email: 'testuser@example.com', 
-          role: 'user' 
-        };
-        localStorage.setItem('user', JSON.stringify(currentUser));
-        showDashboard();
-        return;
-      }
-      
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        showDashboard();
-      }
-      
-      // Wire up persona toggle change listener (BLOCKER 8)
+      // Wire up persona toggle change listener
       const personaToggle = document.getElementById('persona-toggle');
       if (personaToggle) {
         personaToggle.addEventListener('change', () => {
@@ -2387,6 +3274,12 @@
           }
         });
       }
+      
+      // Initialize textarea auto-resize and word counter
+      initTextarea();
+      
+      // Start session timeout monitoring
+      resetSessionTimeout();
     });
 
     // Keyboard shortcuts for power users
@@ -2417,6 +3310,11 @@
         closeModal();
       }
     });
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // INITIALIZE CLERK AUTH ON PAGE LOAD
+    // ═══════════════════════════════════════════════════════════════════
+    initializeClerk();
   </script>
 
 </body>

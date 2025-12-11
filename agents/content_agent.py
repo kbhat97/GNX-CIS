@@ -1,9 +1,18 @@
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from agents.base_agent import BaseAgent
 from utils.gemini_config import GeminiConfig
 from utils.logger import log_agent_action, log_error
 from utils.json_parser import parse_llm_json_response
+
+# Persona support
+try:
+    from personas import load_persona_cached, PersonaContextBuilder
+    PERSONA_AVAILABLE = True
+except ImportError:
+    PERSONA_AVAILABLE = False
+    load_persona_cached = None
+    PersonaContextBuilder = None
 
 # Detailed style definitions to prevent hallucination
 STYLE_DEFINITIONS = {
@@ -55,7 +64,15 @@ class ContentAgent(BaseAgent):
         # Fallback to professional if unknown style
         return STYLE_DEFINITIONS["professional"]["instructions"]
 
-    async def generate_post_text(self, topic: str, use_history: bool, user_id: str, style: str = "Professional", profile: Dict[str, Any] = None) -> Dict[str, Any]:
+    async def generate_post_text(
+        self, 
+        topic: str, 
+        use_history: bool, 
+        user_id: str, 
+        style: str = "Professional", 
+        profile: Dict[str, Any] = None,
+        persona_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         try:
             style_context = ""
             if use_history:
@@ -65,7 +82,25 @@ class ContentAgent(BaseAgent):
             # Get detailed style instructions
             style_instructions = self._get_style_instructions(style)
             
-            # Build persona context
+            # Persona-aware generation
+            persona_builder: Optional[PersonaContextBuilder] = None
+            persona_system_prompt = ""
+            persona_hashtags = []
+            
+            if persona_id and PERSONA_AVAILABLE and load_persona_cached:
+                persona_builder = load_persona_cached(persona_id)
+                if persona_builder:
+                    persona_system_prompt = persona_builder.system_prompt()
+                    persona_hashtags = persona_builder.hashtag_list()
+                    log_agent_action(
+                        "ContentAgent", 
+                        "🎭 Persona loaded", 
+                        f"persona_id={persona_id}, version={persona_builder.version}"
+                    )
+                else:
+                    log_agent_action("ContentAgent", "⚠️ Persona load failed, using fallback", f"persona_id={persona_id}")
+            
+            # Build persona context (fallback for non-persona mode)
             persona_name = "Professional thought leader"
             persona_traits = []
             target_audience = "Business professionals"
@@ -79,7 +114,14 @@ class ContentAgent(BaseAgent):
                 writing_tone = profile.get('writing_tone', writing_tone)
 
             # Enhanced prompt for viral LinkedIn content with Gemini 2.5 Flash
-            prompt = f"""You are an expert LinkedIn content strategist creating high-engagement posts.
+            # Build hashtag instruction based on persona
+            if persona_hashtags:
+                hashtag_instruction = f"Include these hashtags: {', '.join(persona_hashtags)}"
+            else:
+                hashtag_instruction = "Include 5-7 relevant hashtags at the end"
+            
+            # Build the main prompt
+            base_prompt = f"""You are an expert LinkedIn content strategist creating high-engagement posts.
 
 TOPIC: "{topic}"
 
@@ -119,24 +161,53 @@ CREATE A VIRAL LINKEDIN POST WITH:
 
 4. **FORMATTING**:
    - Use line breaks for readability (max 2-3 sentences per paragraph)
-   - Add emojis strategically (2-3 max, not in every line)
+   - EMOJI LIMIT: Use exactly 1-2 emojis MAX in the entire post (not in every line). Too many reduces authority.
    - Bold key phrases with **asterisks**
    - Keep total length under 1,300 characters
 
-5. **HASHTAGS**: Include 5-7 relevant hashtags at the end
+5. **HASHTAGS**: {hashtag_instruction}
 
 IMPORTANT: Follow the STYLE INSTRUCTIONS exactly. The content must feel authentically {style.lower()}.
 
 Return ONLY valid JSON:
 {{
     "post_text": "your complete post here with formatting",
+    "virality_score": <integer 35-95 based on honest assessment>,
+    "suggestions": ["specific improvement 1", "specific improvement 2", "specific improvement 3"],
     "reasoning": "brief explanation of hook choice and structure"
-}}"""
+}}
+
+SCORING CRITERIA (be BRUTALLY HONEST - score what you actually created):
+- 90-95: EXCEPTIONAL - Provocative hook, perfect narrative arc, specific data, strong CTA, high shareability
+- 80-89: STRONG - Good hook, clear structure, some specifics, decent CTA
+- 70-79: AVERAGE - Functional post but generic, weak hook, or missing key elements
+- 60-69: BELOW AVERAGE - Missing multiple viral elements, vague, or too long
+- 35-59: WEAK - Fundamentally flawed structure, no hook, no CTA, won't perform
+
+You MUST score honestly. If the post you generated is only average, say 72. If it's exceptional, say 92.
+Do NOT default to middle ranges - be precise based on the actual post quality.
+
+SUGGESTION EXAMPLES:
+- "The opening lacks a scroll-stopping hook - consider starting with a specific statistic"
+- "Add quantified results (percentages, dollar amounts) to increase credibility"
+- "The CTA is generic - make it more personal or provocative to drive comments"
+- "Content is too long for LinkedIn's algorithm - trim to under 1,000 characters"
+- "Missing a contrarian angle - challenge conventional wisdom for more engagement"
+"""
+            
+            # Prepend persona system prompt if available (this is the key persona injection)
+            if persona_system_prompt:
+                prompt = f"{persona_system_prompt}\n\n---\n\nNow generate a post based on the following request:\n\n{base_prompt}"
+            else:
+                prompt = base_prompt
 
             response = await self.model.generate_content_async(prompt)
             error_payload = {"post_text": "Error generating content.", "reasoning": "JSON parsing failed."}
             result = parse_llm_json_response(response.text, error_payload)
-            log_agent_action("ContentAgent", "✅ Post text generated with Gemini 2.5 Flash", f"Topic: {topic}, Style: {style}")
+            
+            # Enhanced logging with persona info
+            persona_info = f", persona={persona_id}" if persona_id else ""
+            log_agent_action("ContentAgent", "✅ Post text generated with Gemini 2.5 Flash", f"Topic: {topic}, Style: {style}{persona_info}")
             return result
         except Exception as e:
             log_error(e, "Content generation")

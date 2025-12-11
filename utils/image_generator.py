@@ -27,7 +27,11 @@ IMAGE_HOOK_LIMIT = 250  # Increased for complete sentences
 IMAGE_QUALITY_RULES = """
 
 === CRITICAL QUALITY RULES (MUST FOLLOW) ===
-1. SPELLING: Every word must be spelled CORRECTLY. Double-check all text before rendering.
+1. SPELLING CHECK: VERIFY EVERY WORD IS SPELLED CORRECTLY before rendering.
+   - "tension" NOT "tention"
+   - "palpable" NOT "paldable"  
+   - "improvement" NOT "imprevvement"
+   - Double-check ALL text character by character.
 2. NO TRUNCATED TEXT: All text must be fully visible - no text cut off at edges or running outside the image.
 3. MARGINS: Keep at least 60px padding from all edges. No text or elements should touch the border.
 4. COMPLETE SENTENCES: Every text element must be a complete word or phrase - no half-words.

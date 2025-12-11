@@ -2,7 +2,7 @@
 FastAPI Backend for GNX Content Intelligence System
 Provides REST API endpoints for the glassmorphic frontend
 """
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -103,6 +103,16 @@ class HealthResponse(BaseModel):
 @app.get("/", response_model=HealthResponse)
 async def root():
     """Health check endpoint"""
+    return HealthResponse(
+        status="healthy",
+        version="2.1.0",
+        timestamp=datetime.now().isoformat()
+    )
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health():
+    """Simple health check for frontend"""
     return HealthResponse(
         status="healthy",
         version="2.1.0",
@@ -336,6 +346,78 @@ async def get_styles():
             }
         ]
     }
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Admin Endpoints (Phase A - Security Guards)
+# ═══════════════════════════════════════════════════════════════════
+
+class AdminPostRequest(BaseModel):
+    """Request model for admin posting actions."""
+    content: str = Field(..., description="Post content to publish")
+    schedule_at: Optional[str] = Field(default=None, description="ISO8601 timestamp for scheduled posting")
+    draft: bool = Field(default=False, description="Save as draft instead of publishing")
+    platforms: List[str] = Field(default=["linkedin"], description="Target platforms")
+
+class AdminPostResponse(BaseModel):
+    """Response model for admin posting actions."""
+    id: str
+    status: str  # queued | posted | failed | draft
+    message: Optional[str] = None
+
+
+def verify_admin_role(role_header: Optional[str] = None) -> bool:
+    """
+    Verify admin role from request headers.
+    In production, this should verify JWT token or session.
+    For now, accept test_admin header for E2E testing.
+    """
+    # TODO: Implement proper JWT/session-based role verification
+    return role_header == "admin"
+
+
+@app.post("/api/admin/post", response_model=AdminPostResponse)
+async def admin_post(
+    request: AdminPostRequest,
+    x_user_role: Optional[str] = Header(default=None, alias="X-User-Role")
+):
+    """
+    Admin-only endpoint for LinkedIn posting actions.
+    Returns 403 for non-admin users.
+    
+    Currently stubbed - returns mock responses for E2E testing.
+    """
+    # Verify admin role (stub implementation)
+    # In production: verify from JWT token or session
+    if not verify_admin_role(x_user_role):
+        raise HTTPException(
+            status_code=403, 
+            detail="Forbidden: Admin access required"
+        )
+    
+    # Generate post ID
+    from uuid import uuid4
+    post_id = str(uuid4())
+    
+    # Handle different action types
+    if request.draft:
+        return AdminPostResponse(
+            id=post_id,
+            status="draft",
+            message="Draft saved successfully (stub implementation)"
+        )
+    elif request.schedule_at:
+        return AdminPostResponse(
+            id=post_id,
+            status="queued",
+            message=f"Post scheduled for {request.schedule_at} (stub implementation)"
+        )
+    else:
+        return AdminPostResponse(
+            id=post_id,
+            status="queued",
+            message="Post queued for immediate publishing (stub implementation)"
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════

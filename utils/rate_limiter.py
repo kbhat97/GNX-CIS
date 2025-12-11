@@ -237,7 +237,7 @@ def get_rate_limiter() -> RateLimiter:
 # Convenience functions for common rate limits
 def check_generation_limit(user_id: str) -> Tuple[bool, Dict[str, any]]:
     """
-    Check if user can generate a post (max 10 per minute).
+    Check if user can generate a post (max 10 per HOUR).
     
     Args:
         user_id: User identifier
@@ -248,7 +248,7 @@ def check_generation_limit(user_id: str) -> Tuple[bool, Dict[str, any]]:
     return get_rate_limiter().check_rate_limit(
         identifier=user_id,
         max_requests=10,
-        window_seconds=60,
+        window_seconds=3600,  # 1 hour
         resource="generation"
     )
 

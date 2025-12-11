@@ -80,10 +80,43 @@ testsprite_tests/
 # Exception: Allow E2E test files
 !tests/e2e/test_*.py
 
-# Development documentation
+# Development documentation (internal)
 CIS_*.md
 STATE_DUMP_*.md
 BUG_FIX_*.md
 
 # Compiled
 *.cpython-*.pyc
+
+# ========================================
+# INTERNAL/SENSITIVE - DO NOT PUSH TO GIT
+# ========================================
+
+# Node.js dependencies
+node_modules/
+dashboard/node_modules/
+
+# Test images (large files ~1.7MB each)
+download_test*.png
+test_download.png
+
+# Internal documentation (security audits, action plans)
+docs/CRITICAL_AUTH_AUDIT.md
+docs/security_audit.md
+docs/PRE_LAUNCH_ACTION_PLAN.md
+docs/PRE_LAUNCH_TEST_REPORT.md
+docs/TODAYS_ACCOMPLISHMENTS.md
+
+# Persona data files (may contain client info)
+personas/*.json
+
+# Keep persona code files
+!personas/__init__.py
+!personas/persona_loader.py
+!personas/schema.py
+
+# Secret rotation scripts
+scripts/secret_rotation.sh
+
+# Glassmorphic experiments (not production)
+glassmorphic-dashboard/
