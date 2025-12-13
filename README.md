@@ -1,10 +1,12 @@
 <div align="center">
 
+<img src="docs/cis-hero.png" alt="GNX Content Intelligence System" width="100%">
+
 # GNX
 
-### **AI-First. Human-Focused. Autonomously Intelligent.**
+### **Think It. Own It.**
 
-_We build autonomous agents that work together, so you can work on what matters._
+_From idea to influence. AI-powered content intelligence for thought leaders._
 
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen)](https://github.com/kbhat97/GNX-CIS)
 [![AI-First](https://img.shields.io/badge/AI-First-blue)](https://github.com/kbhat97/GNX-CIS)
