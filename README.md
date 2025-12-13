@@ -1,6 +1,9 @@
+![Uploading image.png…]()
+
+
 <div align="center">
 
-# GNX
+# GNX - Content Intelligence System
 
 ### **AI-First. Human-Focused. Autonomously Intelligent.**
 
