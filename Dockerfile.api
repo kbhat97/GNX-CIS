@@ -10,7 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create static directory if it doesn't exist
+# Single-service deployment: serves both API and Dashboard
 RUN mkdir -p static/outputs
+RUN mkdir -p dashboard
 
 # Set environment variables
 ENV PORT=8080

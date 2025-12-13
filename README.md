@@ -20,7 +20,7 @@ _We build autonomous agents that work together, so you can work on what matters.
 
 At GNX, we're building the future of work: a world where autonomous agents handle the complex, the repetitive, and the time-consuming—so humans can focus on the creative, the strategic, and the meaningful.
 
-We're not just AI-first. We're becoming **AI-native**.
+We're not just AI-first. We're in the process of becoming **AI-native**.
 
 ---
 
@@ -108,19 +108,6 @@ CIS deploys a coordinated team of specialized AI agents:
 | **Database**      | Supabase (PostgreSQL)            |
 | **Frontend**      | Modern SPA with Glassmorphism UI |
 | **Deployment**    | Google Cloud Run                 |
-
----
-
-## Roadmap
-
-- [x] Content Agent (v1.0)
-- [x] Virality Scoring Engine
-- [x] AI Image Generation
-- [x] Persona System
-- [ ] LinkedIn Direct Publishing
-- [ ] Scheduling & Automation
-- [ ] Multi-platform support
-- [ ] Agent-to-Agent learning
 
 ---
 

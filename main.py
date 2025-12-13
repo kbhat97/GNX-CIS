@@ -96,8 +96,10 @@ ALLOWED_ORIGINS = [
     "http://localhost:8080",
     # Production Cloud Run URLs
     "https://cis-frontend-666167524553.us-central1.run.app",
-    # Add your subdomain here before launch
-    # "https://gnx-cis.yourdomain.com",
+    "https://gnx-cis-666167524553.us-central1.run.app",
+    # Production custom domain
+    "https://cis.gnxautomation.com",
+    "https://gnxautomation.com",
 ]
 
 # Debug: Show what we loaded
@@ -178,6 +180,20 @@ if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 else:
     logger.warning(f"Static directory not found: {static_dir}")
+
+# Mount dashboard directory for serving dashboard assets
+dashboard_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard")
+if os.path.exists(dashboard_dir):
+    app.mount("/dashboard", StaticFiles(directory=dashboard_dir, html=True), name="dashboard")
+    logger.info(f"✅ Dashboard directory mounted: {dashboard_dir}")
+    
+    # Also mount dist folder at /dist for CSS to work when HTML is served from root
+    dist_dir = os.path.join(dashboard_dir, "dist")
+    if os.path.exists(dist_dir):
+        app.mount("/dist", StaticFiles(directory=dist_dir), name="dist")
+        logger.info(f"✅ Dist directory mounted at /dist for CSS")
+else:
+    logger.warning(f"Dashboard directory not found: {dashboard_dir}")
 
 # CORS Configuration
 app.add_middleware(
@@ -404,8 +420,26 @@ async def health_check_endpoint():
         }
 
 @app.get("/")
-async def root():
-    """API root endpoint"""
+async def serve_dashboard():
+    """Serve the dashboard HTML (single-service deployment)"""
+    dashboard_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard", "app.html")
+    if os.path.exists(dashboard_path):
+        return FileResponse(dashboard_path, media_type="text/html")
+    else:
+        # Fallback to API info if dashboard not found
+        return {
+            "service": "CIS Content Intelligence System API",
+            "version": "2.0.0",
+            "status": "running",
+            "dashboard": "not_found",
+            "auth": "Clerk (JWT)",
+            "database": "Supabase",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+@app.get("/api/info")
+async def api_info():
+    """API info endpoint (was previously root /)"""
     return {
         "service": "CIS Content Intelligence System API",
         "version": "2.0.0",
