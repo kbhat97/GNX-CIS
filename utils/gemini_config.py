@@ -17,15 +17,16 @@ logger = logging.getLogger(__name__)
 class GeminiConfig:
     """Centralized Gemini model configuration and access."""
 
-    # Model aliases - Updated for SPEED (December 2025)
-    FLASH_2 = "models/gemini-2.0-flash-exp"  # Fast
-    GEMINI_2_5_FLASH = "gemini-2.5-flash"  # Fastest production model
-    GEMINI_3_PRO = "gemini-3-pro-preview"  # Slow but most intelligent
+    # Model aliases - Production Ready (December 2024)
+    # IMPORTANT: Avoid -exp (experimental) models - they have rate limits even on paid tiers
+    FLASH_2 = "gemini-2.0-flash"  # GA stable - fast, reliable
+    FLASH_2_5 = "gemini-2.5-flash"  # Fastest + most capable Flash model
+    PRO_2_5 = "gemini-2.5-pro"  # Most intelligent for complex tasks
     
-    # Model assignments - Using 2.5 Flash for SPEED
-    CONTENT_MODEL = GEMINI_2_5_FLASH  # 10x faster than 3.0 Pro
-    SCORING_MODEL = FLASH_2  # Fast scoring
-    ANALYSIS_MODEL = FLASH_2  # Fast analysis
+    # Model assignments - Production configuration
+    CONTENT_MODEL = FLASH_2_5  # Best for content generation (fast + smart)
+    SCORING_MODEL = FLASH_2_5  # Same model for scoring consistency
+    ANALYSIS_MODEL = FLASH_2  # Fast analysis tasks
 
     _configured = False
 
