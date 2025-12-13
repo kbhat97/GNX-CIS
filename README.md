@@ -2,7 +2,7 @@
 
 <img src="docs/cis-hero.png" alt="GNX Content Intelligence System" width="100%">
 
-# GNX
+# GNX - Content Intelligence System
 
 ### **Think It. Own It.**
 
