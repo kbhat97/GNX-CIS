@@ -81,7 +81,7 @@ Return ONLY valid JSON, no markdown. BE STRICT - don't inflate scores!"""
             return result
 
         except Exception as e:
-            log_error(e, "Virality scoring")
+            log_error(e, f"Virality scoring failed: {type(e).__name__}: {str(e)}")
             return self._default_score()
 
     def _default_score(self) -> Dict[str, Any]:
@@ -91,6 +91,10 @@ Return ONLY valid JSON, no markdown. BE STRICT - don't inflate scores!"""
             "confidence": "LOW",
             "predicted_engagement_rate": "Unknown",
             "breakdown": {},
-            "suggestions": ["Unable to analyze - please try again"],
-            "reasoning": "Analysis failed"
+            "suggestions": [
+                "Analysis temporarily unavailable - your post was still saved",
+                "Try improving the post to trigger a new analysis",
+                "Consider adding a strong hook, data points, or a clear CTA"
+            ],
+            "reasoning": "Scoring service temporarily unavailable - using default score"
         }
