@@ -100,11 +100,14 @@ class ContentAgent(BaseAgent):
                 else:
                     log_agent_action("ContentAgent", "⚠️ Persona load failed, using fallback", f"persona_id={persona_id}")
             
-            # Build persona context (fallback for non-persona mode)
+            # Build persona context from profile (includes onboarding data)
             persona_name = "Professional thought leader"
             persona_traits = []
             target_audience = "Business professionals"
             writing_tone = "Professional & Engaging"
+            industry = ""
+            primary_goal = ""
+            user_topics = []
             
             if profile:
                 persona_traits = profile.get('personality_traits', [])
@@ -112,6 +115,14 @@ class ContentAgent(BaseAgent):
                     persona_name = persona_traits[0]
                 target_audience = profile.get('target_audience', target_audience)
                 writing_tone = profile.get('writing_tone', writing_tone)
+                
+                # New onboarding fields
+                industry = profile.get('industry', '')
+                primary_goal = profile.get('primary_goal', '')
+                user_topics = profile.get('common_topics', []) or profile.get('topics', [])
+                
+                log_agent_action("ContentAgent", "📋 Using profile data", 
+                    f"Industry: {industry}, Goal: {primary_goal}, Style: {writing_tone}")
 
             # Enhanced prompt for viral LinkedIn content with Gemini 2.5 Flash
             # Build hashtag instruction based on persona
@@ -119,6 +130,17 @@ class ContentAgent(BaseAgent):
                 hashtag_instruction = f"Include these hashtags: {', '.join(persona_hashtags)}"
             else:
                 hashtag_instruction = "Include 5-7 relevant hashtags at the end"
+            
+            # Build industry/goal context if available
+            context_lines = []
+            if industry:
+                context_lines.append(f"INDUSTRY: {industry}")
+            if primary_goal:
+                context_lines.append(f"GOAL: {primary_goal}")
+            if user_topics:
+                context_lines.append(f"FOCUS TOPICS: {', '.join(user_topics[:5])}")
+            
+            user_context = "\n".join(context_lines) if context_lines else "CONTEXT: General business professional"
             
             # Build the main prompt
             base_prompt = f"""You are an expert LinkedIn content strategist creating high-engagement posts.
@@ -130,6 +152,7 @@ STYLE: {style.title()}
 STYLE INSTRUCTIONS: {style_instructions}
 ═══════════════════════════════════════════════════════════════════
 
+{user_context}
 PERSONA: {persona_name}
 TONE: {writing_tone}
 AUDIENCE: {target_audience}
@@ -172,27 +195,10 @@ IMPORTANT: Follow the STYLE INSTRUCTIONS exactly. The content must feel authenti
 Return ONLY valid JSON:
 {{
     "post_text": "your complete post here with formatting",
-    "virality_score": <integer 35-95 based on honest assessment>,
-    "suggestions": ["specific improvement 1", "specific improvement 2", "specific improvement 3"],
     "reasoning": "brief explanation of hook choice and structure"
 }}
 
-SCORING CRITERIA (be BRUTALLY HONEST - score what you actually created):
-- 90-95: EXCEPTIONAL - Provocative hook, perfect narrative arc, specific data, strong CTA, high shareability
-- 80-89: STRONG - Good hook, clear structure, some specifics, decent CTA
-- 70-79: AVERAGE - Functional post but generic, weak hook, or missing key elements
-- 60-69: BELOW AVERAGE - Missing multiple viral elements, vague, or too long
-- 35-59: WEAK - Fundamentally flawed structure, no hook, no CTA, won't perform
-
-You MUST score honestly. If the post you generated is only average, say 72. If it's exceptional, say 92.
-Do NOT default to middle ranges - be precise based on the actual post quality.
-
-SUGGESTION EXAMPLES:
-- "The opening lacks a scroll-stopping hook - consider starting with a specific statistic"
-- "Add quantified results (percentages, dollar amounts) to increase credibility"
-- "The CTA is generic - make it more personal or provocative to drive comments"
-- "Content is too long for LinkedIn's algorithm - trim to under 1,000 characters"
-- "Missing a contrarian angle - challenge conventional wisdom for more engagement"
+Focus ONLY on creating the best possible content. Scoring will be handled separately.
 """
             
             # Prepend persona system prompt if available (this is the key persona injection)

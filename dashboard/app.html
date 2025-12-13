@@ -277,25 +277,25 @@
   <!-- ═══════════════════════════════════════════════════════════════════
        LOGIN PAGE
        ═══════════════════════════════════════════════════════════════════ -->
-  <div id="login-page" class="min-h-screen grid grid-cols-1 lg:grid-cols-2 items-center gap-16 p-8">
-    <!-- Left Hero Section - always visible for now (debugging) -->
-    <div class="flex flex-col items-start text-left pl-12">
-      <div class="flex items-center gap-3 mb-4">
+  <div id="login-page" class="min-h-screen flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 p-4 md:p-8">
+    <!-- Left Hero Section -->
+    <div class="flex flex-col items-center lg:items-start text-center lg:text-left max-w-md">
+      <div class="flex items-center gap-2 mb-4">
         <img src="/dashboard/gnx-logo.jpg" alt="GNX Logo" class="w-8 h-8 rounded-lg object-cover" onerror="this.onerror=null; this.src='./gnx-logo.jpg';">
-        <span class="text-xl font-bold text-cyan-400">GNX Content Intelligence System</span>
+        <span class="text-base md:text-lg font-bold text-cyan-400">GNX Content Intelligence System</span>
       </div>
-      <h1 class="text-5xl lg:text-6xl font-black text-white leading-tight">
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
         Think It. <br>
         <span class="animated-gradient-text">Own It.</span>
       </h1>
-      <p class="mt-6 text-lg text-gray-300 max-w-md">
+      <p class="mt-4 text-base md:text-lg text-gray-300">
         From idea to influence.
       </p>
     </div>
 
     <!-- Right Login Form -->
-    <div class="w-full max-w-sm mx-auto">
-      <div class="glass-card rounded-2xl p-8 shadow-2xl">
+    <div class="w-full max-w-sm">
+      <div class="glass-card rounded-2xl p-6 md:p-8 shadow-2xl">
         <h2 class="text-3xl font-bold text-center text-white mb-2">Welcome Back</h2>
         <p class="text-center text-violet-300 mb-8">Sign in to access your dashboard</p>
         
@@ -320,6 +320,14 @@
 
           <div id="login-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error" role="alert" aria-live="polite" data-testid="login-error">
             Invalid email or password.
+          </div>
+          
+          <!-- Show this when user is already signed in -->
+          <div id="already-signed-in" class="hidden mt-4 text-center">
+            <p class="text-cyan-400 text-sm mb-3">You're already signed in.</p>
+            <button type="button" onclick="continueToExistingSession()" class="w-full py-2 px-4 bg-violet-600 hover:bg-violet-700 rounded-lg text-white font-medium transition-colors">
+              Continue to Dashboard →
+            </button>
           </div>
 
           <button type="submit" id="login-btn" class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
@@ -403,6 +411,200 @@
             Don't have an account? <span class="font-semibold">Sign up</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       ONBOARDING PAGE (Split-Screen: Questions + Paste Content)
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div id="onboarding-page" class="hidden min-h-screen flex items-center justify-center p-4 md:p-8">
+    <div class="w-full max-w-5xl">
+      <!-- Header -->
+      <div class="text-center mb-10">
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <img src="/dashboard/gnx-logo.jpg" alt="GNX Logo" class="w-10 h-10 rounded-lg object-cover" onerror="this.onerror=null; this.src='./gnx-logo.jpg';">
+          <span class="text-lg font-semibold text-cyan-400">GNX CIS</span>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">Let's Personalize Your Experience</h1>
+        <p class="text-gray-400 text-base">Help us understand your voice so we can generate content that sounds like you</p>
+        
+        <!-- Progress Steps -->
+        <div class="flex items-center justify-center gap-4 mt-6">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-bold">1</div>
+            <span class="text-white text-sm font-medium hidden md:inline">Your Profile</span>
+          </div>
+          <div class="w-8 md:w-16 h-0.5 bg-gray-700"></div>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-sm font-bold">2</div>
+            <span class="text-gray-400 text-sm hidden md:inline">Start Creating</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Left Side: 5 Questions -->
+        <div class="glass-card rounded-2xl p-6 md:p-8">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              📝 Quick Questions
+            </h2>
+            <span class="text-xs text-red-400 font-medium px-2 py-1 bg-red-500/10 rounded-full">Required</span>
+          </div>
+          
+          <form id="onboarding-form" class="space-y-5">
+            <!-- Question 1: Industry -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">1. What industry are you in?</label>
+              <select id="onboarding-industry" required class="w-full h-12">
+                <option value="">Select your industry...</option>
+                <optgroup label="Technology & Computing">
+                  <option value="Computer Software">Computer Software</option>
+                  <option value="Information Technology & Services">Information Technology & Services</option>
+                  <option value="Internet">Internet</option>
+                  <option value="Artificial Intelligence">Artificial Intelligence</option>
+                  <option value="Telecommunications">Telecommunications</option>
+                </optgroup>
+                <optgroup label="Finance & Business">
+                  <option value="Financial Services">Financial Services</option>
+                  <option value="Banking">Banking</option>
+                  <option value="Management Consulting">Management Consulting</option>
+                  <option value="Venture Capital & Private Equity">Venture Capital & Private Equity</option>
+                </optgroup>
+                <optgroup label="Healthcare & Life Sciences">
+                  <option value="Hospital & Health Care">Hospital & Health Care</option>
+                  <option value="Pharmaceuticals">Pharmaceuticals</option>
+                  <option value="Biotechnology">Biotechnology</option>
+                </optgroup>
+                <optgroup label="Professional Services">
+                  <option value="Marketing & Advertising">Marketing & Advertising</option>
+                  <option value="Legal Services">Legal Services</option>
+                  <option value="Human Resources Services">Human Resources Services</option>
+                </optgroup>
+                <optgroup label="Manufacturing & Energy">
+                  <option value="Manufacturing">Manufacturing</option>
+                  <option value="Automotive">Automotive</option>
+                  <option value="Oil & Energy">Oil & Energy</option>
+                  <option value="Renewables & Environment">Renewables & Environment</option>
+                </optgroup>
+                <optgroup label="Education & Non-Profit">
+                  <option value="Higher Education">Higher Education</option>
+                  <option value="Professional Training & Coaching">Professional Training & Coaching</option>
+                  <option value="Non-Profit Organization">Non-Profit Organization</option>
+                </optgroup>
+                <optgroup label="Other Industries">
+                  <option value="Real Estate">Real Estate</option>
+                  <option value="Retail">Retail</option>
+                  <option value="E-commerce">E-commerce</option>
+                  <option value="Media Production">Media Production</option>
+                  <option value="Government Administration">Government Administration</option>
+                  <option value="Other">Other</option>
+                </optgroup>
+              </select>
+            </div>
+            
+            <!-- Question 2: Target Audience -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">2. Who is your target audience?</label>
+              <input type="text" id="onboarding-audience" class="w-full h-12" placeholder="e.g., CTOs, HR professionals, startup founders..." required>
+            </div>
+            
+            <!-- Question 3: Content Style -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-3">3. Your preferred content style</label>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="flex items-center justify-center gap-2 p-3 bg-white/5 rounded-lg cursor-pointer border border-white/10 hover:border-violet-500/50 transition-all has-[:checked]:border-violet-500 has-[:checked]:bg-violet-500/15 text-center">
+                  <input type="radio" name="onboarding-style" value="Professional" required class="w-4 h-4 text-violet-500 bg-gray-700 border-gray-600 focus:ring-violet-500 accent-violet-500">
+                  <span class="text-white text-sm font-medium">Professional</span>
+                </label>
+                <label class="flex items-center justify-center gap-2 p-3 bg-white/5 rounded-lg cursor-pointer border border-white/10 hover:border-violet-500/50 transition-all has-[:checked]:border-violet-500 has-[:checked]:bg-violet-500/15 text-center">
+                  <input type="radio" name="onboarding-style" value="Storytelling" class="w-4 h-4 text-violet-500 bg-gray-700 border-gray-600 focus:ring-violet-500 accent-violet-500">
+                  <span class="text-white text-sm font-medium">Storytelling</span>
+                </label>
+                <label class="flex items-center justify-center gap-2 p-3 bg-white/5 rounded-lg cursor-pointer border border-white/10 hover:border-violet-500/50 transition-all has-[:checked]:border-violet-500 has-[:checked]:bg-violet-500/15 text-center">
+                  <input type="radio" name="onboarding-style" value="Technical" class="w-4 h-4 text-violet-500 bg-gray-700 border-gray-600 focus:ring-violet-500 accent-violet-500">
+                  <span class="text-white text-sm font-medium">Technical</span>
+                </label>
+                <label class="flex items-center justify-center gap-2 p-3 bg-white/5 rounded-lg cursor-pointer border border-white/10 hover:border-violet-500/50 transition-all has-[:checked]:border-violet-500 has-[:checked]:bg-violet-500/15 text-center">
+                  <input type="radio" name="onboarding-style" value="Inspirational" class="w-4 h-4 text-violet-500 bg-gray-700 border-gray-600 focus:ring-violet-500 accent-violet-500">
+                  <span class="text-white text-sm font-medium">Inspirational</span>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Question 4: Topics -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">4. Topics you focus on</label>
+              <input type="text" id="onboarding-topics" class="w-full h-12" placeholder="e.g., Leadership, AI, Product Management..." required>
+              <p class="text-xs text-gray-500 mt-1.5">Separate multiple topics with commas</p>
+            </div>
+            
+            <!-- Question 5: Primary Goal -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">5. Your primary goal</label>
+              <select id="onboarding-goal" required class="w-full h-12">
+                <option value="">Select your goal...</option>
+                <option value="Thought Leadership">🎯 Thought Leadership</option>
+                <option value="Brand Awareness">📢 Brand Awareness</option>
+                <option value="Lead Generation">💼 Lead Generation</option>
+                <option value="Career Opportunities">🚀 Career Opportunities</option>
+                <option value="Community Building">🤝 Community Building</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        
+        <!-- Right Side: Paste Content -->
+        <div class="glass-card rounded-2xl p-6 md:p-8 flex flex-col">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              📋 Share Your Content
+            </h2>
+            <span class="text-xs text-gray-500 font-medium px-2 py-1 bg-gray-700/50 rounded-full">Optional</span>
+          </div>
+          
+          <p class="text-gray-400 text-sm mb-3">Paste any content that helps us understand your voice:</p>
+          
+          <ul class="text-gray-500 text-sm mb-4 space-y-1.5 pl-1">
+            <li class="flex items-center gap-2"><span class="text-violet-400">•</span> Your best LinkedIn posts</li>
+            <li class="flex items-center gap-2"><span class="text-violet-400">•</span> Your LinkedIn bio/headline</li>
+            <li class="flex items-center gap-2"><span class="text-violet-400">•</span> Posts you admire from others</li>
+          </ul>
+          
+          <textarea 
+            id="onboarding-content" 
+            class="w-full flex-1 min-h-[200px] resize-none rounded-xl" 
+            placeholder="Paste your content here...
+
+Example:
+My LinkedIn headline: Digital transformation leader | 15+ years in enterprise software
+
+My best post:
+🚀 Just led my team through a 6-month SAP migration that saved $2M annually..."></textarea>
+          
+          <div class="mt-4 p-3 bg-gradient-to-r from-violet-500/10 to-cyan-500/10 rounded-xl border border-violet-500/20">
+            <p class="text-gray-300 text-sm flex items-start gap-2">
+              <span class="text-lg">💡</span>
+              <span><strong class="text-violet-300">Pro tip:</strong> The more examples you provide, the better we can match your unique voice!</span>
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Submit Button -->
+      <div class="mt-8 text-center">
+        <button onclick="handleOnboardingSubmit()" id="onboarding-submit-btn" class="px-10 py-4 gradient-button rounded-xl text-white font-bold text-base inline-flex items-center justify-center gap-3 shadow-lg hover:shadow-violet-500/25 transition-shadow">
+          <span id="onboarding-btn-text">Complete Setup & Start Creating</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+          </svg>
+          <svg id="onboarding-spinner" class="hidden animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </button>
+        <p id="onboarding-error" class="hidden mt-4 text-red-400 text-sm"></p>
       </div>
     </div>
   </div>
@@ -936,21 +1138,42 @@
           logger.log('[Auth] Clerk initialized successfully');
           
           // Check if user is already signed in from previous session
-          if (clerkInstance.user) {
+          // Skip auto-login on localhost for development testing
+          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          
+          if (clerkInstance.user && !isLocalhost) {
             currentUser = {
               email: clerkInstance.user.emailAddresses[0]?.emailAddress,
               name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
               clerk_id: clerkInstance.user.id,
               image_url: clerkInstance.user.imageUrl
             };
-            logger.log('[Auth] User already signed in:', currentUser.email);
+            logger.log('[Auth] User already signed in (production auto-login):', currentUser.email);
             showDashboard();
+          } else if (isLocalhost && clerkInstance.user) {
+            // On localhost, show "Continue to Dashboard" option instead of auto-login
+            logger.log('[Auth] Localhost - showing continue option for:', clerkInstance.user.emailAddresses[0]?.emailAddress);
+            document.getElementById('already-signed-in')?.classList.remove('hidden');
           }
         } else {
           logger.error('[Auth] Clerk failed to load after timeout');
         }
       } catch (err) {
         logger.error('[Auth] Clerk initialization error:', err);
+      }
+    }
+    
+    // Continue to dashboard for existing session (localhost)
+    function continueToExistingSession() {
+      if (clerkInstance && clerkInstance.user) {
+        currentUser = {
+          email: clerkInstance.user.emailAddresses[0]?.emailAddress,
+          name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
+          clerk_id: clerkInstance.user.id,
+          image_url: clerkInstance.user.imageUrl
+        };
+        logger.log('[Auth] Continuing with existing session:', currentUser.email);
+        showDashboard();
       }
     }
     
@@ -2105,8 +2328,227 @@
     
     // NOTE: updateAdminSettingsUI removed - now handled by updateAdminLinkedInUI()
 
-    async function showDashboard() {
+    // ═══════════════════════════════════════════════════════════════════
+    // ONBOARDING
+    // ═══════════════════════════════════════════════════════════════════
+    
+    async function checkOnboardingStatus() {
+      // Check if user has completed onboarding
+      if (!supabaseEnabled || !currentUser) return true; // Skip check if no Supabase
+      
+      try {
+        // Get user ID from users table
+        const { data: user, error: userError } = await supabase
+          .from('users')
+          .select('id, onboarding_completed')
+          .eq('email', currentUser.email)
+          .single();
+        
+        if (userError || !user) {
+          logger.log('[Onboarding] User not found, will show onboarding');
+          return false;
+        }
+        
+        // Check onboarding_completed flag
+        if (user.onboarding_completed) {
+          logger.log('[Onboarding] Already completed');
+          return true;
+        }
+        
+        // Also check user_profiles table
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          logger.log('[Onboarding] Profile exists, marking as completed');
+          // Update users table to mark as completed
+          await supabase.from('users').update({ onboarding_completed: true }).eq('id', user.id);
+          return true;
+        }
+        
+        return false;
+      } catch (e) {
+        logger.error('[Onboarding] Status check error:', e);
+        return true; // Default to skipping onboarding on error
+      }
+    }
+    
+    function showOnboarding() {
       document.getElementById('login-page').classList.add('hidden');
+      document.getElementById('dashboard-page').classList.add('hidden');
+      document.getElementById('onboarding-page').classList.remove('hidden');
+      logger.log('[Onboarding] Showing onboarding page');
+    }
+    
+    async function handleOnboardingSubmit() {
+      const form = document.getElementById('onboarding-form');
+      const errorEl = document.getElementById('onboarding-error');
+      const btnText = document.getElementById('onboarding-btn-text');
+      const spinner = document.getElementById('onboarding-spinner');
+      
+      // Validate required fields
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      
+      // Get form values
+      const industry = document.getElementById('onboarding-industry').value;
+      const audience = document.getElementById('onboarding-audience').value;
+      const style = document.querySelector('input[name="onboarding-style"]:checked')?.value;
+      const topics = document.getElementById('onboarding-topics').value;
+      const goal = document.getElementById('onboarding-goal').value;
+      const pastedContent = document.getElementById('onboarding-content').value;
+      
+      if (!style) {
+        errorEl.textContent = 'Please select a content style';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      
+      // Show loading
+      btnText.textContent = 'Saving...';
+      spinner.classList.remove('hidden');
+      errorEl.classList.add('hidden');
+      
+      try {
+        if (supabaseEnabled) {
+          // Get user ID
+          const { data: user } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', currentUser.email)
+            .single();
+          
+          if (user) {
+            // Parse topics into array
+            const topicsArray = topics.split(',').map(t => t.trim()).filter(t => t);
+            
+            // Save to user_profiles - this is the "brain data" for AI agents
+            const profileData = {
+              user_id: user.id,
+              
+              // Onboarding questionnaire fields
+              industry: industry,
+              target_audience: audience,
+              content_style: style,
+              topics: topicsArray,
+              primary_goal: goal,
+              
+              // Legacy/derived fields (for backward compatibility)
+              writing_tone: style,
+              content_focus: industry,
+              key_values: topicsArray,
+              dominant_style: style.toLowerCase(),
+              extracted_themes: topicsArray,
+              
+              // Voice summary for AI context
+              brand_voice_summary: `Industry: ${industry}. Target audience: ${audience}. Style: ${style}. Goal: ${goal}. Topics: ${topicsArray.join(', ')}.`,
+              
+              updated_at: new Date().toISOString()
+            };
+            
+            // Upsert profile
+            const { error: profileError } = await supabase
+              .from('user_profiles')
+              .upsert(profileData, { onConflict: 'user_id' });
+            
+            if (profileError) {
+              logger.error('[Onboarding] Profile save error:', profileError);
+              throw new Error('Failed to save profile: ' + profileError.message);
+            }
+            
+            // If user pasted content, save to content_analysis for AI learning
+            if (pastedContent && pastedContent.trim().length > 10) {
+              const analysisData = {
+                user_id: user.id,
+                analyzed_posts: { 
+                  raw_content: pastedContent,
+                  source: 'onboarding',
+                  submitted_at: new Date().toISOString()
+                },
+                created_at: new Date().toISOString()
+              };
+              
+              const { error: analysisError } = await supabase
+                .from('content_analysis')
+                .upsert(analysisData, { onConflict: 'user_id' });
+              
+              if (analysisError) {
+                logger.warn('[Onboarding] Content analysis save warning:', analysisError);
+              }
+            }
+            
+            // Mark onboarding as completed
+            await supabase
+              .from('users')
+              .update({ 
+                onboarding_completed: true,
+                onboarding_path: pastedContent ? 'content_analysis' : 'questionnaire'
+              })
+              .eq('id', user.id);
+            
+            logger.log('[Onboarding] Profile saved successfully. AI agents will use this data.');
+          }
+        }
+        
+        // Store locally as backup
+        localStorage.setItem('onboarding_profile', JSON.stringify({
+          industry, audience, style, topics, goal, pastedContent
+        }));
+        
+        // Hide onboarding, show dashboard
+        document.getElementById('onboarding-page').classList.add('hidden');
+        await showDashboardAfterOnboarding();
+        
+      } catch (e) {
+        logger.error('[Onboarding] Submit error:', e);
+        errorEl.textContent = 'Error saving profile. Please try again.';
+        errorEl.classList.remove('hidden');
+      } finally {
+        btnText.textContent = '✓ Complete Setup & Start Creating';
+        spinner.classList.add('hidden');
+      }
+    }
+    
+    async function showDashboardAfterOnboarding() {
+      // This is called after onboarding is complete
+      document.getElementById('login-page').classList.add('hidden');
+      document.getElementById('onboarding-page').classList.add('hidden');
+      document.getElementById('dashboard-page').classList.remove('hidden');
+      document.getElementById('user-name').textContent = currentUser.name;
+      document.getElementById('user-email').textContent = currentUser.email;
+      checkApiStatus();
+      updatePersonaUI();
+      updateAdminLinkedInUI();
+      
+      const loadedPosts = await loadPostsFromSupabase();
+      if (loadedPosts && loadedPosts.length > 0) {
+        posts = loadedPosts;
+      } else {
+        posts = posts || [];
+      }
+      
+      updateMetrics();
+      updateRecentPosts();
+      updateHistoryGrid();
+      logger.log('✅ Dashboard loaded after onboarding');
+    }
+
+    async function showDashboard() {
+      // Check if user needs onboarding first
+      const onboardingComplete = await checkOnboardingStatus();
+      
+      if (!onboardingComplete) {
+        showOnboarding();
+        return;
+      }
+      
+      document.getElementById('login-page').classList.add('hidden');
+      document.getElementById('onboarding-page')?.classList.add('hidden');
       document.getElementById('dashboard-page').classList.remove('hidden');
       document.getElementById('user-name').textContent = currentUser.name;
       document.getElementById('user-email').textContent = currentUser.email;
@@ -2697,7 +3139,8 @@
              onclick="viewPost(${postIndex})">
           <img src="${post.imageUrl || postImages[postIndex % postImages.length]}" 
                alt="${displayTopic}" 
-               class="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300">
+               class="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+               onerror="this.onerror=null; this.src='${postImages[postIndex % postImages.length]}'">
           <div class="p-4">
             <div class="flex justify-between items-start mb-2">
               <span class="text-xs px-2 py-1 rounded-full ${post.virality_score >= 80 ? 'status-published' : 'status-draft'}">
@@ -2894,7 +3337,8 @@
           ${post.imageUrl ? `
             <img src="${post.imageUrl}" 
                  alt="${displayTopic}" 
-                 class="w-full h-48 object-cover rounded-lg mb-4">
+                 class="w-full h-48 object-cover rounded-lg mb-4"
+                 onerror="this.style.display='none'">
           ` : ''}
           
           <div class="flex items-center gap-4 mb-4 flex-wrap">

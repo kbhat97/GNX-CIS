@@ -4,6 +4,7 @@ import os
 from typing import Dict, Any
 from agents.content_agent import ContentAgent
 from agents.virality_agent import ViralityAgent
+from agents.history_agent import HistoryAgent
 from utils.image_generator import create_branded_image
 from database.supabase_client import save_draft_post, get_post, update_draft_post
 from utils.logger import log_agent_action, log_error
@@ -14,20 +15,37 @@ async def run_post_creation_workflow(topic: str, use_history: bool, user_id: str
     log_agent_action("Orchestrator", "Starting post creation workflow", f"User: {user_id}, Topic: {topic}")
     content_agent = ContentAgent()
     virality_agent = ViralityAgent()
+    history_agent = HistoryAgent()
+    
     try:
-        content_result = await content_agent.generate_post_text(topic, use_history, user_id)
+        # Step 1: Get user's learning profile (if history enabled)
+        user_profile = None
+        if use_history:
+            log_agent_action("Orchestrator", "📚 Getting user learning profile", user_id)
+            user_profile = await history_agent.analyze_user_history(user_id)
+            
+            # Check if learning is active (20+ posts)
+            if user_profile.get("learning_active") == False:
+                posts_needed = user_profile.get("posts_needed", 20)
+                log_agent_action("Orchestrator", f"⏳ Learning not active yet ({posts_needed} more posts needed)", user_id)
+        
+        # Step 2: Generate content with profile (if available)
+        content_result = await content_agent.generate_post_text(
+            topic, use_history, user_id, profile=user_profile
+        )
         if "error" in content_result or not content_result.get("post_text"):
             raise Exception(f"Content generation failed: {content_result.get('reasoning', 'Unknown error')}")
         
-        # --- THIS IS THE FIX: Use the AI's text directly ---
-        # Remove the unnecessary truncation logic.
         post_text = content_result["post_text"]
-        # ---------------------------------------------------
         
+        # Step 3: Independent scoring by ViralityAgent (no self-scoring)
         score_result = await virality_agent.score_post(post_text)
+        
+        # Step 4: Generate image
         full_image_path = create_branded_image(post_text, "KUNAL BHAT, PMP")
-
         log_agent_action("Orchestrator", "Image created", full_image_path)
+        
+        # Step 5: Save draft (this adds to the learning book for future)
         post_data = {
             "user_id": user_id, "topic": topic, "post_text": post_text,
             "reasoning": content_result.get("reasoning"), "virality_score": score_result.get("score"),
