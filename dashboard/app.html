@@ -2592,18 +2592,28 @@ My best post:
     // ═══════════════════════════════════════════════════════════════════
     
     async function checkOnboardingStatus() {
-      // Check if user has completed onboarding
-      if (!supabaseEnabled || !currentUser) return true; // Skip check if no Supabase
+      // ADMIN BYPASS: Check admin status FIRST before any database checks
+      // This ensures admin users always skip onboarding even if Supabase fails
+      const userEmail = (currentUser?.email || '').toLowerCase().trim();
+      const adminEmails = ['kunalsbhatt@gmail.com'];
       
-      // ADMIN BYPASS: Admin users with persona don't need onboarding
-      // Check email directly first as a reliable fallback
-      const userEmail = (currentUser.email || '').toLowerCase();
-      const isAdmin = userEmail === 'kunalsbhatt@gmail.com' || isAdminUser();
+      logger.log('[Onboarding] Checking status for:', userEmail);
       
-      
-      if (isAdmin) {
-        logger.log('[Onboarding] Admin user detected - skipping onboarding (persona-based)');
+      if (adminEmails.includes(userEmail)) {
+        logger.log('[Onboarding] Admin email detected - bypassing onboarding');
         return true; // Skip onboarding for admins
+      }
+      
+      // Secondary check via isAdminUser function
+      if (isAdminUser()) {
+        logger.log('[Onboarding] Admin role detected - bypassing onboarding');
+        return true;
+      }
+      
+      // Check if Supabase is available
+      if (!supabaseEnabled || !currentUser) {
+        logger.log('[Onboarding] No Supabase - skipping check');
+        return true; // Skip check if no Supabase
       }
       
       try {
