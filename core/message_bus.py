@@ -33,7 +33,8 @@ class MessageBus:
             self.project_id = config.project_id
         else:
             self.local_queue = {}
-        logger.info(f"Message bus initialized in {"production" if self.is_production else "development"} mode.")
+        mode = "production" if self.is_production else "development"
+        logger.info(f"Message bus initialized in {mode} mode.")
 
     def publish(self, topic_name: str, message_data: Dict[str, Any]):
         """

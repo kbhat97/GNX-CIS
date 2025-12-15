@@ -777,7 +777,7 @@ My best post:
                   <!-- Admin Persona Toggle (hidden from non-admin users) -->
                   <div id="admin-persona-section" class="hidden" data-testid="admin-persona-section">
                     <label id="persona-mode-label" class="block text-sm text-gray-400 mb-2">🎭 Admin Persona</label>
-                    <div class="flex items-center gap-4 p-3 glass-card rounded-lg">
+                    <div class="inline-flex items-center gap-4 p-3 glass-card rounded-lg">
                       <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="persona-toggle" class="sr-only peer" checked aria-checked="true" data-testid="persona-toggle" aria-label="Enable Kunal Persona">
                         <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
@@ -2554,7 +2554,14 @@ My best post:
       if (!supabaseEnabled || !currentUser) return true; // Skip check if no Supabase
       
       // ADMIN BYPASS: Admin users with persona don't need onboarding
-      if (isAdminUser()) {
+      // Check email directly first as a reliable fallback
+      const userEmail = (currentUser.email || '').toLowerCase();
+      const isAdmin = userEmail === 'kunalsbhatt@gmail.com' || isAdminUser();
+      
+      console.log('[Onboarding] Admin check:', { userEmail, isAdmin, currentUser: !!currentUser });
+      
+      if (isAdmin) {
+        console.log('[Onboarding] ✅ Admin user detected - SKIPPING onboarding (persona-based)');
         logger.log('[Onboarding] Admin user detected - skipping onboarding (persona-based)');
         return true; // Skip onboarding for admins
       }
