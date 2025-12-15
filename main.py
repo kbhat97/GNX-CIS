@@ -174,6 +174,13 @@ app = FastAPI(
     version="2.0.0",
 )
 
+# Root route - redirect to dashboard
+@app.get("/")
+async def root():
+    """Redirect root to dashboard"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/dashboard/app.html", status_code=302)
+
 # Mount static files directory (Phase 8)
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 if os.path.exists(static_dir):
