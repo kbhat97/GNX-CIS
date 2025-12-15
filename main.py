@@ -188,17 +188,19 @@ if os.path.exists(static_dir):
 else:
     logger.warning(f"Static directory not found: {static_dir}")
 
-# Mount dashboard directory for serving dashboard assets
+# Mount dist folder FIRST (before /dashboard) to prevent path conflicts
 dashboard_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard")
+dist_dir = os.path.join(dashboard_dir, "dist")
+if os.path.exists(dist_dir):
+    app.mount("/dist", StaticFiles(directory=dist_dir), name="dist")
+    logger.info(f"[OK] Dist directory mounted at /dist for CSS")
+else:
+    logger.warning(f"Dist directory not found: {dist_dir}")
+
+# Mount dashboard directory for serving dashboard assets
 if os.path.exists(dashboard_dir):
     app.mount("/dashboard", StaticFiles(directory=dashboard_dir, html=True), name="dashboard")
     logger.info(f"[OK] Dashboard directory mounted: {dashboard_dir}")
-    
-    # Also mount dist folder at /dist for CSS to work when HTML is served from root
-    dist_dir = os.path.join(dashboard_dir, "dist")
-    if os.path.exists(dist_dir):
-        app.mount("/dist", StaticFiles(directory=dist_dir), name="dist")
-        logger.info(f"[OK] Dist directory mounted at /dist for CSS")
 else:
     logger.warning(f"Dashboard directory not found: {dashboard_dir}")
 
