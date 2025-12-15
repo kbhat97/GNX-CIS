@@ -776,7 +776,7 @@ My best post:
                   
                   <!-- Admin Persona Toggle (hidden from non-admin users) -->
                   <div id="admin-persona-section" class="hidden" data-testid="admin-persona-section">
-                    <label id="persona-mode-label" class="block text-sm text-gray-400 mb-2">🎭 Admin Persona</label>
+                    <label id="persona-mode-label" class="block text-sm text-gray-400 mb-2">Admin Persona</label>
                     <div class="inline-flex items-center gap-4 p-3 glass-card rounded-lg">
                       <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="persona-toggle" class="sr-only peer" checked aria-checked="true" data-testid="persona-toggle" aria-label="Enable Kunal Persona">
@@ -900,29 +900,29 @@ My best post:
 
                 <div class="flex gap-4 mt-6">
                   <button onclick="copyToClipboard()" class="flex-1 py-2 px-4 gradient-border-button rounded-lg text-white font-semibold">
-                    📋 Copy
+                    Copy
                   </button>
                   <button onclick="editCurrentPost()" class="flex-1 py-2 px-4 gradient-border-button rounded-lg text-white font-semibold">
-                    ✏️ Edit
+                    Edit
                   </button>
                   <button onclick="improvePost()" class="flex-1 py-2 px-4 gradient-button rounded-lg text-white font-semibold">
-                    ✨ Improve
+                    Improve
                   </button>
                 </div>
                 
                 <!-- Admin LinkedIn Actions (only visible to admins) -->
                 <div id="admin-linkedin-actions" class="hidden mt-6 pt-6 border-t border-white/10">
-                  <h4 class="text-sm font-semibold text-violet-400 mb-3">🎭 Admin Actions</h4>
+                  <h4 class="text-sm font-semibold text-violet-400 mb-3">Admin Actions</h4>
                   <div class="flex gap-3 flex-wrap">
                     <button onclick="publishToLinkedIn()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold text-sm transition-colors flex items-center gap-2">
                       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
                       Publish Now
                     </button>
                     <button onclick="showScheduleModal()" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 rounded-lg text-white font-semibold text-sm transition-colors flex items-center gap-2">
-                      📅 Schedule
+                      Schedule
                     </button>
                     <button onclick="saveAsDraft()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-white font-semibold text-sm transition-colors flex items-center gap-2">
-                      💾 Save Draft
+                      Save Draft
                     </button>
                   </div>
                   <p id="linkedin-action-status" class="mt-3 text-sm text-gray-400 hidden"></p>
@@ -1606,9 +1606,9 @@ My best post:
     try {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       supabaseEnabled = true;
-      logger.log('✅ Supabase connected');
+      logger.log('[OK] Supabase connected');
     } catch (error) {
-      logger.warn('⚠️ Supabase not available:', error);
+      logger.warn('[WARN] Supabase not available:', error);
       supabaseEnabled = false;
     }
 
@@ -1666,10 +1666,10 @@ My best post:
 
         if (error) throw error;
         
-        logger.log('✅ Post saved to Supabase:', data.id);
+        logger.log('[OK] Post saved to Supabase:', data.id);
         return data;
       } catch (error) {
-        logger.error('❌ Failed to save post to Supabase:', error);
+        logger.error('[X] Failed to save post to Supabase:', error);
         return null;
       }
     }
@@ -1729,11 +1729,11 @@ My best post:
         });
 
         // Debug: Show raw scores from Supabase
-        logger.log('📦 [Supabase] Raw scores from DB:', loadedPosts.map(p => p.virality_score));
-        logger.log(`✅ Loaded ${transformedPosts.length} posts from Supabase`);
+        logger.log('[DATA] [Supabase] Raw scores from DB:', loadedPosts.map(p => p.virality_score));
+        logger.log(`[OK] Loaded ${transformedPosts.length} posts from Supabase`);
         return transformedPosts;
       } catch (error) {
-        logger.error('❌ Failed to load posts from Supabase:', error);
+        logger.error('[X] Failed to load posts from Supabase:', error);
         return [];
       }
     }
@@ -2223,7 +2223,7 @@ My best post:
       document.getElementById('reset-success').classList.remove('hidden');
       document.getElementById('reset-error').classList.add('hidden');
       
-      logger.log(`🔑 Temporary password for ${email}: ${tempPassword}`);
+      logger.log(`[KEY] Temporary password for ${email}: ${tempPassword}`);
     }
     
     function generateTempPassword() {
@@ -2255,46 +2255,70 @@ My best post:
     
     async function publishToLinkedIn() {
       if (!currentPost || !currentPost.content) {
-        showLinkedInStatus('❌ No post to publish. Generate a post first.', true);
+        showLinkedInStatus('[X] No post to publish. Generate a post first.', true);
         return;
       }
       
       if (!isAdminUser()) {
-        showLinkedInStatus('❌ Admin access required.', true);
+        showLinkedInStatus('[X] Admin access required.', true);
         return;
       }
       
-      // SECURITY NOTE: Direct publishing now requires JWT authentication
-      // The demo dashboard uses localStorage auth which is not secure enough
-      // for LinkedIn publishing. Users should:
-      // 1. Use the LinkedIn share URL (opens LinkedIn with pre-filled content)
-      // 2. Or use the authenticated Clerk-based app for direct publishing
+      showLinkedInStatus('Publishing to LinkedIn...', false);
       
-      // For now, open LinkedIn share dialog as a safe alternative
-      const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.origin)}`;
-      const shareText = encodeURIComponent(currentPost.content);
-      
-      // Copy content to clipboard and show instructions
       try {
-        await navigator.clipboard.writeText(currentPost.content);
-        showLinkedInStatus('📋 Post copied! Opening LinkedIn... Paste your content there.', false);
+        // Try to publish via API (uses saved LinkedIn token)
+        const response = await fetch(`${API_BASE}/api/linkedin/publish`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: currentPost.content,
+            user_email: currentUser?.email || '',
+            image_url: currentPost.image_url || null
+          })
+        });
         
-        // Open LinkedIn compose (they'll need to paste)
+        const result = await response.json();
+        
+        if (result.success) {
+          showLinkedInStatus('[OK] Published to LinkedIn!', false);
+          return;
+        }
+        
+        // If API failed, show error and fall back to copy+paste
+        logger.warn('LinkedIn API publish failed:', result.error);
+        
+        // Fallback: Copy to clipboard and open LinkedIn
+        await navigator.clipboard.writeText(currentPost.content);
+        showLinkedInStatus(`[WARN] ${result.error || 'API unavailable'}. Post copied - paste it on LinkedIn.`, false);
+        
         setTimeout(() => {
           window.open('https://www.linkedin.com/feed/', '_blank');
-        }, 1000);
+        }, 1500);
+        
       } catch (err) {
-        showLinkedInStatus('📋 Copy failed. Please manually copy your post content.', true);
+        logger.error('LinkedIn publish error:', err);
+        
+        // Fallback: Copy to clipboard
+        try {
+          await navigator.clipboard.writeText(currentPost.content);
+          showLinkedInStatus('[WARN] Publishing failed. Post copied - paste it on LinkedIn.', false);
+          setTimeout(() => {
+            window.open('https://www.linkedin.com/feed/', '_blank');
+          }, 1500);
+        } catch (copyErr) {
+          showLinkedInStatus('[X] Publishing failed. Please copy your post manually.', true);
+        }
       }
     }
     
     async function saveAsDraft() {
       if (!currentPost || !currentPost.content) {
-        showLinkedInStatus('❌ No post to save. Generate a post first.', true);
+        showLinkedInStatus('[X] No post to save. Generate a post first.', true);
         return;
       }
       
-      showLinkedInStatus('💾 Saving as draft...');
+      showLinkedInStatus('Saving as draft...');
       
       try {
         // Save to Supabase with draft status
@@ -2305,7 +2329,7 @@ My best post:
         });
         
         if (saved) {
-          showLinkedInStatus('✅ Saved as draft!');
+          showLinkedInStatus('[OK] Saved as draft!');
         } else {
           // Fallback to localStorage
           const drafts = JSON.parse(localStorage.getItem('post_drafts') || '[]');
@@ -2316,17 +2340,17 @@ My best post:
             savedAt: new Date().toISOString()
           });
           localStorage.setItem('post_drafts', JSON.stringify(drafts));
-          showLinkedInStatus('✅ Saved as local draft!');
+          showLinkedInStatus('[OK] Saved as local draft!');
         }
       } catch (error) {
         logger.error('Save draft error:', error);
-        showLinkedInStatus('❌ Failed to save draft.', true);
+        showLinkedInStatus('[X] Failed to save draft.', true);
       }
     }
     
     function showScheduleModal() {
       if (!currentPost || !currentPost.content) {
-        showLinkedInStatus('❌ No post to schedule. Generate a post first.', true);
+        showLinkedInStatus('[X] No post to schedule. Generate a post first.', true);
         return;
       }
       
@@ -2409,7 +2433,7 @@ My best post:
         
         if (response.ok) {
           hideScheduleModal();
-          showLinkedInStatus(`✅ Post scheduled for ${scheduledAt.toLocaleDateString()}`);
+          showLinkedInStatus(`[OK] Post scheduled for ${scheduledAt.toLocaleDateString()}`);
           
           // Also save locally
           const scheduled = JSON.parse(localStorage.getItem('scheduled_posts') || '[]');
@@ -2422,7 +2446,7 @@ My best post:
           localStorage.setItem('scheduled_posts', JSON.stringify(scheduled));
           
           hideScheduleModal();
-          showLinkedInStatus(`✅ Post scheduled locally for ${scheduledAt.toLocaleDateString()}`);
+          showLinkedInStatus(`[OK] Post scheduled locally for ${scheduledAt.toLocaleDateString()}`);
         }
       } catch (error) {
         logger.error('Schedule error:', error);
@@ -2438,7 +2462,7 @@ My best post:
         localStorage.setItem('scheduled_posts', JSON.stringify(scheduled));
         
         hideScheduleModal();
-        showLinkedInStatus(`✅ Post scheduled locally for ${scheduledAt.toLocaleDateString()}`);
+        showLinkedInStatus(`[OK] Post scheduled locally for ${scheduledAt.toLocaleDateString()}`);
       }
     }
     
@@ -2520,15 +2544,33 @@ My best post:
           // Fallback to redirect if popup blocked
           window.location.href = data.auth_url;
         } else {
-          // Poll for completion
+          // Listen for message from popup
+          const messageHandler = (event) => {
+            if (event.data === 'linkedin_connected') {
+              window.removeEventListener('message', messageHandler);
+              statusEl.textContent = '[OK] LinkedIn connected successfully!';
+              statusEl.classList.remove('text-blue-400');
+              statusEl.classList.add('text-green-400');
+              checkLinkedInStatus();
+            } else if (event.data === 'linkedin_error') {
+              window.removeEventListener('message', messageHandler);
+              statusEl.textContent = '[X] LinkedIn connection failed.';
+              statusEl.classList.remove('text-blue-400');
+              statusEl.classList.add('text-red-400');
+            }
+          };
+          window.addEventListener('message', messageHandler);
+          
+          // Also poll for popup close as backup
           const checkPopup = setInterval(() => {
             try {
               if (popup.closed) {
                 clearInterval(checkPopup);
-                statusEl.textContent = '✅ Check if connection was successful.';
-                statusEl.classList.remove('text-blue-400');
-                statusEl.classList.add('text-green-400');
-                checkLinkedInStatus();
+                // Only update if not already handled by message
+                if (!statusEl.classList.contains('text-green-400') && !statusEl.classList.contains('text-red-400')) {
+                  statusEl.textContent = 'Checking connection status...';
+                  checkLinkedInStatus();
+                }
               }
             } catch (e) {
               // Cross-origin error, popup still open
@@ -2537,7 +2579,7 @@ My best post:
         }
       } catch (error) {
         logger.error('LinkedIn connect error:', error);
-        statusEl.textContent = '❌ Error connecting to LinkedIn';
+        statusEl.textContent = '[X] Error connecting to LinkedIn';
         statusEl.classList.remove('text-blue-400');
         statusEl.classList.add('text-red-400');
       }
@@ -2558,10 +2600,8 @@ My best post:
       const userEmail = (currentUser.email || '').toLowerCase();
       const isAdmin = userEmail === 'kunalsbhatt@gmail.com' || isAdminUser();
       
-      console.log('[Onboarding] Admin check:', { userEmail, isAdmin, currentUser: !!currentUser });
       
       if (isAdmin) {
-        console.log('[Onboarding] ✅ Admin user detected - SKIPPING onboarding (persona-based)');
         logger.log('[Onboarding] Admin user detected - skipping onboarding (persona-based)');
         return true; // Skip onboarding for admins
       }
@@ -2765,7 +2805,7 @@ My best post:
       updateMetrics();
       updateRecentPosts();
       updateHistoryGrid();
-      logger.log('✅ Dashboard loaded after onboarding');
+      logger.log('[OK] Dashboard loaded after onboarding');
     }
 
     async function showDashboard() {
@@ -2789,15 +2829,15 @@ My best post:
       updateAdminLinkedInUI();  // Show admin LinkedIn actions if admin
       
       // Load posts from Supabase
-      logger.log('📡 Attempting to load posts from Supabase...');
+      logger.log('[DATA] Attempting to load posts from Supabase...');
       const loadedPosts = await loadPostsFromSupabase();
-      logger.log('📊 Loaded posts count:', loadedPosts ? loadedPosts.length : 0);
+      logger.log('[DATA] Loaded posts count:', loadedPosts ? loadedPosts.length : 0);
       
       if (loadedPosts && loadedPosts.length > 0) {
         posts = loadedPosts;
-        logger.log(`📥 Restored ${posts.length} posts from Supabase`);
+        logger.log(`[OK] Restored ${posts.length} posts from Supabase`);
       } else {
-        logger.warn('⚠️ No posts loaded from Supabase');
+        logger.warn('[WARN] No posts loaded from Supabase');
         // Initialize empty posts array
         posts = posts || [];
       }
@@ -3038,7 +3078,7 @@ My best post:
             data.version = data.version || 1;
             data.improvement_count = data.improvement_count || 0;
             posts.unshift(data);
-            logger.log('✅ [Generate] Added new post to array, id:', data.id);
+            logger.log('[OK] [Generate] Added new post to array, id:', data.id);
           }
           
           // Note: Don't call savePostToSupabase - backend already saved/updated it
@@ -3129,7 +3169,7 @@ My best post:
       const suggestionsSection = suggestionsList?.parentElement;
       suggestionsList.innerHTML = '';
       
-      logger.log('📋 Suggestions from API:', data.suggestions);
+      logger.log('[DATA] Suggestions from API:', data.suggestions);
       
       const suggestions = data.suggestions || [];
       if (suggestions.length > 0) {
@@ -3156,7 +3196,7 @@ My best post:
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                   </svg>
-                  💾 Save Image (PNG)
+                  Save Image (PNG)
                 </button>
               </div>
               <img src="${data.imageUrl}" alt="Generated post image" class="rounded-lg max-w-full h-auto shadow-lg border border-white/10">
@@ -3274,7 +3314,7 @@ My best post:
           const prevAvg = prevPosts.reduce((sum, p) => sum + (p.virality_score || 0), 0) / prevPosts.length;
           const diff = newestScore - prevAvg;
           
-          logger.log('📈 [Trend] Newest score:', newestScore, 'Previous avg:', prevAvg.toFixed(1), 'Diff:', diff.toFixed(1));
+          logger.log('[TREND] Newest score:', newestScore, 'Previous avg:', prevAvg.toFixed(1), 'Diff:', diff.toFixed(1));
           
           const trendEl = document.getElementById('avg-trend');
           const trendValueEl = document.getElementById('avg-trend-value');
@@ -3307,16 +3347,16 @@ My best post:
     function updateSparkline() {
       const sparklinePath = document.getElementById('sparkline-path');
       if (!sparklinePath) {
-        logger.log('📊 [Sparkline] Element not found');
+        logger.log('[CHART] [Sparkline] Element not found');
         return;
       }
       
       // Filter posts with valid virality scores
       const validPosts = posts.filter(p => p.virality_score && !isNaN(p.virality_score));
-      logger.log('📊 [Sparkline] Total posts:', posts.length, 'Valid posts:', validPosts.length);
+      logger.log('[CHART] [Sparkline] Total posts:', posts.length, 'Valid posts:', validPosts.length);
       
       if (validPosts.length > 0) {
-        logger.log('📊 [Sparkline] Sample scores:', validPosts.slice(-5).map(p => p.virality_score));
+        logger.log('[CHART] [Sparkline] Sample scores:', validPosts.slice(-5).map(p => p.virality_score));
       }
       
       if (validPosts.length < 2) {
@@ -3324,7 +3364,7 @@ My best post:
         const avgScore = validPosts.length === 1 ? validPosts[0].virality_score : 50;
         const normalizedY = 20 - ((avgScore / 100) * 20);
         const flatPoints = `0,${normalizedY} 100,${normalizedY}`;
-        logger.log('📊 [Sparkline] Flat line (< 2 posts):', flatPoints);
+        logger.log('[CHART] [Sparkline] Flat line (< 2 posts):', flatPoints);
         sparklinePath.setAttribute('points', flatPoints);
         return;
       }
@@ -3336,8 +3376,8 @@ My best post:
       const min = Math.min(...scores);
       const range = max - min || 1;
       
-      logger.log('📊 [Sparkline] Recent scores (oldest→newest):', scores);
-      logger.log('📊 [Sparkline] Range:', min, '-', max, '(diff:', range, ')');
+      logger.log('[CHART] [Sparkline] Recent scores (oldest-newest):', scores);
+      logger.log('[CHART] [Sparkline] Range:', min, '-', max, '(diff:', range, ')');
       
       const width = 100;
       const height = 20;
@@ -3347,7 +3387,7 @@ My best post:
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       }).join(' ');
       
-      logger.log('📊 [Sparkline] Points:', points);
+      logger.log('[CHART] [Sparkline] Points:', points);
       sparklinePath.setAttribute('points', points);
     }
 
@@ -3519,7 +3559,7 @@ My best post:
                 <span class="group-hover:underline">View Full</span>
               </button>
               <button onclick="event.stopPropagation(); copyPost(${post.originalIndex})" class="text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
-                📋 Copy
+                Copy
               </button>
             </div>
           </div>
@@ -3623,17 +3663,17 @@ My best post:
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                 </svg>
-                💾 Save Image (PNG)
+                Save Image (PNG)
               </button>
             </div>
           ` : ''}
           
           <div class="flex gap-3">
             <button id="copy-btn-${index}" onclick="copyPost(${index})" class="flex-1 py-2.5 px-4 gradient-border-button rounded-lg text-white font-semibold text-sm hover:scale-105 transition-transform">
-              📋 Copy to Clipboard
+              Copy to Clipboard
             </button>
             <button onclick="editPost(${index}); closeModal();" class="flex-1 py-2.5 px-4 gradient-button rounded-lg text-white font-semibold text-sm hover:scale-105 transition-transform">
-              ✨ Improve Post
+              Improve Post
             </button>
           </div>
         </div>

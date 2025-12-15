@@ -93,7 +93,7 @@ class EngagementAgent:
         analysis = await self.analyze_comment(comment)
         
         if not analysis["should_respond"]:
-            print(f"⏭️  Skipping comment (reason: {analysis['reasoning']})")
+            print(f"[SKIP] Skipping comment (reason: {analysis['reasoning']})")
             return {
                 "responded": False,
                 "reason": analysis["reasoning"]
@@ -118,7 +118,7 @@ class EngagementAgent:
                     "intent": analysis["intent"]
                 }).execute()
                 
-                print(f"✅ Replied to {comment.get('author')}")
+                print(f"[OK] Replied to {comment.get('author')}")
                 
                 return {
                     "responded": True,
@@ -131,7 +131,7 @@ class EngagementAgent:
                 }
         
         except Exception as e:
-            print(f"❌ Error responding: {str(e)}")
+            print(f"[X] Error responding: {str(e)}")
             return {
                 "responded": False,
                 "error": str(e)

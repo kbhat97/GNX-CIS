@@ -43,14 +43,14 @@ try:
     RATE_LIMITER_AVAILABLE = True
 except ImportError:
     RATE_LIMITER_AVAILABLE = False
-    logger.warning("⚠️ Rate limiter not available - API is vulnerable!")
+    logger.warning("[WARN] Rate limiter not available - API is vulnerable!")
 
 # Import ContentAgent for AI generation
 try:
     from agents.content_agent import ContentAgent
     CONTENT_AGENT_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ ContentAgent not available: {e}")
+    logger.warning(f"[WARN] ContentAgent not available: {e}")
     CONTENT_AGENT_AVAILABLE = False
 
 # Import ViralityAgent for SEPARATE scoring (fixes LLM self-evaluation bias)
@@ -58,7 +58,7 @@ try:
     from agents.virality_agent import ViralityAgent
     VIRALITY_AGENT_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ ViralityAgent not available: {e}")
+    logger.warning(f"[WARN] ViralityAgent not available: {e}")
     VIRALITY_AGENT_AVAILABLE = False
 
 # ============================================
@@ -83,8 +83,8 @@ CLERK_JWKS_URL = os.getenv(
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8080")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8501")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 ALLOWED_ORIGINS = [
     origin.strip() for origin in 
@@ -103,10 +103,10 @@ ALLOWED_ORIGINS = [
 ]
 
 # Debug: Show what we loaded
-logger.info(f"📝 Loaded Configuration:")
-logger.info(f"   CLERK_SECRET_KEY: {'✅ SET' if CLERK_SECRET_KEY else '❌ NOT SET'}")
-logger.info(f"   SUPABASE_URL: {'✅ SET' if SUPABASE_URL else '❌ NOT SET'}")
-logger.info(f"   SUPABASE_KEY: {'✅ SET' if SUPABASE_KEY else '❌ NOT SET'}")
+logger.info(f"[CONFIG] Loaded Configuration:")
+logger.info(f"   CLERK_SECRET_KEY: {'[OK] SET' if CLERK_SECRET_KEY else '[X] NOT SET'}")
+logger.info(f"   SUPABASE_URL: {'[OK] SET' if SUPABASE_URL else '[X] NOT SET'}")
+logger.info(f"   SUPABASE_KEY: {'[OK] SET' if SUPABASE_KEY else '[X] NOT SET'}")
 
 # ============================================
 # INITIALIZE SERVICES
@@ -119,12 +119,12 @@ SUPABASE_READY = False
 if SUPABASE_URL and SUPABASE_KEY and not TEST_MODE:
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        logger.info("✅ Supabase initialized successfully")
+        logger.info("[OK] Supabase initialized successfully")
         SUPABASE_READY = True
     except Exception as e:
-        logger.error(f"❌ Supabase initialization failed: {e}")
+        logger.error(f"[ERROR] Supabase initialization failed: {e}")
 else:
-    logger.warning("⚠️ SUPABASE_URL or SUPABASE_KEY not set")
+    logger.warning("[WARN] SUPABASE_URL or SUPABASE_KEY not set")
 
 # Clerk (JWT validation via JWKS)
 jwks_data: Dict[str, Any] = {}
@@ -132,37 +132,37 @@ try:
     jwks_response = requests.get(CLERK_JWKS_URL, timeout=5)
     jwks_response.raise_for_status()
     jwks_data = jwks_response.json()
-    logger.info("✅ Clerk JWKS loaded successfully")
+    logger.info("[OK] Clerk JWKS loaded successfully")
 except Exception as e:
-    logger.error(f"❌ Failed to load Clerk JWKS: {e}")
+    logger.error(f"[ERROR] Failed to load Clerk JWKS: {e}")
 
 CLERK_READY = (bool(jwks_data) and bool(CLERK_PUBLISHABLE_KEY)) or TEST_MODE
 if CLERK_READY:
-    logger.info("✅ Clerk configuration ready")
+    logger.info("[OK] Clerk configuration ready")
 else:
-    logger.warning("⚠️ Clerk not fully configured - Auth disabled")
+    logger.warning("[WARN] Clerk not fully configured - Auth disabled")
 
 # Initialize ContentAgent
 content_agent = None
 if CONTENT_AGENT_AVAILABLE:
     try:
         content_agent = ContentAgent()
-        logger.info("✅ ContentAgent initialized")
+        logger.info("[OK] ContentAgent initialized")
     except Exception as e:
-        logger.error(f"❌ Failed to initialize ContentAgent: {e}")
+        logger.error(f"[ERROR] Failed to initialize ContentAgent: {e}")
 else:
-    logger.warning("⚠️ ContentAgent not available - using fallback content")
+    logger.warning("[WARN] ContentAgent not available - using fallback content")
 
 # Initialize ViralityAgent (SEPARATE scorer to avoid self-evaluation bias)
 virality_agent = None
 if VIRALITY_AGENT_AVAILABLE:
     try:
         virality_agent = ViralityAgent()
-        logger.info("✅ ViralityAgent initialized (separate scorer)")
+        logger.info("[OK] ViralityAgent initialized (separate scorer)")
     except Exception as e:
-        logger.error(f"❌ Failed to initialize ViralityAgent: {e}")
+        logger.error(f"[ERROR] Failed to initialize ViralityAgent: {e}")
 else:
-    logger.warning("⚠️ ViralityAgent not available - will use ContentAgent self-score as fallback")
+    logger.warning("[WARN] ViralityAgent not available - will use ContentAgent self-score as fallback")
 
 # ============================================
 # FASTAPI APP SETUP
@@ -185,13 +185,13 @@ else:
 dashboard_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard")
 if os.path.exists(dashboard_dir):
     app.mount("/dashboard", StaticFiles(directory=dashboard_dir, html=True), name="dashboard")
-    logger.info(f"✅ Dashboard directory mounted: {dashboard_dir}")
+    logger.info(f"[OK] Dashboard directory mounted: {dashboard_dir}")
     
     # Also mount dist folder at /dist for CSS to work when HTML is served from root
     dist_dir = os.path.join(dashboard_dir, "dist")
     if os.path.exists(dist_dir):
         app.mount("/dist", StaticFiles(directory=dist_dir), name="dist")
-        logger.info(f"✅ Dist directory mounted at /dist for CSS")
+        logger.info(f"[OK] Dist directory mounted at /dist for CSS")
 else:
     logger.warning(f"Dashboard directory not found: {dashboard_dir}")
 
@@ -264,7 +264,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[
 
     # DEV_MODE bypass for testing
     if authorization and "dev_jwt_" in authorization:
-        logger.warning("⚠️ DEV_MODE active – bypassing Clerk verification.")
+        logger.warning("[DEV_MODE] Active - bypassing Clerk verification.")
         return {
             "clerk_id": "dev_user_1",
             "email": "dev@example.com",
@@ -315,7 +315,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[
             audience=CLERK_PUBLISHABLE_KEY,
         )
 
-        logger.info(f"✅ User authenticated: {payload.get('sub', 'unknown')}")
+        logger.info(f"[OK] User authenticated: {payload.get('sub', 'unknown')}")
         return {
             "clerk_id": payload.get("sub"),
             "email": payload.get("email", ""),
@@ -324,14 +324,14 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[
         }
 
     except JWTError as e:
-        logger.error(f"❌ JWT validation failed: {e}")
+        logger.error(f"[ERROR] JWT validation failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception as e:
-        logger.error(f"❌ Authentication failed: {e}")
+        logger.error(f"[ERROR] Authentication failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication error",
@@ -344,7 +344,7 @@ async def get_db_user(current_user: Dict = Depends(get_current_user)) -> Dict[st
     """
     # DEV_MODE bypass (when using dev_jwt_for_testing)
     if current_user.get("clerk_id") == "dev_user_1":
-        logger.warning("⚠️ DEV_MODE active – returning mock DB user.")
+        logger.warning("[DEV_MODE] Active - returning mock DB user.")
         return {
             "id": "dev_user_1",
             "clerk_id": "dev_user_1",
@@ -385,7 +385,7 @@ async def get_db_user(current_user: Dict = Depends(get_current_user)) -> Dict[st
         return result.data[0]
     
     except Exception as e:
-        logger.error(f"❌ Failed to get/create DB user: {e}")
+        logger.error(f"[ERROR] Failed to get/create DB user: {e}")
         raise HTTPException(status_code=500, detail="User database error")
 
 # ============================================
@@ -681,7 +681,7 @@ async def get_user_profile(db_user: Dict = Depends(get_db_user)):
     try:
         # --- TEST_MODE short‑circuit ---
         if os.getenv("TEST_MODE") == "1":
-            logger.warning("⚠️ TEST_MODE active – returning mock profile payload.")
+            logger.warning("[TEST_MODE] Active - returning mock profile payload.")
             return {
                 "status": "success",
                 "id": "test_user_id_001",          # <‑‑ top‑level id for tests
@@ -809,6 +809,9 @@ async def linkedin_callback(code: str, state: str):
         client_id = os.getenv("LINKEDIN_CLIENT_ID")
         client_secret = os.getenv("LINKEDIN_CLIENT_SECRET")
         redirect_uri = f"{API_BASE_URL}/auth/linkedin/callback"
+        
+        logger.info(f"[LINKEDIN] Callback received - redirect_uri: {redirect_uri}")
+        logger.info(f"[LINKEDIN] client_id present: {bool(client_id)}, client_secret present: {bool(client_secret)}")
 
         # Exchange code for token
         token_url = "https://www.linkedin.com/oauth/v2/accessToken"
@@ -821,29 +824,420 @@ async def linkedin_callback(code: str, state: str):
         }
 
         token_response = requests.post(token_url, data=token_data, timeout=10)
+        
+        # Log the response for debugging
+        logger.info(f"[LINKEDIN] Token response status: {token_response.status_code}")
+        if token_response.status_code != 200:
+            logger.error(f"[LINKEDIN] Token response body: {token_response.text}")
+        
         token_response.raise_for_status()
         token_info = token_response.json()
 
-        # Get user ID from state
-        user_id = state
-
-        # Save token to database
-        token_record = {
-            "user_id": user_id,
-            "access_token": token_info["access_token"],
-            "expires_in": token_info.get("expires_in"),
-            "created_at": datetime.utcnow().isoformat(),
-        }
-
+        # State contains user email - need to look up actual UUID
+        user_email = state
+        user_uuid = None
+        
         if SUPABASE_READY:
-            supabase.table("linkedin_tokens").upsert(token_record).execute()
+            try:
+                # Look up user UUID from email
+                user_result = supabase.table("users").select("id").eq("email", user_email).single().execute()
+                if user_result.data:
+                    user_uuid = user_result.data["id"]
+                    logger.info(f"[LINKEDIN] Found user UUID: {user_uuid} for email: {user_email}")
+            except Exception as lookup_err:
+                logger.warning(f"[LINKEDIN] User lookup warning: {lookup_err}")
 
-        # Redirect to frontend with success message
-        return RedirectResponse(f"{FRONTEND_URL}?linkedin=connected")
+        # Save token to database (only use columns that exist in the table)
+        if user_uuid and SUPABASE_READY:
+            token_record = {
+                "user_id": user_uuid,  # Use actual UUID, not email
+                "access_token": token_info["access_token"],
+                "created_at": datetime.utcnow().isoformat(),
+            }
+            try:
+                supabase.table("linkedin_tokens").upsert(token_record, on_conflict="user_id").execute()
+                logger.info(f"[LINKEDIN] Token saved to database for user: {user_uuid}")
+            except Exception as db_err:
+                logger.warning(f"[LINKEDIN] DB save warning: {db_err}")
+
+        logger.info(f"[LINKEDIN] OAuth successful for user: {user_email}")
+        
+        # Return a self-closing popup page with nice UX
+        close_html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>LinkedIn Connected</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                    color: white;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    text-align: center;
+                }
+                .container {
+                    background: rgba(255,255,255,0.1);
+                    backdrop-filter: blur(10px);
+                    border-radius: 16px;
+                    padding: 40px;
+                    max-width: 400px;
+                }
+                .checkmark {
+                    font-size: 64px;
+                    margin-bottom: 20px;
+                }
+                h2 { margin: 0 0 10px 0; color: #4ade80; }
+                p { color: #a0a0a0; margin: 10px 0; }
+                .countdown { 
+                    font-size: 24px; 
+                    font-weight: bold; 
+                    color: #60a5fa;
+                    margin: 20px 0;
+                }
+                .close-btn {
+                    background: #3b82f6;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    margin-top: 10px;
+                }
+                .close-btn:hover { background: #2563eb; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="checkmark">[OK]</div>
+                <h2>LinkedIn Connected!</h2>
+                <p>Your account is now linked.</p>
+                <p>You can close this window or it will close automatically in</p>
+                <div class="countdown"><span id="timer">5</span> seconds</div>
+                <button class="close-btn" onclick="window.close()">Close Now</button>
+            </div>
+            <script>
+                // Notify parent window of success
+                if (window.opener) {
+                    window.opener.postMessage('linkedin_connected', '*');
+                }
+                // Countdown and auto-close
+                let seconds = 5;
+                const timerEl = document.getElementById('timer');
+                const interval = setInterval(function() {
+                    seconds--;
+                    timerEl.textContent = seconds;
+                    if (seconds <= 0) {
+                        clearInterval(interval);
+                        window.close();
+                    }
+                }, 1000);
+            </script>
+        </body>
+        </html>
+        """
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse(content=close_html)
 
     except Exception as e:
-        logger.error(f"LinkedIn callback error: {e}")
-        return RedirectResponse(f"{FRONTEND_URL}?linkedin=error")
+        logger.error(f"[LINKEDIN] Callback error: {e}", exc_info=True)
+        # Return error page that closes popup
+        error_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>LinkedIn Error</title>
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                    color: white;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    text-align: center;
+                }}
+                .container {{
+                    background: rgba(255,255,255,0.1);
+                    backdrop-filter: blur(10px);
+                    border-radius: 16px;
+                    padding: 40px;
+                    max-width: 400px;
+                }}
+                .error-icon {{ font-size: 64px; margin-bottom: 20px; }}
+                h2 {{ margin: 0 0 10px 0; color: #f87171; }}
+                p {{ color: #a0a0a0; margin: 10px 0; }}
+                .error-msg {{ color: #fca5a5; font-size: 14px; word-break: break-word; }}
+                .countdown {{ font-size: 18px; color: #60a5fa; margin: 15px 0; }}
+                .close-btn {{
+                    background: #ef4444;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    margin-top: 10px;
+                }}
+                .close-btn:hover {{ background: #dc2626; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="error-icon">[X]</div>
+                <h2>Connection Failed</h2>
+                <p>There was an issue connecting to LinkedIn.</p>
+                <p class="error-msg">{str(e)[:100]}</p>
+                <p class="countdown">Closing in <span id="timer">5</span> seconds...</p>
+                <button class="close-btn" onclick="window.close()">Close Now</button>
+            </div>
+            <script>
+                if (window.opener) {{
+                    window.opener.postMessage('linkedin_error', '*');
+                }}
+                let seconds = 5;
+                const timerEl = document.getElementById('timer');
+                const interval = setInterval(function() {{
+                    seconds--;
+                    timerEl.textContent = seconds;
+                    if (seconds <= 0) {{
+                        clearInterval(interval);
+                        window.close();
+                    }}
+                }}, 1000);
+            </script>
+        </body>
+        </html>
+        """
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse(content=error_html)
+
+
+# ============================================
+# LINKEDIN PUBLISH ENDPOINT
+# ============================================
+
+class LinkedInPublishRequest(BaseModel):
+    """Request model for publishing to LinkedIn"""
+    content: str
+    user_email: str
+    image_url: Optional[str] = None
+
+
+@app.post("/api/linkedin/publish")
+async def publish_to_linkedin(request: LinkedInPublishRequest):
+    """Publish post directly to LinkedIn with image support (requires connected account)"""
+    try:
+        if not SUPABASE_READY:
+            return {"success": False, "error": "Database not available"}
+        
+        # Strip markdown formatting from content (LinkedIn doesn't support it)
+        import re
+        clean_content = request.content
+        # Remove bold markers: **text** or __text__
+        clean_content = re.sub(r'\*\*(.+?)\*\*', r'\1', clean_content)
+        clean_content = re.sub(r'__(.+?)__', r'\1', clean_content)
+        # Remove italic markers: *text* or _text_ (be careful not to remove underscores in hashtags)
+        clean_content = re.sub(r'(?<!\w)\*([^*]+)\*(?!\w)', r'\1', clean_content)
+        
+        # Get user UUID from email
+        user_result = supabase.table("users").select("id").eq("email", request.user_email).single().execute()
+        if not user_result.data:
+            return {"success": False, "error": "User not found"}
+        
+        user_id = user_result.data["id"]
+        
+        # Get LinkedIn token
+        token_result = supabase.table("linkedin_tokens").select("access_token").eq("user_id", user_id).single().execute()
+        if not token_result.data:
+            return {"success": False, "error": "LinkedIn not connected. Please connect your account first."}
+        
+        access_token = token_result.data["access_token"]
+        
+        # Get LinkedIn user profile
+        profile_url = "https://api.linkedin.com/v2/userinfo"
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "LinkedIn-Version": "202511"
+        }
+        
+        profile_response = requests.get(profile_url, headers=headers, timeout=10)
+        if profile_response.status_code != 200:
+            logger.error(f"[LINKEDIN PUBLISH] Profile fetch failed: {profile_response.text}")
+            return {"success": False, "error": "Failed to get LinkedIn profile. Token may be expired. Please reconnect."}
+        
+        profile_data = profile_response.json()
+        linkedin_sub = profile_data.get("sub")
+        
+        if not linkedin_sub:
+            return {"success": False, "error": "Could not get LinkedIn user ID"}
+        
+        person_urn = f"urn:li:person:{linkedin_sub}"
+        image_urn = None
+        
+        # Step 1-2: Upload image if provided
+        if request.image_url:
+            image_bytes = None
+            content_type = "image/png"
+            try:
+                # Convert relative URLs to absolute (for local images)
+                image_url = request.image_url
+                logger.info(f"[LINKEDIN PUBLISH] Processing image URL: {image_url[:80]}...")
+                
+                if image_url.startswith('/static/') or image_url.startswith('static/'):
+                    # It's a local path like /static/outputs/... - need to read from file system
+                    # Strip leading slash and construct full path
+                    clean_path = image_url.lstrip('/')
+                    local_path = os.path.join(os.path.dirname(__file__), clean_path)
+                    logger.info(f"[LINKEDIN PUBLISH] Looking for local file: {local_path}")
+                    
+                    if os.path.exists(local_path):
+                        logger.info(f"[LINKEDIN PUBLISH] Reading image from local file: {local_path}")
+                        with open(local_path, 'rb') as f:
+                            image_bytes = f.read()
+                        logger.info(f"[LINKEDIN PUBLISH] Read {len(image_bytes)} bytes from local file")
+                        content_type = "image/png"
+                    else:
+                        logger.warning(f"[LINKEDIN PUBLISH] Local image not found: {local_path}")
+                        
+                elif image_url.startswith('http'):
+                    # It's a full URL (GCS or other) - fetch it
+                    logger.info(f"[LINKEDIN PUBLISH] Fetching image from URL: {image_url[:60]}...")
+                    image_response = requests.get(image_url, timeout=30)
+                    if image_response.status_code == 200:
+                        image_bytes = image_response.content
+                        content_type = image_response.headers.get("Content-Type", "image/png")
+                        logger.info(f"[LINKEDIN PUBLISH] Fetched {len(image_bytes)} bytes from URL")
+                    else:
+                        logger.warning(f"[LINKEDIN PUBLISH] Could not fetch image: {image_response.status_code}")
+                else:
+                    logger.warning(f"[LINKEDIN PUBLISH] Unknown image URL format: {image_url[:50]}")
+                
+                # If we got image bytes, upload to LinkedIn
+                if image_bytes:
+                    # Step 1: Initialize upload
+                    init_url = "https://api.linkedin.com/rest/images?action=initializeUpload"
+                    init_headers = {
+                        "Authorization": f"Bearer {access_token}",
+                        "Content-Type": "application/json",
+                        "X-Restli-Protocol-Version": "2.0.0",
+                        "LinkedIn-Version": "202511"
+                    }
+                    init_data = {
+                        "initializeUploadRequest": {
+                            "owner": person_urn
+                        }
+                    }
+                    
+                    init_response = requests.post(init_url, headers=init_headers, json=init_data, timeout=15)
+                    
+                    if init_response.status_code in [200, 201]:
+                        init_result = init_response.json()
+                        upload_url = init_result.get("value", {}).get("uploadUrl")
+                        image_urn = init_result.get("value", {}).get("image")
+                        
+                        logger.info(f"[LINKEDIN PUBLISH] Got upload URL, image URN: {image_urn}")
+                        
+                        if upload_url and image_urn:
+                            # Step 2: Upload the image bytes
+                            upload_headers = {
+                                "Authorization": f"Bearer {access_token}",
+                                "Content-Type": content_type,
+                            }
+                            
+                            upload_response = requests.put(upload_url, headers=upload_headers, data=image_bytes, timeout=60)
+                            
+                            if upload_response.status_code in [200, 201]:
+                                logger.info(f"[LINKEDIN PUBLISH] Image uploaded successfully: {image_urn}")
+                            else:
+                                logger.warning(f"[LINKEDIN PUBLISH] Image upload failed: {upload_response.status_code} - {upload_response.text[:200]}")
+                                image_urn = None  # Fall back to text-only
+                    else:
+                        logger.warning(f"[LINKEDIN PUBLISH] Init upload failed: {init_response.status_code} - {init_response.text[:200]}")
+                        
+            except Exception as img_err:
+                logger.warning(f"[LINKEDIN PUBLISH] Image upload error (continuing with text): {img_err}")
+                image_urn = None
+        
+        # Step 3: Create post (use Posts API for image support)
+        if image_urn:
+            # Use Posts API with image
+            post_url = "https://api.linkedin.com/rest/posts"
+            post_headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+                "X-Restli-Protocol-Version": "2.0.0",
+                "LinkedIn-Version": "202511"
+            }
+            post_data = {
+                "author": person_urn,
+                "commentary": clean_content,
+                "visibility": "PUBLIC",
+                "distribution": {
+                    "feedDistribution": "MAIN_FEED",
+                    "targetEntities": [],
+                    "thirdPartyDistributionChannels": []
+                },
+                "content": {
+                    "media": {
+                        "id": image_urn,
+                        "title": "Generated image"
+                    }
+                },
+                "lifecycleState": "PUBLISHED",
+                "isReshareDisabledByAuthor": False
+            }
+        else:
+            # Use UGC Posts API for text-only (more reliable)
+            post_url = "https://api.linkedin.com/v2/ugcPosts"
+            post_headers = headers
+            post_data = {
+                "author": person_urn,
+                "lifecycleState": "PUBLISHED",
+                "specificContent": {
+                    "com.linkedin.ugc.ShareContent": {
+                        "shareCommentary": {
+                            "text": clean_content
+                        },
+                        "shareMediaCategory": "NONE"
+                    }
+                },
+                "visibility": {
+                    "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+                }
+            }
+        
+        post_response = requests.post(post_url, headers=post_headers, json=post_data, timeout=15)
+        
+        if post_response.status_code in [200, 201]:
+            logger.info(f"[LINKEDIN PUBLISH] Successfully posted for user: {request.user_email} (with_image={bool(image_urn)})")
+            return {
+                "success": True,
+                "message": f"Post published to LinkedIn successfully{' with image!' if image_urn else '!'}",
+                "post_id": post_response.headers.get("x-restli-id", "unknown"),
+                "has_image": bool(image_urn)
+            }
+        else:
+            logger.error(f"[LINKEDIN PUBLISH] Post failed: {post_response.text}")
+            try:
+                error_detail = post_response.json().get("message", post_response.text[:200])
+            except:
+                error_detail = post_response.text[:200]
+            return {"success": False, "error": f"LinkedIn API error: {error_detail}"}
+            
+    except Exception as e:
+        logger.error(f"[LINKEDIN PUBLISH] Error: {e}")
+        return {"success": False, "error": str(e)}
+
 
 # ============================================
 # POST ENDPOINTS
@@ -864,7 +1258,7 @@ class ApiGenerateRequest(BaseModel):
 @app.post("/api/generate")
 async def api_generate(request: ApiGenerateRequest):
     """Generate a LinkedIn post - HTML Dashboard version (no JWT required)"""
-    logger.info(f"📝 /api/generate request: topic={request.topic}, style={request.style}")
+    logger.info(f"[GENERATE] /api/generate request: topic={request.topic}, style={request.style}")
     
     # CRITICAL: Rate limiting to prevent runaway costs (10 per hour)
     if RATE_LIMITER_AVAILABLE:
@@ -872,7 +1266,7 @@ async def api_generate(request: ApiGenerateRequest):
         is_allowed, rate_info = check_generation_limit(user_identifier)
         if not is_allowed:
             retry_after = rate_info.get('retry_after', 60)
-            logger.warning(f"⚠️ Rate limit exceeded for {user_identifier}. Retry after {retry_after}s")
+            logger.warning(f"[WARN] Rate limit exceeded for {user_identifier}. Retry after {retry_after}s")
             raise HTTPException(
                 status_code=429,
                 detail={
@@ -884,7 +1278,7 @@ async def api_generate(request: ApiGenerateRequest):
             )
         else:
             remaining = rate_info.get('remaining', 0)
-            logger.info(f"✅ Rate limit OK for {user_identifier}: {remaining} requests remaining")
+            logger.info(f"[OK] Rate limit OK for {user_identifier}: {remaining} requests remaining")
     
     try:
         # Use Supabase to look up user by email if provided
@@ -926,23 +1320,23 @@ async def api_generate(request: ApiGenerateRequest):
                 
                 if virality_agent and content:
                     try:
-                        logger.info("🎯 Scoring post with separate ViralityAgent (eliminates self-bias)")
+                        logger.info("[SCORE] Scoring post with separate ViralityAgent (eliminates self-bias)")
                         score_result = await virality_agent.score_post(content)
                         virality_score = score_result.get("score", 50)
                         suggestions = score_result.get("suggestions", [])
                         score_breakdown = score_result.get("breakdown", {})
-                        logger.info(f"✅ ViralityAgent scored post: {virality_score}/100")
+                        logger.info(f"[OK] ViralityAgent scored post: {virality_score}/100")
                     except Exception as score_err:
                         logger.error(f"ViralityAgent scoring failed: {score_err}")
                         # Fallback to ContentAgent self-score if ViralityAgent fails
                         virality_score = content_result.get("virality_score", 50)
                         suggestions = content_result.get("suggestions", [])
-                        logger.warning("⚠️ Using ContentAgent self-score as fallback")
+                        logger.warning("[WARN] Using ContentAgent self-score as fallback")
                 else:
                     # ViralityAgent not available - use ContentAgent self-score
                     virality_score = content_result.get("virality_score", 50)
                     suggestions = content_result.get("suggestions", [])
-                    logger.warning("⚠️ ViralityAgent not available - using self-score")
+                    logger.warning("[WARN] ViralityAgent not available - using self-score")
                 
                 # Generate image if requested (using Nano Banana AI)
                 image_url = None
@@ -964,7 +1358,7 @@ async def api_generate(request: ApiGenerateRequest):
                         
                         if image_path:
                             image_url = f"/static/outputs/{os.path.basename(image_path)}"
-                            logger.info(f"✅ AI image generated: {image_url}")
+                            logger.info(f"[OK] AI image generated: {image_url}")
                         else:
                             # Fallback to branded image if AI fails
                             logger.warning("AI image generation failed, using branded fallback")
@@ -989,7 +1383,7 @@ async def api_generate(request: ApiGenerateRequest):
                     try:
                         if is_improvement:
                             # IMPROVE existing post using RPC (atomic: history + update)
-                            logger.info(f"📝 Improving existing post: {request.post_id}")
+                            logger.info(f"[IMPROVE] Improving existing post: {request.post_id}")
                             
                             # Call improve_post RPC with retry logic (optimistic locking)
                             max_retries = 3
@@ -1009,24 +1403,24 @@ async def api_generate(request: ApiGenerateRequest):
                                 if rpc_result.data:
                                     result_data = rpc_result.data
                                     if result_data.get("success"):
-                                        logger.info(f"✅ Post improved: v{result_data.get('new_version')} (improvement #{result_data.get('improvement_count')})")
+                                        logger.info(f"[OK] Post improved: v{result_data.get('new_version')} (improvement #{result_data.get('improvement_count')})")
                                         post_id = request.post_id
                                         break
                                     elif result_data.get("error") == "version_mismatch":
-                                        logger.warning(f"⚠️ Version mismatch on attempt {attempt+1}, retrying...")
+                                        logger.warning(f"[WARN] Version mismatch on attempt {attempt+1}, retrying...")
                                         if attempt < max_retries - 1:
                                             import asyncio
                                             await asyncio.sleep(0.1 * (attempt + 1))  # Exponential backoff
                                             continue
                                         else:
-                                            logger.error("❌ Version conflict after max retries - concurrent edit detected")
+                                            logger.error("[ERROR] Version conflict after max retries - concurrent edit detected")
                                             return {
                                                 "success": False,
                                                 "error": "Concurrent edit detected. Please refresh and try again.",
                                                 "conflict": True
                                             }
                                     else:
-                                        logger.error(f"❌ Improve failed: {result_data.get('error')}")
+                                        logger.error(f"[ERROR] Improve failed: {result_data.get('error')}")
                                         # Fall through to create new post as fallback
                                         is_improvement = False
                                         break
@@ -1049,7 +1443,7 @@ async def api_generate(request: ApiGenerateRequest):
                             result = supabase.table("posts").insert(post_data).execute()
                             if result.data:
                                 post_id = result.data[0]["id"]
-                                logger.info(f"✅ New post created: {post_id}")
+                                logger.info(f"[OK] New post created: {post_id}")
                                 
                     except Exception as db_err:
                         logger.error(f"Failed to save post to Supabase: {db_err}")
@@ -1105,7 +1499,7 @@ class ImageGenerateRequest(BaseModel):
 @app.post("/api/generate-image")
 async def api_generate_image(request: ImageGenerateRequest):
     """Generate an AI image for existing post content (deferred generation)"""
-    logger.info(f"🎨 /api/generate-image request: style={request.style}")
+    logger.info(f"[IMAGE] /api/generate-image request: style={request.style}")
     
     try:
         # Import the AI image generator
@@ -1132,7 +1526,7 @@ async def api_generate_image(request: ImageGenerateRequest):
         if image_path and os.path.exists(image_path):
             # Return the image URL - images are stored in static/outputs/
             image_url = f"/static/outputs/{os.path.basename(image_path)}"
-            logger.info(f"✅ Image generated: {image_url}")
+            logger.info(f"[OK] Image generated: {image_url}")
             
             # Update post in Supabase if post_id provided
             if request.post_id and SUPABASE_READY:
@@ -1210,7 +1604,7 @@ async def download_image(filename: str, download_as: Optional[str] = None):
     if download_as and not download_as.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
         final_filename = download_as + '.png'
     
-    logger.info(f"📥 Serving download: {filename} as {final_filename}")
+    logger.info(f"[DOWNLOAD] Serving download: {filename} as {final_filename}")
     
     # Return file with proper headers for download
     return FileResponse(
@@ -1233,7 +1627,7 @@ async def generate_post(
     """Generate a LinkedIn post using AI"""
     # DEV_MODE bypass (when using dev_jwt_for_testing)
     if db_user.get("id") == "dev_user_1":
-        logger.warning("⚠️ DEV_MODE active – generating real image with mock content.")
+        logger.warning("[DEV_MODE] Active - generating real image with mock content.")
         next_id = f"post_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         content = f"This is a DEV_MODE generated post about: {request.topic}\n\nGenerated by CIS AI System in development mode."
         
@@ -1241,9 +1635,9 @@ async def generate_post(
         image_path = None
         try:
             image_path = create_branded_image(content, "Kunal Bhat, PMP")
-            logger.info(f"✅ DEV_MODE: Image generated successfully")
+            logger.info(f"[OK] DEV_MODE: Image generated successfully")
         except Exception as img_err:
-            logger.error(f"❌ DEV_MODE: Image generation failed: {img_err}")
+            logger.error(f"[ERROR] DEV_MODE: Image generation failed: {img_err}")
         
         return {
             "status": "success",
@@ -1256,7 +1650,7 @@ async def generate_post(
         }
     
     if TEST_MODE:
-        logger.warning("⚠️ TEST_MODE active – returning mock generated post.")
+        logger.warning("[TEST_MODE] Active - returning mock generated post.")
         next_id = f"post_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         content = f"This is a TEST_MODE generated post about: {request.topic}\n\nGenerated by CIS AI System in test mode."
         TEST_STATE["posts"].append({
@@ -1365,7 +1759,7 @@ async def get_pending_posts(db_user: Dict = Depends(get_db_user)):
     """Get user's pending posts"""
     # DEV_MODE bypass
     if db_user.get("id") == "dev_user_1":
-        logger.warning("⚠️ DEV_MODE active – returning empty pending posts.")
+        logger.warning("[DEV_MODE] Active - returning empty pending posts.")
         return {"status": "success", "posts": [], "count": 0}
     
     if TEST_MODE:
@@ -1393,7 +1787,7 @@ async def get_published_posts(db_user: Dict = Depends(get_db_user)):
     """Get user's published posts"""
     # DEV_MODE bypass
     if db_user.get("id") == "dev_user_1":
-        logger.warning("⚠️ DEV_MODE active – returning empty published posts.")
+        logger.warning("[DEV_MODE] Active - returning empty published posts.")
         return {"status": "success", "posts": [], "count": 0}
     
     if TEST_MODE:
@@ -1509,7 +1903,7 @@ async def admin_publish_linkedin(request: LinkedInPublishRequest, db_user: Dict 
     
     # Verify admin authorization from server-side list
     if user_email not in [e.lower().strip() for e in ADMIN_EMAILS]:
-        logger.warning(f"⚠️ Unauthorized admin publish attempt by: {user_email}")
+        logger.warning(f"[WARN] Unauthorized admin publish attempt by: {user_email}")
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
@@ -1546,7 +1940,7 @@ async def admin_publish_linkedin(request: LinkedInPublishRequest, db_user: Dict 
                 result = await api.publish_post(text=request.content)
             
             if result.get("success"):
-                logger.info(f"✅ Admin LinkedIn publish successful: {user_email}")
+                logger.info(f"[OK] Admin LinkedIn publish successful: {user_email}")
                 return {"success": True, "linkedin_post_id": result.get("linkedin_post_id")}
             else:
                 return {"success": False, "error": result.get("error", "Unknown error")}
@@ -1592,7 +1986,7 @@ async def schedule_post(
         result = supabase.table("posts").insert(post_data).execute()
         
         if result.data:
-            logger.info(f"📅 Post scheduled for user: {user_id}, time: {scheduled_at}")
+            logger.info(f"[SCHEDULE] Post scheduled for user: {user_id}, time: {scheduled_at}")
             return {
                 "success": True,
                 "post_id": result.data[0]["id"],
@@ -1690,7 +2084,7 @@ async def update_post(
     """Update a post"""
     # DEV_MODE bypass
     if db_user.get("id") == "dev_user_1":
-        logger.warning("⚠️ DEV_MODE active – returning mock post update.")
+        logger.warning("[DEV_MODE] Active - returning mock post update.")
         return {
             "status": "success",
             "post": {
@@ -1757,7 +2151,7 @@ async def alias_user_onboarding(
         # prevent accidental use in production
         raise HTTPException(status_code=400, detail="Endpoint available only in TEST_MODE")
     try:
-        logger.warning("⚠️ TEST_MODE active – accepting simplified onboarding payload.")
+        logger.warning("[TEST_MODE] Active - accepting simplified onboarding payload.")
         responses = payload.get("responses", {}) if isinstance(payload, dict) else {}
         mock_user_id = db_user.get("id", "test_user_id_001")
         # synthesize a confirmation structure similar to real onboarding
@@ -1782,7 +2176,7 @@ async def alias_linkedin_token_test(payload: Dict[str, Any] = Body(...),
     if os.getenv("TEST_MODE") != "1":
         raise HTTPException(status_code=400, detail="Endpoint available only in TEST_MODE")
     try:
-        logger.warning("⚠️ TEST_MODE active – mocking LinkedIn token save response.")
+        logger.warning("[TEST_MODE] Active - mocking LinkedIn token save response.")
         return {"success": True, "user_id": db_user.get("id", "test_user_id_001")}
     except Exception as e:
         logger.error(f"LinkedIn token alias error: {e}")
@@ -1797,7 +2191,7 @@ async def alias_linkedin_status_test(db_user: Dict = Depends(get_db_user)):
     if os.getenv("TEST_MODE") != "1":
         raise HTTPException(status_code=400, detail="Endpoint available only in TEST_MODE")
     try:
-        logger.warning("⚠️ TEST_MODE active – returning mock LinkedIn connection status.")
+        logger.warning("[TEST_MODE] Active - returning mock LinkedIn connection status.")
         return {"connected": True}
     except Exception as e:
         logger.error(f"LinkedIn status alias error: {e}")
@@ -1865,15 +2259,15 @@ async def general_exception_handler(request, exc):
 @app.on_event("startup")
 async def startup_event():
     """Run startup checks"""
-    logger.info("🚀 Starting CIS API...")
-    logger.info(f"✅ Clerk: {'Ready' if CLERK_READY else 'Not configured'}")
-    logger.info(f"✅ Supabase: {'Ready' if SUPABASE_READY else 'Not available'}")
+    logger.info("[STARTUP] Starting CIS API...")
+    logger.info(f"[OK] Clerk: {'Ready' if CLERK_READY else 'Not configured'}")
+    logger.info(f"[OK] Supabase: {'Ready' if SUPABASE_READY else 'Not available'}")
     logger.info("=" * 50)
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Run shutdown tasks"""
-    logger.info("🛑 Shutting down CIS API...")
+    logger.info("[SHUTDOWN] Shutting down CIS API...")
 
 # ============================================
 # RUN

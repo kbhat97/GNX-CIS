@@ -21,13 +21,13 @@ async def run_post_creation_workflow(topic: str, use_history: bool, user_id: str
         # Step 1: Get user's learning profile (if history enabled)
         user_profile = None
         if use_history:
-            log_agent_action("Orchestrator", "📚 Getting user learning profile", user_id)
+            log_agent_action("Orchestrator", "[LEARN] Getting user learning profile", user_id)
             user_profile = await history_agent.analyze_user_history(user_id)
             
             # Check if learning is active (20+ posts)
             if user_profile.get("learning_active") == False:
                 posts_needed = user_profile.get("posts_needed", 20)
-                log_agent_action("Orchestrator", f"⏳ Learning not active yet ({posts_needed} more posts needed)", user_id)
+                log_agent_action("Orchestrator", f"[WAIT] Learning not active yet ({posts_needed} more posts needed)", user_id)
         
         # Step 2: Generate content with profile (if available)
         content_result = await content_agent.generate_post_text(

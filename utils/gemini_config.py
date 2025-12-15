@@ -48,7 +48,7 @@ class GeminiConfig:
 
         genai.configure(api_key=api_key)
         cls._configured = True
-        logger.info("✅ Gemini 2.5 Flash configured for speed.")
+        logger.info("[OK] Gemini 2.5 Flash configured for speed.")
 
     @classmethod
     def get_model(cls, model_type: Literal["content", "scoring", "analysis"] = "content"):

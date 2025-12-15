@@ -79,14 +79,14 @@ async def daily_post():
             
             if result["success"]:
                 log_agent_action("PublisherAgent", "Auto-published", result['linkedin_post_id'])
-                log(f"✅ Auto-published post with score {score}")
+                log(f"[OK] Auto-published post with score {score}")
             else:
                 log_error(Exception(result.get('error')), "Auto-publishing")
                 
         except Exception as e:
             log_error(e, "Auto-publishing")
     else:
-        log(f"⏸️ Post saved for review (score: {score} < 70)")
+        log(f"[HOLD] Post saved for review (score: {score} < 70)")
     
     log("=== Daily Post Workflow Complete ===")
 

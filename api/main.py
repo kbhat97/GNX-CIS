@@ -180,7 +180,7 @@ async def generate_post(request: GenerateRequest):
                 hook = post_text.split('\n')[0] if post_text else ""
                 
                 # Try Nano Banana AI image generation first (with full content for dynamic prompts)
-                print(f"🎨 User requested image generation for style: {request.style}")
+                print(f"[IMAGE] User requested image generation for style: {request.style}")
                 image_path = await generate_ai_image(
                     hook_text=hook,
                     topic=clean_topic,
@@ -204,7 +204,7 @@ async def generate_post(request: GenerateRequest):
             except Exception as img_err:
                 print(f"Image generation warning: {img_err}")
         else:
-            print("📝 Skipping image generation (deferred mode - user can generate later)")
+            print("[POST] Skipping image generation (deferred mode - user can generate later)")
         
         # Create response
         post_id = f"post_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -283,7 +283,7 @@ async def generate_image_for_post(request: GenerateImageRequest):
     try:
         hook = request.content.split('\n')[0] if request.content else ""
         
-        print(f"🎨 On-demand image generation for style: {request.style}")
+        print(f"[IMAGE] On-demand image generation for style: {request.style}")
         image_path = await generate_ai_image(
             hook_text=hook,
             topic="User finalized post",

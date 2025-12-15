@@ -40,7 +40,7 @@ class PublisherAgent:
             now = datetime.now()
             if schedule_time > now:
                 wait_seconds = (schedule_time - now).total_seconds()
-                print(f"⏰ Scheduled for {schedule_time}. Waiting {wait_seconds}s...")
+                print(f"[SCHED] Scheduled for {schedule_time}. Waiting {wait_seconds}s...")
                 await asyncio.sleep(wait_seconds)
         
         try:
@@ -64,7 +64,7 @@ class PublisherAgent:
                     "published_at": datetime.now().isoformat()
                 }).eq("id", post_id).execute()
                 
-                print(f"✅ Published post {post_id}")
+                print(f"[OK] Published post {post_id}")
                 
                 return {
                     "success": True,
@@ -84,7 +84,7 @@ class PublisherAgent:
                 }
         
         except Exception as e:
-            print(f"❌ Publishing error: {str(e)}")
+            print(f"[X] Publishing error: {str(e)}")
             
             # Update database with error
             supabase_client.table("posts").update({

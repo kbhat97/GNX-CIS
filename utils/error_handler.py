@@ -29,7 +29,7 @@ class RateLimiter:
         
         # Record this call
         self.calls[api_name].append(now)
-	return True
+        return True
     
     def wait_if_needed(self, api_name: str) -> float:
         """Wait if rate limit exceeded, return wait time"""
@@ -39,7 +39,7 @@ class RateLimiter:
             wait_time = limit_config["period"] - (time.time() - oldest_call)
             
             if wait_time > 0:
-                print(f"⏳ Rate limit reached for {api_name}. Waiting {wait_time:.1f}s...")
+                print(f"[WAIT] Rate limit reached for {api_name}. Waiting {wait_time:.1f}s...")
                 time.sleep(wait_time)
                 return wait_time
         

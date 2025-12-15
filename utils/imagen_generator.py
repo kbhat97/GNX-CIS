@@ -7,6 +7,7 @@ Uses Google Vertex AI to generate professional business infographics
 
 import os
 import logging
+import uuid
 from typing import Optional, Dict, Any
 from datetime import datetime
 
@@ -47,7 +48,7 @@ class ImagenGenerator:
                 # Best for business infographics with text rendering
                 self.model = ImageGenerationModel.from_pretrained("gemini-3.0-pro-image")
                 
-                logger.info("✅ Gemini 3 Pro Image (Nano Banana Pro) loaded successfully")
+                logger.info("[OK] Gemini 3 Pro Image (Nano Banana Pro) loaded successfully")
                 
                 # Initialize Cloud Storage
                 self.storage_client = storage.Client(project=config.project_id)
@@ -55,21 +56,21 @@ class ImagenGenerator:
                 # Get or create bucket
                 try:
                     self.bucket = self.storage_client.get_bucket(config.GCS_BUCKET_NAME)
-                    logger.info(f"✅ Using existing GCS bucket: {config.GCS_BUCKET_NAME}")
+                    logger.info(f"[OK] Using existing GCS bucket: {config.GCS_BUCKET_NAME}")
                 except Exception:
                     # Bucket doesn't exist, create it
                     self.bucket = self.storage_client.create_bucket(
                         config.GCS_BUCKET_NAME,
                         location=config.GCP_REGION
                     )
-                    logger.info(f"✅ Created GCS bucket: {config.GCS_BUCKET_NAME}")
+                    logger.info(f"[OK] Created GCS bucket: {config.GCS_BUCKET_NAME}")
                 
-                logger.info("✅ Gemini 3 Pro Image (Nano Banana Pro) initialized successfully")
+                logger.info("[OK] Gemini 3 Pro Image (Nano Banana Pro) initialized successfully")
                 
             except Exception as e:
                 log_error(e, "Imagen initialization")
                 self.enabled = False
-                logger.warning("⚠️ Falling back to PIL-based image generation")
+                logger.warning("[WARN] Falling back to PIL-based image generation")
     
     def generate_linkedin_image(
         self, 
@@ -120,7 +121,7 @@ class ImagenGenerator:
             # Upload to GCS
             public_url = self._upload_to_gcs(image, topic)
             
-            log_agent_action("ImagenGenerator", "✅ Business infographic generated successfully", f"URL: {public_url}")
+            log_agent_action("ImagenGenerator", "[OK] Business infographic generated successfully", f"URL: {public_url}")
             
             return public_url
             
@@ -226,10 +227,11 @@ Generate a clean, professional business infographic suitable for a LinkedIn post
     def _upload_to_gcs(self, image, topic: str) -> str:
         """Upload generated image to Google Cloud Storage"""
         try:
-            # Generate unique filename
+            # Generate unique filename with timestamp, unique ID, and topic
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            safe_topic = "".join(c if c.isalnum() else "_" for c in topic[:30])
-            filename = f"linkedin_posts/{timestamp}_{safe_topic}.png"
+            unique_id = str(uuid.uuid4())[:8]  # Short unique ID for traceability
+            safe_topic = "".join(c if c.isalnum() else "_" for c in topic[:25])
+            filename = f"linkedin_posts/{timestamp}_{unique_id}_{safe_topic}.png"
             
             # Create blob
             blob = self.bucket.blob(filename)
@@ -247,7 +249,7 @@ Generate a clean, professional business infographic suitable for a LinkedIn post
             blob.make_public()
             
             public_url = blob.public_url
-            logger.info(f"✅ Image uploaded to GCS: {filename}")
+            logger.info(f"[OK] Image uploaded to GCS: {filename}")
             
             return public_url
             

@@ -77,17 +77,17 @@ TONE & STYLE
 - Include checklists, bullet points, numbered lists where helpful
 
 ═══════════════════════════════════════════════════════════════════
-🚫 ABSOLUTE PROHIBITIONS (VIOLATION = FAILURE)
+[PROHIBITED] ABSOLUTE PROHIBITIONS (VIOLATION = FAILURE)
 ═══════════════════════════════════════════════════════════════════
 
-❌ NEVER use specific percentages like "25%", "30%", "40%", "15%"
-❌ NEVER invent statistics or metrics
-❌ NEVER write without personal experience anchoring
+[X] NEVER use specific percentages like "25%", "30%", "40%", "15%"
+[X] NEVER invent statistics or metrics
+[X] NEVER write without personal experience anchoring
 
 If you violate any of these, the post FAILS quality check.
 
 ═══════════════════════════════════════════════════════════════════
-✅ MANDATORY REQUIREMENTS (MUST BE IN EVERY POST)
+[REQUIRED] MANDATORY REQUIREMENTS (MUST BE IN EVERY POST)
 ═══════════════════════════════════════════════════════════════════
 
 1. **PERSONAL EXPERIENCE ANCHOR** (REQUIRED - pick ONE)
@@ -98,18 +98,18 @@ If you violate any of these, the post FAILS quality check.
    - "Working with Fortune 500 clients on digital transformation..."
    - "My experience delivering $3M-$4.5M SAP programs taught me..."
    
-   ⚠️ If you don't include personal experience = POST REJECTED
+   [!] If you don't include personal experience = POST REJECTED
 
 2. **METRICS FRAMING** (STRICT RULE)
    Instead of percentages, use:
-   ✅ "significant improvements"
-   ✅ "measurable gains"
-   ✅ "reduced overhead"
-   ✅ "faster time-to-value"
-   ✅ "industry leaders report..."
-   ✅ "organizations are seeing..."
+   [+] "significant improvements"
+   [+] "measurable gains"
+   [+] "reduced overhead"
+   [+] "faster time-to-value"
+   [+] "industry leaders report..."
+   [+] "organizations are seeing..."
    
-   ❌ NEVER: "25% increase", "30% reduction", "40% faster"
+   [X] NEVER: "25% increase", "30% reduction", "40% faster"
 
 3. **MANDATORY HASHTAGS** (MUST USE THESE EXACT HASHTAGS)
    End EVERY post with these hashtags:
@@ -220,7 +220,7 @@ def safe_load_persona(persona_id: str) -> Union[Dict, PersonaError]:
         # Validate with Pydantic
         AdminPersona(**data)
         
-        logger.info(f"✅ Loaded persona: {persona_id} v{data.get('version', '?')}")
+        logger.info(f"[OK] Loaded persona: {persona_id} v{data.get('version', '?')}")
         return data
         
     except json.JSONDecodeError as e:

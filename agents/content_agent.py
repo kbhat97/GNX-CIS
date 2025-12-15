@@ -94,11 +94,11 @@ class ContentAgent(BaseAgent):
                     persona_hashtags = persona_builder.hashtag_list()
                     log_agent_action(
                         "ContentAgent", 
-                        "🎭 Persona loaded", 
+                        "[PERSONA] Persona loaded", 
                         f"persona_id={persona_id}, version={persona_builder.version}"
                     )
                 else:
-                    log_agent_action("ContentAgent", "⚠️ Persona load failed, using fallback", f"persona_id={persona_id}")
+                    log_agent_action("ContentAgent", "[WARN] Persona load failed, using fallback", f"persona_id={persona_id}")
             
             # Build persona context from profile (includes onboarding data)
             persona_name = "Professional thought leader"
@@ -121,7 +121,7 @@ class ContentAgent(BaseAgent):
                 primary_goal = profile.get('primary_goal', '')
                 user_topics = profile.get('common_topics', []) or profile.get('topics', [])
                 
-                log_agent_action("ContentAgent", "📋 Using profile data", 
+                log_agent_action("ContentAgent", "[PROFILE] Using profile data", 
                     f"Industry: {industry}, Goal: {primary_goal}, Style: {writing_tone}")
 
             # Enhanced prompt for viral LinkedIn content with Gemini 2.5 Flash
@@ -213,7 +213,7 @@ Focus ONLY on creating the best possible content. Scoring will be handled separa
             
             # Enhanced logging with persona info
             persona_info = f", persona={persona_id}" if persona_id else ""
-            log_agent_action("ContentAgent", "✅ Post text generated with Gemini 2.5 Flash", f"Topic: {topic}, Style: {style}{persona_info}")
+            log_agent_action("ContentAgent", "[OK] Post text generated with Gemini 2.5 Flash", f"Topic: {topic}, Style: {style}{persona_info}")
             return result
         except Exception as e:
             log_error(e, "Content generation")
@@ -251,7 +251,7 @@ Return ONLY valid JSON:
             response = await self.model.generate_content_async(prompt)
             error_payload = {"post_text": original_text, "reasoning": "Failed to improve content due to a parsing error."}
             result = parse_llm_json_response(response.text, error_payload)
-            log_agent_action("ContentAgent", "✅ Post text improved successfully")
+            log_agent_action("ContentAgent", "[OK] Post text improved successfully")
             return result
         except Exception as e:
             log_error(e, "Improve post text")

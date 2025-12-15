@@ -162,7 +162,7 @@ def show_metrics_dashboard():
     """Display metrics dashboard in Streamlit"""
     tracker = get_metrics_tracker()
     
-    st.markdown("## 📊 Metrics Dashboard")
+    st.markdown("## Metrics Dashboard")
     
     # Generation metrics
     gen_stats = tracker.get_generation_stats()
@@ -179,7 +179,7 @@ def show_metrics_dashboard():
         st.metric("Avg Duration", f"{gen_stats['avg_duration']}s")
     
     # User metrics
-    st.markdown("### 👥 User Metrics")
+    st.markdown("### User Metrics")
     user_stats = tracker.get_user_stats()
     
     col1, col2 = st.columns(2)
@@ -189,7 +189,7 @@ def show_metrics_dashboard():
         st.metric("Active Today", user_stats["active_today"])
     
     # Model usage
-    st.markdown("### 🤖 Model Usage")
+    st.markdown("### Model Usage")
     model_stats = tracker.get_model_stats()
     
     for model, count in model_stats.items():

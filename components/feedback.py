@@ -80,13 +80,13 @@ def submit_feedback(
 def _send_negative_feedback_alert(feedback: dict):
     """Send alert for negative feedback (placeholder - would integrate with email/Slack)"""
     # In production, this would send an email or Slack notification
-    print(f"⚠️ NEGATIVE FEEDBACK ALERT: Rating {feedback['rating']} - {feedback['text'][:100]}")
+    print(f"[WARN] NEGATIVE FEEDBACK ALERT: Rating {feedback['rating']} - {feedback['text'][:100]}")
 
 
 def show_feedback_button():
     """Show feedback button in sidebar"""
     with st.sidebar:
-        if st.button("💬 Give Feedback", use_container_width=True):
+        if st.button("Give Feedback", use_container_width=True):
             st.session_state.show_feedback_form = True
 
 
@@ -97,7 +97,7 @@ def show_feedback_form(post_id: Optional[int] = None, user_id: Optional[str] = N
         return
     
     st.markdown("---")
-    st.markdown("### 💬 Share Your Feedback")
+    st.markdown("### Share Your Feedback")
     
     with st.form("feedback_form"):
         # Rating
@@ -110,7 +110,7 @@ def show_feedback_form(post_id: Optional[int] = None, user_id: Optional[str] = N
         )
         
         # Star display
-        stars = "⭐" * rating + "☆" * (5 - rating)
+        stars = "*" * rating + "-" * (5 - rating)
         st.markdown(f"**Rating: {stars}**")
         
         # Category
@@ -129,10 +129,10 @@ def show_feedback_form(post_id: Optional[int] = None, user_id: Optional[str] = N
         col1, col2 = st.columns(2)
         
         with col1:
-            submit = st.form_submit_button("📤 Submit", type="primary", use_container_width=True)
+            submit = st.form_submit_button("Submit", type="primary", use_container_width=True)
         
         with col2:
-            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+            cancel = st.form_submit_button("Cancel", use_container_width=True)
         
         if submit:
             if feedback_text.strip():
@@ -145,7 +145,7 @@ def show_feedback_form(post_id: Optional[int] = None, user_id: Optional[str] = N
                 )
                 
                 if success:
-                    st.success("✅ Thank you for your feedback!")
+                    st.success("[OK] Thank you for your feedback!")
                     st.session_state.show_feedback_form = False
                     st.balloons()
                 else:
@@ -166,17 +166,17 @@ def show_inline_post_feedback(post_id: int, user_id: Optional[str] = None):
     feedback_key = f"post_feedback_{post_id}"
     
     with col1:
-        if st.button("👍", key=f"like_{post_id}", help="Great content!"):
+        if st.button("Like", key=f"like_{post_id}", help="Great content!"):
             submit_feedback(5, "Liked this post", post_id, user_id, "content_quality")
-            st.toast("Thanks for the feedback! 👍")
+            st.toast("Thanks for the feedback!")
     
     with col2:
-        if st.button("👎", key=f"dislike_{post_id}", help="Needs improvement"):
+        if st.button("Dislike", key=f"dislike_{post_id}", help="Needs improvement"):
             submit_feedback(2, "Disliked this post", post_id, user_id, "content_quality")
             st.toast("We'll work on improving!")
     
     with col6:
-        if st.button("💬 More feedback", key=f"more_{post_id}"):
+        if st.button("More feedback", key=f"more_{post_id}"):
             st.session_state.show_feedback_form = True
             st.session_state.feedback_post_id = post_id
 

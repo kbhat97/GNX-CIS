@@ -20,7 +20,7 @@ class HealthCheck:
     
     async def check_all(self) -> Dict[str, Any]:
         """Run all health checks and return comprehensive status"""
-        logger.info("🏥 Starting comprehensive health checks...")
+        logger.info("[HEALTH] Starting comprehensive health checks...")
         
         results = {
             "timestamp": datetime.now().isoformat(),
@@ -55,7 +55,7 @@ class HealthCheck:
                     results["warnings"].append(f"{check_name}: {check_result['warning']}")
                 
                 # Log result
-                status_icon = "✅" if check_result["healthy"] else "❌"
+                status_icon = "[OK]" if check_result["healthy"] else "[X]"
                 logger.info(f"{status_icon} {check_name}: {check_result['message']}")
                 
             except Exception as e:
@@ -66,7 +66,7 @@ class HealthCheck:
                     "error": str(e)
                 }
                 results["errors"].append(f"{check_name}: {error_msg}")
-                logger.error(f"❌ {check_name} health check failed: {e}")
+                logger.error(f"[X] {check_name} health check failed: {e}")
         
         # Determine overall status
         unhealthy_checks = [name for name, check in results["checks"].items() if not check["healthy"]]
@@ -76,7 +76,7 @@ class HealthCheck:
         elif results["warnings"]:
             results["overall_status"] = "DEGRADED"
         
-        logger.info(f"🏥 Health check complete: {results['overall_status']}")
+        logger.info(f"[HEALTH] Health check complete: {results['overall_status']}")
         return results
     
     async def check_configuration(self) -> Dict[str, Any]:

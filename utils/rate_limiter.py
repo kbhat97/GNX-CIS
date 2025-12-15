@@ -300,15 +300,15 @@ def format_retry_message(info: Dict[str, any]) -> str:
         Formatted message
     """
     if info.get('allowed'):
-        return f"✅ {info.get('remaining', 0)} requests remaining"
+        return f"[OK] {info.get('remaining', 0)} requests remaining"
     
     retry_after = info.get('retry_after', 0)
     
     if retry_after < 60:
-        return f"⏳ Rate limit exceeded. Try again in {retry_after} seconds."
+        return f"[LIMIT] Rate limit exceeded. Try again in {retry_after} seconds."
     elif retry_after < 3600:
         minutes = retry_after // 60
-        return f"⏳ Rate limit exceeded. Try again in {minutes} minutes."
+        return f"[LIMIT] Rate limit exceeded. Try again in {minutes} minutes."
     else:
         hours = retry_after // 3600
-        return f"⏳ Rate limit exceeded. Try again in {hours} hours."
+        return f"[LIMIT] Rate limit exceeded. Try again in {hours} hours."

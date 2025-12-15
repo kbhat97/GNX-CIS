@@ -54,14 +54,14 @@ class RedisCache:
             
             # Test connection
             self.client.ping()
-            logger.info("✅ Redis connected successfully")
+            logger.info("[OK] Redis connected successfully")
             self.using_fallback = False
             
         except (redis.ConnectionError, redis.TimeoutError) as e:
-            logger.warning(f"⚠️ Redis connection failed: {e}")
+            logger.warning(f"[WARN] Redis connection failed: {e}")
             
             if self.fallback_to_memory:
-                logger.info("📦 Falling back to in-memory cache")
+                logger.info("[FALLBACK] Falling back to in-memory cache")
                 self.using_fallback = True
                 self.client = None
             else:

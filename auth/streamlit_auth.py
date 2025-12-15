@@ -46,7 +46,7 @@ def require_auth() -> Dict:
         # Check for session timeout
         if not check_session_timeout():
             logout()
-            st.warning("⏰ Your session has expired due to inactivity. Please log in again.")
+            st.warning("Your session has expired due to inactivity. Please log in again.")
             show_login_page()
             st.stop()
         
@@ -123,10 +123,10 @@ def show_login_page():
                         
                         if success and user_data:
                             st.session_state.user = user_data
-                            st.success(f"✅ {message}")
+                            st.success(f"[OK] {message}")
                             st.rerun()
                         else:
-                            st.error(f"❌ {message}")
+                            st.error(f"[X] {message}")
                     else:
                         st.error("Please enter both email and password")
         
@@ -161,11 +161,11 @@ def show_login_page():
                         
                         if success and user_data:
                             st.session_state.user = user_data
-                            st.success(f"✅ {message}")
+                            st.success(f"[OK] {message}")
                             st.balloons()
                             st.rerun()
                         else:
-                            st.error(f"❌ {message}")
+                            st.error(f"[X] {message}")
         
         with tab3:
             st.markdown("<h3 style='text-align: center;'>Reset Password</h3>", unsafe_allow_html=True)
@@ -177,7 +177,7 @@ def show_login_page():
                 
                 if submit:
                     if email:
-                        st.success(f"✅ Reset link sent to **{email}**")
+                        st.success(f"[OK] Reset link sent to **{email}**")
                     else:
                         st.error("Please enter your email")
 
@@ -199,16 +199,16 @@ def show_user_menu():
             if user.get("image_url"):
                 st.image(user["image_url"], width=50)
             else:
-                st.markdown("👤")
+                st.markdown("[User]")
         
         with col2:
             st.markdown(f"**{user.get('first_name', '')} {user.get('last_name', '')}**")
             st.caption(user.get('email', ''))
         
         # Logout button
-        if st.button("🚪 Logout", use_container_width=True):
+        if st.button("Logout", use_container_width=True):
             logout()
-            st.success("✅ Logged out successfully")
+            st.success("[OK] Logged out successfully")
             st.rerun()
 
 

@@ -76,8 +76,32 @@ Return ONLY valid JSON, no markdown. BE STRICT - don't inflate scores!"""
             response = await self.model.generate_content_async(prompt)
             
             result = parse_llm_json_response(response.text, self._default_score())
+            
+            # Apply score validation and deflation to prevent AI score inflation
+            raw_score = result.get('score', 50)
+            if isinstance(raw_score, str):
+                try:
+                    raw_score = int(raw_score)
+                except:
+                    raw_score = 50
+            
+            # Cap maximum score at 95 (perfect 100 is unrealistic)
+            # Apply slight deflation curve for scores above 80
+            if raw_score >= 95:
+                adjusted_score = 92
+            elif raw_score >= 90:
+                adjusted_score = 85 + (raw_score - 90) // 2  # 90-94 -> 85-87
+            elif raw_score >= 85:
+                adjusted_score = 80 + (raw_score - 85)  # 85-89 -> 80-84
+            elif raw_score >= 80:
+                adjusted_score = raw_score - 3  # slight deflation
+            else:
+                adjusted_score = raw_score  # no change for scores < 80
+            
+            result['score'] = max(0, min(95, adjusted_score))
+            result['raw_ai_score'] = raw_score  # Keep original for debugging
 
-            log_agent_action("ViralityAgent", "Post scored", f"Score: {result.get('score', 0)}/100")
+            log_agent_action("ViralityAgent", "Post scored", f"Score: {result.get('score', 0)}/100 (raw: {raw_score})")
             return result
 
         except Exception as e:

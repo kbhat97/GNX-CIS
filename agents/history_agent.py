@@ -51,7 +51,7 @@ class HistoryAgent:
             Learning profile dict with style, topics, patterns
         """
         try:
-            log_agent_action("HistoryAgent", "📚 Getting learning profile", f"User: {user_id}")
+            log_agent_action("HistoryAgent", "[LEARN] Getting learning profile", f"User: {user_id}")
             
             # Step 1: Check if user has minimum posts for learning
             total_posts = await self._get_user_post_count(user_id)
@@ -59,7 +59,7 @@ class HistoryAgent:
             if total_posts < MIN_POSTS_FOR_LEARNING:
                 log_agent_action(
                     "HistoryAgent", 
-                    f"⏳ Not enough posts for learning ({total_posts}/{MIN_POSTS_FOR_LEARNING})", 
+                    f"[WAIT] Not enough posts for learning ({total_posts}/{MIN_POSTS_FOR_LEARNING})", 
                     f"User: {user_id}"
                 )
                 # Use async version that also fetches onboarding data
@@ -77,11 +77,11 @@ class HistoryAgent:
             new_posts = await self._get_new_posts(user_id, since=last_analyzed)
             
             if not new_posts:
-                log_agent_action("HistoryAgent", "✅ Profile up to date, no new posts", user_id)
+                log_agent_action("HistoryAgent", "[OK] Profile up to date, no new posts", user_id)
                 return existing_profile
             
             # Step 4: Incrementally merge new learnings
-            log_agent_action("HistoryAgent", f"🔄 Merging {len(new_posts)} new posts into profile", user_id)
+            log_agent_action("HistoryAgent", f"[MERGE] Merging {len(new_posts)} new posts into profile", user_id)
             updated_profile = await self._merge_new_learnings(existing_profile, new_posts)
             
             # Step 5: Save updated profile
@@ -192,7 +192,7 @@ class HistoryAgent:
                 "primary_goal": onboarding_profile.get("primary_goal"),
                 "source": "onboarding"
             })
-            log_agent_action("HistoryAgent", "📝 Using onboarding profile data", f"User: {user_id}")
+            log_agent_action("HistoryAgent", "[PROFILE] Using onboarding profile data", f"User: {user_id}")
         else:
             # No onboarding data - use defaults
             base_profile.update({
@@ -303,7 +303,7 @@ Be specific based on the actual posts, not generic advice."""
             # Save to user_profiles
             await self._save_user_profile(user_id, analysis)
             
-            log_agent_action("HistoryAgent", f"✅ Full profile built from {len(posts)} posts", user_id)
+            log_agent_action("HistoryAgent", f"[OK] Full profile built from {len(posts)} posts", user_id)
             return analysis
             
         except Exception as e:
@@ -374,7 +374,7 @@ Focus on MERGING, not replacing. The learning book grows with each post."""
                 .upsert(db_data, on_conflict="user_id") \
                 .execute()
             
-            log_agent_action("HistoryAgent", "💾 Profile saved to Supabase", user_id)
+            log_agent_action("HistoryAgent", "[SAVE] Profile saved to Supabase", user_id)
             return True
             
         except Exception as e:
@@ -425,5 +425,5 @@ Focus on MERGING, not replacing. The learning book grows with each post."""
         DEPRECATED: Use analyze_user_history instead.
         Kept for backward compatibility with existing code.
         """
-        log_agent_action("HistoryAgent", "⚠️ Using deprecated analyze_past_posts, migrating to analyze_user_history", user_id)
+        log_agent_action("HistoryAgent", "[WARN] Using deprecated analyze_past_posts, migrating to analyze_user_history", user_id)
         return await self.analyze_user_history(user_id)

@@ -277,7 +277,7 @@ async def generate_ai_image(hook_text: str, topic: str, style: str = "profession
         # Append quality rules to ensure spelling, margins, and text visibility
         prompt += IMAGE_QUALITY_RULES
         
-        print(f"🎨 Generating {style_key} style image with Nano Banana...")
+        print(f"[IMAGE] Generating {style_key} style image with Nano Banana...")
 
         # Generate image using Nano Banana
         response = await client.aio.models.generate_content(
@@ -301,7 +301,7 @@ async def generate_ai_image(hook_text: str, topic: str, style: str = "profession
                     filename = f"ai_post_{style_key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.png"
                     output_path = os.path.join(OUTPUT_DIR, filename)
                     image.save(output_path)
-                    print(f"✅ Nano Banana AI image generated: {filename}")
+                    print(f"[OK] Nano Banana AI image generated: {filename}")
                     return os.path.abspath(output_path)
                 except AttributeError:
                     # Fallback: try raw data approach
@@ -313,7 +313,7 @@ async def generate_ai_image(hook_text: str, topic: str, style: str = "profession
                     output_path = os.path.join(OUTPUT_DIR, filename)
                     with open(output_path, 'wb') as f:
                         f.write(image_data)
-                    print(f"✅ Nano Banana AI image generated (raw): {filename}")
+                    print(f"[OK] Nano Banana AI image generated (raw): {filename}")
                     return os.path.abspath(output_path)
         
         print("No image data in Nano Banana response")
