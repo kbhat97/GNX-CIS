@@ -2593,28 +2593,38 @@ My best post:
     
     async function checkOnboardingStatus() {
       // ADMIN BYPASS: Check admin status FIRST before any database checks
+      logger.log('[Onboarding] === CHECKING ONBOARDING STATUS ===');
+      logger.log('[Onboarding] currentUser:', currentUser);
+      logger.log('[Onboarding] currentUser.email:', currentUser?.email);
+      
       // This ensures admin users always skip onboarding even if Supabase fails
       const userEmail = (currentUser?.email || '').toLowerCase().trim();
       const adminEmails = ['kunalsbhatt@gmail.com'];
       
-      logger.log('[Onboarding] Checking status for:', userEmail);
+      logger.log('[Onboarding] Checking email:', userEmail, 'against admins:', adminEmails);
       
       if (adminEmails.includes(userEmail)) {
-        logger.log('[Onboarding] Admin email detected - bypassing onboarding');
+        logger.log('[Onboarding] ✓ Admin email MATCHED - bypassing onboarding');
         return true; // Skip onboarding for admins
+      } else {
+        logger.log('[Onboarding] Email not in admin list');
       }
       
       // Secondary check via isAdminUser function
-      if (isAdminUser()) {
-        logger.log('[Onboarding] Admin role detected - bypassing onboarding');
+      const adminCheck = isAdminUser();
+      logger.log('[Onboarding] isAdminUser() returned:', adminCheck);
+      if (adminCheck) {
+        logger.log('[Onboarding] ✓ Admin role detected - bypassing onboarding');
         return true;
       }
       
       // Check if Supabase is available
       if (!supabaseEnabled || !currentUser) {
-        logger.log('[Onboarding] No Supabase - skipping check');
+        logger.log('[Onboarding] No Supabase or no user - skipping check');
         return true; // Skip check if no Supabase
       }
+      
+      logger.log('[Onboarding] Proceeding with Supabase check...');
       
       try {
         // Get user ID from users table
