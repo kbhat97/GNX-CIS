@@ -127,8 +127,23 @@ personas/*.json
 
 # Secret rotation scripts
 scripts/secret_rotation.sh
+scripts/upload_secrets.sh
+scripts/upload_missing_secrets.sh
 
 # Glassmorphic experiments (not production)
 glassmorphic-dashboard/
 
 docs/GTM_OPERATIONS.md
+
+# CI/CD Internal Documentation (planning/status - do not push)
+STATUS.md
+NEXT_STEPS.md
+SECURITY_AUDIT.md
+PRE_COMMIT_VALIDATION.md
+TRIGGER_VERIFIED.md
+SETUP_COMPLETE.md
+START_HERE.md
+QUICK_COMMANDS.md
+ACTION_PLAN.md
+SECURITY_CLEANUP.md
+docs/CICD_IMPLEMENTATION_SUMMARY.md
