@@ -147,3 +147,8 @@ QUICK_COMMANDS.md
 ACTION_PLAN.md
 SECURITY_CLEANUP.md
 docs/CICD_IMPLEMENTATION_SUMMARY.md
+
+# Internal status tracking (removed from git)
+docs/TODAYS_ACCOMPLISHMENTS.md
+docs/PRODUCTION_READY_STATUS.md
+docs/security_audit.md
