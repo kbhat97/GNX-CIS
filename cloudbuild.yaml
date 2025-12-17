@@ -99,7 +99,6 @@ steps:
       - "--region=us-central1"
       - "--platform=managed"
       - "--allow-unauthenticated"
-      - "--set-env-vars=GOOGLE_API_KEY=${_GOOGLE_API_KEY},OPENAI_API_KEY=${_OPENAI_API_KEY},CLERK_SECRET_KEY=${_CLERK_SECRET_KEY},CLERK_PUBLISHABLE_KEY=${_CLERK_PUBLISHABLE_KEY},SUPABASE_URL=${_SUPABASE_URL},SUPABASE_KEY=${_SUPABASE_SERVICE_KEY},LINKEDIN_CLIENT_ID=${_LINKEDIN_CLIENT_ID},LINKEDIN_CLIENT_SECRET=${_LINKEDIN_CLIENT_SECRET},SENDGRID_API_KEY=${_SENDGRID_API_KEY},SENTRY_DSN=${_SENTRY_DSN},API_BASE_URL=${_API_BASE_URL},FRONTEND_URL=${_FRONTEND_URL},ENVIRONMENT=production"
     waitFor: ["push-api"]
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
@@ -113,7 +112,6 @@ steps:
       - "--region=us-central1"
       - "--platform=managed"
       - "--allow-unauthenticated"
-      - "--set-env-vars=API_BASE_URL=${_API_BASE_URL},CLERK_PUBLISHABLE_KEY=${_CLERK_PUBLISHABLE_KEY}"
     waitFor: ["push-frontend"]
 
   # Slack: Deployment complete
