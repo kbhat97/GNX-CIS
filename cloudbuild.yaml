@@ -1,70 +1,189 @@
 steps:
-  # Build the API container
-  - name: "gcr.io/cloud-builders/docker"
+  # ═════════════════════════════════════════════════════════════════════════════
+  # STEP 1: Build Docker Images
+  # ═════════════════════════════════════════════════════════════════════════════
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-api'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/cis-api:$COMMIT_SHA', '-f', 'Dockerfile.api', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-frontend'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/cis-frontend:$COMMIT_SHA', '-f', 'Dockerfile.frontend', '.']
+
+  # Slack: Build complete
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'notify-build-complete'
+    entrypoint: 'sh'
     args:
-      [
-        "build",
-        "-t",
-        "gcr.io/$PROJECT_ID/cis-api:$COMMIT_SHA",
-        "-f",
-        "Dockerfile.api",
-        ".",
-      ]
+      - '-c'
+      - |
+        curl -X POST ${_SLACK_WEBHOOK_URL} \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "text": "🔨 *Build Complete*",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "✅ Docker images built successfully\n*Commit:* `$SHORT_SHA`\n*Branch:* master"
+                }
+              }
+            ]
+          }' || echo "Slack notification failed (non-critical)"
+    waitFor: ['build-api', 'build-frontend']
 
-  # Build the Frontend container
-  - name: "gcr.io/cloud-builders/docker"
+  # ═════════════════════════════════════════════════════════════════════════════
+  # STEP 2: Push to Container Registry
+  # ═════════════════════════════════════════════════════════════════════════════
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-api'
+    args: ['push', 'gcr.io/$PROJECT_ID/cis-api:$COMMIT_SHA']
+    waitFor: ['build-api']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-frontend'
+    args: ['push', 'gcr.io/$PROJECT_ID/cis-frontend:$COMMIT_SHA']
+    waitFor: ['build-frontend']
+
+  # Slack: Images pushed
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'notify-push-complete'
+    entrypoint: 'sh'
     args:
-      [
-        "build",
-        "-t",
-        "gcr.io/$PROJECT_ID/cis-frontend:$COMMIT_SHA",
-        "-f",
-        "Dockerfile.frontend",
-        ".",
-      ]
+      - '-c'
+      - |
+        curl -X POST ${_SLACK_WEBHOOK_URL} \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "text": "📦 *Images Pushed to GCR*",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "✅ Images pushed to Container Registry\n*Tag:* `$SHORT_SHA`"
+                }
+              }
+            ]
+          }' || echo "Slack notification failed (non-critical)"
+    waitFor: ['push-api', 'push-frontend']
 
-  # Push the API container
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/$PROJECT_ID/cis-api:$COMMIT_SHA"]
-
-  # Push the Frontend container
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/$PROJECT_ID/cis-frontend:$COMMIT_SHA"]
-
-  # Deploy API to Cloud Run
-  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+  # ═════════════════════════════════════════════════════════════════════════════
+  # STEP 3: Deploy to Cloud Run
+  # ═════════════════════════════════════════════════════════════════════════════
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-api'
     entrypoint: gcloud
     args:
-      - "run"
-      - "deploy"
-      - "cis-api"
-      - "--image=gcr.io/$PROJECT_ID/cis-api:$COMMIT_SHA"
-      - "--region=us-central1"
-      - "--platform=managed"
-      - "--allow-unauthenticated"
-      - "--set-env-vars=CLERK_SECRET_KEY=${_CLERK_SECRET_KEY},CLERK_PUBLISHABLE_KEY=${_CLERK_PUBLISHABLE_KEY},SUPABASE_URL=${_SUPABASE_URL},SUPABASE_KEY=${_SUPABASE_KEY},API_BASE_URL=${_API_BASE_URL},FRONTEND_URL=${_FRONTEND_URL}"
+      - 'run'
+      - 'deploy'
+      - 'cis-api'
+      - '--image=gcr.io/$PROJECT_ID/cis-api:$COMMIT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars=GOOGLE_API_KEY=${_GOOGLE_API_KEY},OPENAI_API_KEY=${_OPENAI_API_KEY},CLERK_SECRET_KEY=${_CLERK_SECRET_KEY},CLERK_PUBLISHABLE_KEY=${_CLERK_PUBLISHABLE_KEY},SUPABASE_URL=${_SUPABASE_URL},SUPABASE_KEY=${_SUPABASE_SERVICE_KEY},LINKEDIN_CLIENT_ID=${_LINKEDIN_CLIENT_ID},LINKEDIN_CLIENT_SECRET=${_LINKEDIN_CLIENT_SECRET},SENDGRID_API_KEY=${_SENDGRID_API_KEY},SENTRY_DSN=${_SENTRY_DSN},API_BASE_URL=${_API_BASE_URL},FRONTEND_URL=${_FRONTEND_URL},ENVIRONMENT=production'
+    waitFor: ['push-api']
 
-  # Deploy Frontend to Cloud Run
-  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+  - name:'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-frontend'
     entrypoint: gcloud
     args:
-      - "run"
-      - "deploy"
-      - "cis-frontend"
-      - "--image=gcr.io/$PROJECT_ID/cis-frontend:$COMMIT_SHA"
-      - "--region=us-central1"
-      - "--platform=managed"
-      - "--allow-unauthenticated"
-      - "--set-env-vars=API_BASE_URL=${_API_BASE_URL},CLERK_PUBLISHABLE_KEY=${_CLERK_PUBLISHABLE_KEY}"
+      - 'run'
+      - 'deploy'
+      - 'cis-frontend'
+      - '--image=gcr.io/$PROJECT_ID/cis-frontend:$COMMIT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars=API_BASE_URL=${_API_BASE_URL},CLERK_PUBLISHABLE_KEY=${_CLERK_PUBLISHABLE_KEY}'
+    waitFor: ['push-frontend']
+
+  # Slack: Deployment complete
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'notify-deploy-complete'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        curl -X POST ${_SLACK_WEBHOOK_URL} \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "text": "🚀 *Deployment Complete*",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "✅ Services deployed to Cloud Run\n*API:* cis-api\n*Frontend:* cis-frontend\n*Commit:* `$SHORT_SHA`"
+                }
+              }
+            ]
+          }' || echo "Slack notification failed (non-critical)"
+    waitFor: ['deploy-api', 'deploy-frontend']
+
+  # ═════════════════════════════════════════════════════════════════════════════
+  # STEP 4: Final Email Notification (Only at the end)
+  # ═════════════════════════════════════════════════════════════════════════════
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'notify-email-final'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        curl -X POST https://api.sendgrid.com/v3/mail/send \
+          -H "Authorization: Bearer ${_SENDGRID_API_KEY}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "personalizations": [{
+              "to": [{"email": "${_ADMIN_EMAIL}"}]
+            }],
+            "from": {"email": "noreply@gnx-cis.app", "name": "GNX-CIS Deployment"},
+            "subject": "✅ Deployment Complete - Commit $SHORT_SHA",
+            "content": [{
+              "type": "text/html",
+              "value": "<h2>🎉 Deployment Successfully Completed</h2><p><strong>Commit:</strong> $SHORT_SHA</p><p><strong>Branch:</strong> master</p><p><strong>Build ID:</strong> $BUILD_ID</p><h3>Deployment Steps:</h3><ul><li>✅ Docker images built (API + Frontend)</li><li>✅ Images pushed to GCR</li><li>✅ API deployed to Cloud Run</li><li>✅ Frontend deployed to Cloud Run</li></ul><h3>Services:</h3><ul><li><strong>API:</strong> cis-api (us-central1)</li><li><strong>Frontend:</strong> cis-frontend (us-central1)</li></ul><p><strong>View logs:</strong> <a href=\"https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=$PROJECT_ID\">Cloud Build</a></p><p><em>Deployment completed at $(date)</em></p>"
+            }]
+          }' || echo "Email notification failed (non-critical)"
+    waitFor: ['deploy-api', 'deploy-frontend']
 
 images:
-  - "gcr.io/$PROJECT_ID/cis-api:$COMMIT_SHA"
-  - "gcr.io/$PROJECT_ID/cis-frontend:$COMMIT_SHA"
+  - 'gcr.io/$PROJECT_ID/cis-api:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/cis-frontend:$COMMIT_SHA'
 
 substitutions:
-  _CLERK_SECRET_KEY: ""
-  _CLERK_PUBLISHABLE_KEY: ""
-  _SUPABASE_URL: ""
-  _SUPABASE_KEY: ""
-  _API_BASE_URL: "https://cis-api-xxxxxxxxxx-uc.a.run.app"
-  _FRONTEND_URL: "https://cis-frontend-xxxxxxxxxx-uc.a.run.app"
+  # Core API Keys
+  _GOOGLE_API_KEY: ''
+  _OPENAI_API_KEY: ''
+  
+  # Authentication (Clerk)
+  _CLERK_SECRET_KEY: ''
+  _CLERK_PUBLISHABLE_KEY: ''
+  
+  # Database (Supabase)
+  _SUPABASE_URL: ''
+  _SUPABASE_SERVICE_KEY: ''
+  
+  # LinkedIn API
+  _LINKEDIN_CLIENT_ID: ''
+  _LINKEDIN_CLIENT_SECRET: ''
+  
+  # Notifications
+  _SLACK_WEBHOOK_URL: 'https://hooks.slack.com/services/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'
+  _SENDGRID_API_KEY: ''
+  _ADMIN_EMAIL: 'Kunalsbhatt@gmail.com'
+  
+  # Error Tracking
+  _SENTRY_DSN: ''
+  
+  # Infrastructure
+  _API_BASE_URL: 'https://cis-api-xxxxxxxxxx-uc.a.run.app'
+  _FRONTEND_URL: 'https://cis-frontend-xxxxxxxxxx-uc.a.run.app'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  logStreamingOption: STREAM_ON
+
+timeout: 1800s  # 30 minutes
