@@ -73,6 +73,7 @@ Return JSON (BE STRICT - most posts are 60-75):
 
 Return ONLY valid JSON, no markdown. BE STRICT - don't inflate scores!"""
 
+
             response = await self.model.generate_content_async(prompt)
             
             result = parse_llm_json_response(response.text, self._default_score())
@@ -105,7 +106,15 @@ Return ONLY valid JSON, no markdown. BE STRICT - don't inflate scores!"""
             return result
 
         except Exception as e:
-            log_error(e, f"Virality scoring failed: {type(e).__name__}: {str(e)}")
+            # Enhanced error logging for production debugging
+            error_context = {
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "post_length": len(post_text),
+                "post_preview": post_text[:100] if post_text else "N/A"
+            }
+            log_error(e, f"Virality scoring failed: {type(e).__name__}: {str(e)} | Context: {error_context}")
+            logger.error(f"[VIRALITY_AGENT_FAILURE] {error_context}")
             return self._default_score()
 
     def _default_score(self) -> Dict[str, Any]:

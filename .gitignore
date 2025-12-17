@@ -77,6 +77,8 @@ extra_ignore/
 test_*.py
 *_test.py
 fix_*.py
+check_*.py
+reproduce_*.py
 testsprite_tests/
 
 # Exception: Allow E2E test files
@@ -86,6 +88,12 @@ testsprite_tests/
 CIS_*.md
 STATE_DUMP_*.md
 BUG_FIX_*.md
+VIRALITY_AGENT_*.md
+
+# Marketing/Outreach strategy (internal)
+COMPANY_POST_LAUNCH.md
+PERSONAL_LAUNCH_POST.md
+OUTREACH_STRATEGY.md
 
 # Compiled
 *.cpython-*.pyc
