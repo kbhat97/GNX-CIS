@@ -29,25 +29,18 @@ steps:
   # Slack: Build complete
   - name: "gcr.io/cloud-builders/curl"
     id: "notify-build-complete"
-    entrypoint: "sh"
+    entrypoint: "bash"
     secretEnv: ["SLACK_WEBHOOK_URL"]
     args:
       - "-c"
       - |
-        curl -X POST $$SLACK_WEBHOOK_URL \
-          -H 'Content-Type: application/json' \
-          -d '{
-            "text": "🔨 *Build Complete*",
-            "blocks": [
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "✅ Docker images built successfully\n*Commit:* `$SHORT_SHA`\n*Branch:* master"
-                }
-              }
-            ]
-          }' || echo "Slack notification failed (non-critical)"
+        if [ -n "$$SLACK_WEBHOOK_URL" ]; then
+          curl -X POST "$$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d '{"text": "🔨 Build Complete - Commit $SHORT_SHA"}' || echo "Slack failed"
+        else
+          echo "SLACK_WEBHOOK_URL is empty"
+        fi
     waitFor: ["build-api", "build-frontend"]
 
   # ═════════════════════════════════════════════════════════════════════════════
@@ -66,25 +59,16 @@ steps:
   # Slack: Images pushed
   - name: "gcr.io/cloud-builders/curl"
     id: "notify-push-complete"
-    entrypoint: "sh"
+    entrypoint: "bash"
     secretEnv: ["SLACK_WEBHOOK_URL"]
     args:
       - "-c"
       - |
-        curl -X POST $$SLACK_WEBHOOK_URL \
-          -H 'Content-Type: application/json' \
-          -d '{
-            "text": "📦 *Images Pushed to GCR*",
-            "blocks": [
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "✅ Images pushed to Container Registry\n*Tag:* `$SHORT_SHA`"
-                }
-              }
-            ]
-          }' || echo "Slack notification failed (non-critical)"
+        if [ -n "$$SLACK_WEBHOOK_URL" ]; then
+          curl -X POST "$$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d '{"text": "📦 Images pushed to GCR - Tag $SHORT_SHA"}' || echo "Slack failed"
+        fi
     waitFor: ["push-api", "push-frontend"]
 
   # ═════════════════════════════════════════════════════════════════════════════
