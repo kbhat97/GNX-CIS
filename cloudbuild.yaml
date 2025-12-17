@@ -30,10 +30,11 @@ steps:
   - name: "gcr.io/cloud-builders/curl"
     id: "notify-build-complete"
     entrypoint: "sh"
+    secretEnv: ["SLACK_WEBHOOK_URL"]
     args:
       - "-c"
       - |
-        curl -X POST ${_SLACK_WEBHOOK_URL} \
+        curl -X POST $$SLACK_WEBHOOK_URL \
           -H 'Content-Type: application/json' \
           -d '{
             "text": "🔨 *Build Complete*",
@@ -66,10 +67,11 @@ steps:
   - name: "gcr.io/cloud-builders/curl"
     id: "notify-push-complete"
     entrypoint: "sh"
+    secretEnv: ["SLACK_WEBHOOK_URL"]
     args:
       - "-c"
       - |
-        curl -X POST ${_SLACK_WEBHOOK_URL} \
+        curl -X POST $$SLACK_WEBHOOK_URL \
           -H 'Content-Type: application/json' \
           -d '{
             "text": "📦 *Images Pushed to GCR*",
@@ -118,10 +120,11 @@ steps:
   - name: "gcr.io/cloud-builders/curl"
     id: "notify-deploy-complete"
     entrypoint: "sh"
+    secretEnv: ["SLACK_WEBHOOK_URL"]
     args:
       - "-c"
       - |
-        curl -X POST ${_SLACK_WEBHOOK_URL} \
+        curl -X POST $$SLACK_WEBHOOK_URL \
           -H 'Content-Type: application/json' \
           -d '{
             "text": "🚀 *Deployment Complete*",
@@ -143,11 +146,12 @@ steps:
   - name: "gcr.io/cloud-builders/curl"
     id: "notify-email-final"
     entrypoint: "sh"
+    secretEnv: ["SENDGRID_API_KEY"]
     args:
       - "-c"
       - |
         curl -X POST https://api.sendgrid.com/v3/mail/send \
-          -H "Authorization: Bearer ${_SENDGRID_API_KEY}" \
+          -H "Authorization: Bearer $$SENDGRID_API_KEY" \
           -H "Content-Type: application/json" \
           -d '{
             "personalizations": [{
@@ -199,5 +203,12 @@ options:
   machineType: "E2_HIGHCPU_8"
   logging: CLOUD_LOGGING_ONLY
   logStreamingOption: STREAM_ON
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/gnx-cis/secrets/SLACK_WEBHOOK_URL/versions/latest
+      env: "SLACK_WEBHOOK_URL"
+    - versionName: projects/gnx-cis/secrets/SENDGRID_API_KEY/versions/latest
+      env: "SENDGRID_API_KEY"
 
 timeout: 1800s # 30 minutes
