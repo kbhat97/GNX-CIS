@@ -37,22 +37,42 @@ jobs:
       - name: Enable GitHub auto-merge
         uses: actions/github-script@v7
         with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             try {
-              // Enable auto-merge (GitHub will merge when checks pass)
-              await github.rest.pulls.update({
+              // Get PR node ID for GraphQL
+              const { data: pr } = await github.rest.pulls.get({
                 owner: context.repo.owner,
-                repo: context.repo.name,
-                pull_number: context.issue.number,
-                auto_merge: true
+                repo: context.repo.repo,
+                pull_number: context.issue.number
+              });
+              
+              // Enable auto-merge using GraphQL (REST API doesn't support this)
+              const mutation = `
+                mutation($pullRequestId: ID!, $mergeMethod: PullRequestMergeMethod!) {
+                  enablePullRequestAutoMerge(input: {
+                    pullRequestId: $pullRequestId,
+                    mergeMethod: $mergeMethod
+                  }) {
+                    pullRequest {
+                      autoMergeRequest {
+                        enabledAt
+                      }
+                    }
+                  }
+                }
+              `;
+              
+              await github.graphql(mutation, {
+                pullRequestId: pr.node_id,
+                mergeMethod: 'SQUASH'
               });
               
               console.log('Auto-merge enabled successfully');
             } catch (error) {
               console.error('Failed to enable auto-merge:', error);
-              throw error;
+              core.setFailed(`Auto-merge failed: ${error.message}`);
             }
-
       - name: Comment on success
         if: success()
         uses: actions/github-script@v7
@@ -60,7 +80,7 @@ jobs:
           script: |
             await github.rest.issues.createComment({
               owner: context.repo.owner,
-              repo: context.repo.name,
+              repo: context.repo.repo,
               issue_number: context.issue.number,
               body: '🤖 **Auto-merged successfully!**\n\nThis CI/CD PR was automatically merged because:\n- ✅ Author is repo owner\n- ✅ Title starts with `fix(cicd)`, `chore(cicd)`, or `feat(cicd)`\n- ✅ Not labeled as bug/critical\n- ✅ All checks passed\n\nDeployment will trigger automatically via Cloud Build.'
             });
@@ -72,7 +92,7 @@ jobs:
           script: |
             await github.rest.issues.createComment({
               owner: context.repo.owner,
-              repo: context.repo.name,
+              repo: context.repo.repo,
               issue_number: context.issue.number,
               body: '⚠️ **Auto-merge blocked**\n\nThis PR could not be auto-merged. Possible reasons:\n- ❌ Merge conflicts\n- ❌ Failed checks\n- ❌ Manual review required\n\nPlease review and merge manually.'
             });
@@ -103,14 +123,14 @@ jobs:
           script: |
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
-              repo: context.repo.name,
+              repo: context.repo.repo,
               issue_number: context.issue.number,
               labels: ['do-not-merge', 'breaking-change']
             });
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
-              repo: context.repo.name,
+              repo: context.repo.repo,
               issue_number: context.issue.number,
               body: '🚨 **Breaking Change Detected**\n\nThis PR modifies critical Cloud Build configuration.\n\n**Auto-merge disabled** - Manual review required.\n\nReview changes carefully before merging.'
             });
