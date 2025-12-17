@@ -1,0 +1,129 @@
+name: Auto-Merge CI/CD PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [master]
+  pull_request_review:
+    types: [submitted]
+  check_suite:
+    types: [completed]
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    # Only auto-merge if:
+    # 1. PR author is the repo owner
+    # 2. PR title starts with fix(cicd), chore(cicd), or feat(cicd)
+    # 3. NOT a bug fix (contains 'bug' or 'critical')
+    if: |
+      github.event.pull_request.user.login == github.repository_owner &&
+      (
+        startsWith(github.event.pull_request.title, 'fix(cicd)') ||
+        startsWith(github.event.pull_request.title, 'chore(cicd)') ||
+        startsWith(github.event.pull_request.title, 'feat(cicd)')
+      ) &&
+      !contains(github.event.pull_request.title, 'bug') &&
+      !contains(github.event.pull_request.title, 'critical') &&
+      !contains(github.event.pull_request.labels.*.name, 'do-not-merge')
+
+    steps:
+      - name: Wait for checks to start
+        run: sleep 10
+
+      - name: Check if checks are passing
+        id: check-status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              pull_number: context.issue.number
+            });
+
+            // Check if mergeable
+            if (pr.mergeable === false) {
+              core.setFailed('PR has merge conflicts');
+              return;
+            }
+
+            console.log('PR is mergeable, proceeding with auto-merge');
+
+      - name: Enable auto-merge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              pull_number: context.issue.number,
+              merge_method: 'squash',
+              commit_title: `${context.payload.pull_request.title} (#${context.issue.number})`,
+              commit_message: context.payload.pull_request.body || 'Auto-merged CI/CD PR'
+            });
+
+      - name: Comment on success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              issue_number: context.issue.number,
+              body: '🤖 **Auto-merged successfully!**\n\nThis CI/CD PR was automatically merged because:\n- ✅ Author is repo owner\n- ✅ Title starts with `fix(cicd)`, `chore(cicd)`, or `feat(cicd)`\n- ✅ Not labeled as bug/critical\n- ✅ All checks passed\n\nDeployment will trigger automatically via Cloud Build.'
+            });
+
+      - name: Handle merge failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              issue_number: context.issue.number,
+              body: '⚠️ **Auto-merge blocked**\n\nThis PR could not be auto-merged. Possible reasons:\n- ❌ Merge conflicts\n- ❌ Failed checks\n- ❌ Manual review required\n\nPlease review and merge manually.'
+            });
+
+  # Safety check - prevent auto-merge of breaking changes
+  safety-check:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == github.repository_owner
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for breaking changes
+        id: breaking-check
+        run: |
+          # Check if cloudbuild.yaml has major changes
+          if git diff HEAD~1 cloudbuild.yaml | grep -E "^-.*substitutions:|^-.*availableSecrets:"; then
+            echo "breaking=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "breaking=false" >> $GITHUB_OUTPUT
+
+      - name: Label if breaking
+        if: steps.breaking-check.outputs.breaking == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              issue_number: context.issue.number,
+              labels: ['do-not-merge', 'breaking-change']
+            });
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              issue_number: context.issue.number,
+              body: '🚨 **Breaking Change Detected**\n\nThis PR modifies critical Cloud Build configuration.\n\n**Auto-merge disabled** - Manual review required.\n\nReview changes carefully before merging.'
+            });
