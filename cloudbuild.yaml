@@ -157,7 +157,7 @@ steps:
             "personalizations": [{
               "to": [{"email": "${_ADMIN_EMAIL}"}]
             }],
-            "from": {"email": "noreply@gnx-cis.app", "name": "GNX-CIS Deployment"},
+            "from": {"email": "kunalsbhatt@gmail.com", "name": "GNX-CIS Deployment"},
             "subject": "✅ Deployment Complete - Commit $SHORT_SHA",
             "content": [{
               "type": "text/html",
