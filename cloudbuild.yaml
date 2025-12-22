@@ -217,18 +217,7 @@ availableSecrets:
       env: "SLACK_WEBHOOK_URL"
     - versionName: projects/gnx-cis/secrets/SENDGRID_API_KEY/versions/latest
       env: "SENDGRID_API_KEY"
-    # Stripe Production Secrets
-    - versionName: projects/gnx-cis/secrets/STRIPE_SECRET_KEY/versions/latest
-      env: "STRIPE_SECRET_KEY"
-    - versionName: projects/gnx-cis/secrets/STRIPE_PUBLISHABLE_KEY/versions/latest
-      env: "STRIPE_PUBLISHABLE_KEY"
-    - versionName: projects/gnx-cis/secrets/STRIPE_PRICE_PRO/versions/latest
-      env: "STRIPE_PRICE_PRO"
-    - versionName: projects/gnx-cis/secrets/STRIPE_PRICE_BUSINESS/versions/latest
-      env: "STRIPE_PRICE_BUSINESS"
-    - versionName: projects/gnx-cis/secrets/STRIPE_WEBHOOK_SECRET_CIS_PRODUCTION/versions/latest
-      env: "STRIPE_WEBHOOK_SECRET_CIS_PRODUCTION"
-    - versionName: projects/gnx-cis/secrets/STRIPE_WEBHOOK_SECRET_ENGAGING_VICTORY/versions/latest
-      env: "STRIPE_WEBHOOK_SECRET_ENGAGING_VICTORY"
+    # Note: Stripe secrets are injected at Cloud Run runtime via --update-secrets
+    # They don't need to be in availableSecrets since they're not used during build
 
 timeout: 1800s # 30 minutes
