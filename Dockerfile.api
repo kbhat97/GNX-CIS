@@ -2,12 +2,6 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Node.js for Tailwind CSS build
-RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
 # Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -15,17 +9,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create static directory if it doesn't exist
-# Single-service deployment: serves both API and Dashboard
+# Create static directory for generated images
 RUN mkdir -p static/outputs
-RUN mkdir -p dashboard/dist
-
-# Build Tailwind CSS for production
-WORKDIR /app/dashboard
-RUN npm install && npm run build:css
-
-# Return to app directory
-WORKDIR /app
 
 # Set environment variables
 ENV PORT=8080
