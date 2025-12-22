@@ -19,6 +19,7 @@ steps:
     args:
       [
         "build",
+        "--no-cache",
         "-t",
         "gcr.io/$PROJECT_ID/cis-frontend:$COMMIT_SHA",
         "-f",
