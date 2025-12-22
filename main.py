@@ -83,8 +83,8 @@ CLERK_JWKS_URL = os.getenv(
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://cis-api-666167524553.us-central1.run.app")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://cis-frontend-666167524553.us-central1.run.app")
 
 ALLOWED_ORIGINS = [
     origin.strip() for origin in 
@@ -113,16 +113,17 @@ logger.info(f"   SUPABASE_KEY: {'[OK] SET' if SUPABASE_KEY else '[X] NOT SET'}")
 try:
     from utils.secret_manager import load_stripe_secrets
     stripe_secrets = load_stripe_secrets()
-    STRIPE_SECRET_KEY = stripe_secrets.get("STRIPE_SECRET_KEY", "")
-    STRIPE_PUBLISHABLE_KEY = stripe_secrets.get("STRIPE_PUBLISHABLE_KEY", "")
-    STRIPE_PRICE_PRO = stripe_secrets.get("STRIPE_PRICE_PRO", "")
-    STRIPE_PRICE_BUSINESS = stripe_secrets.get("STRIPE_PRICE_BUSINESS", "")
+    # Explicitly strip all values to remove any trailing \r\n
+    STRIPE_SECRET_KEY = (stripe_secrets.get("STRIPE_SECRET_KEY", "") or "").strip()
+    STRIPE_PUBLISHABLE_KEY = (stripe_secrets.get("STRIPE_PUBLISHABLE_KEY", "") or "").strip()
+    STRIPE_PRICE_PRO = (stripe_secrets.get("STRIPE_PRICE_PRO", "") or "").strip()
+    STRIPE_PRICE_BUSINESS = (stripe_secrets.get("STRIPE_PRICE_BUSINESS", "") or "").strip()
     # Load webhook secrets - we'll determine which one to use based on the endpoint
-    STRIPE_WEBHOOK_SECRET_CIS = stripe_secrets.get("STRIPE_WEBHOOK_SECRET_CIS_PRODUCTION", "")
-    STRIPE_WEBHOOK_SECRET_ENGAGING = stripe_secrets.get("STRIPE_WEBHOOK_SECRET_ENGAGING_VICTORY", "")
+    STRIPE_WEBHOOK_SECRET_CIS = (stripe_secrets.get("STRIPE_WEBHOOK_SECRET_CIS_PRODUCTION", "") or "").strip()
+    STRIPE_WEBHOOK_SECRET_ENGAGING = (stripe_secrets.get("STRIPE_WEBHOOK_SECRET_ENGAGING_VICTORY", "") or "").strip()
     # Use the CIS production webhook as default
     STRIPE_WEBHOOK_SECRET = STRIPE_WEBHOOK_SECRET_CIS or STRIPE_WEBHOOK_SECRET_ENGAGING
-    STRIPE_COUPON_ID = stripe_secrets.get("STRIPE_COUPON_ID", "")
+    STRIPE_COUPON_ID = (stripe_secrets.get("STRIPE_COUPON_ID", "") or "").strip()
     logger.info("[OK] Stripe secrets loaded from Secret Manager")
 except ImportError as e:
     logger.warning(f"[WARN] Secret Manager not available, falling back to environment variables: {e}")
@@ -778,8 +779,8 @@ async def create_checkout_session(
                 "price": price_id,
                 "quantity": 1,
             }],
-            "success_url": request.success_url or f"{API_BASE_URL}/dashboard/app.html?checkout=success",
-            "cancel_url": request.cancel_url or f"{API_BASE_URL}/dashboard/app.html?checkout=cancelled",
+            "success_url": request.success_url or f"{FRONTEND_URL}?checkout=success",
+            "cancel_url": request.cancel_url or f"{FRONTEND_URL}?checkout=cancelled",
             "client_reference_id": str(db_user.get("id", "")),
             "subscription_data": {
                 "trial_period_days": 30,  # 30-day free trial
@@ -876,6 +877,7 @@ async def handle_subscription_created(subscription: Dict):
     
     if user_id and SUPABASE_READY:
         try:
+            # Update users table
             supabase.table("users").update({
                 "subscription_plan": plan,
                 "subscription_status": status,
@@ -883,6 +885,12 @@ async def handle_subscription_created(subscription: Dict):
                 "posts_this_month": 0,
                 "posts_reset_at": datetime.utcnow().isoformat()
             }).eq("id", user_id).execute()
+            
+            # PRODUCTION: Also update user_profiles.subscription_tier for dashboard
+            supabase.table("user_profiles").update({
+                "subscription_tier": plan
+            }).eq("user_id", user_id).execute()
+            
             logger.info(f"[STRIPE] User {user_id} subscribed to {plan}")
         except Exception as e:
             logger.error(f"[STRIPE] Failed to update user subscription: {e}")
@@ -896,10 +904,17 @@ async def handle_subscription_updated(subscription: Dict):
     
     if user_id and SUPABASE_READY:
         try:
+            # Update users table
             supabase.table("users").update({
                 "subscription_plan": plan,
                 "subscription_status": status
             }).eq("id", user_id).execute()
+            
+            # PRODUCTION: Also update user_profiles.subscription_tier for dashboard
+            supabase.table("user_profiles").update({
+                "subscription_tier": plan
+            }).eq("user_id", user_id).execute()
+            
             logger.info(f"[STRIPE] User {user_id} subscription updated to {plan}, status: {status}")
         except Exception as e:
             logger.error(f"[STRIPE] Failed to update subscription: {e}")
@@ -911,10 +926,17 @@ async def handle_subscription_deleted(subscription: Dict):
     
     if user_id and SUPABASE_READY:
         try:
+            # Update users table
             supabase.table("users").update({
                 "subscription_plan": "free",
                 "subscription_status": "canceled"
             }).eq("id", user_id).execute()
+            
+            # PRODUCTION: Also update user_profiles.subscription_tier for dashboard
+            supabase.table("user_profiles").update({
+                "subscription_tier": "free"
+            }).eq("user_id", user_id).execute()
+            
             logger.info(f"[STRIPE] User {user_id} subscription canceled")
         except Exception as e:
             logger.error(f"[STRIPE] Failed to cancel subscription: {e}")
@@ -928,6 +950,7 @@ async def handle_checkout_completed(session: Dict):
     
     if user_id and SUPABASE_READY:
         try:
+            # Update users table
             supabase.table("users").update({
                 "subscription_plan": plan,
                 "subscription_status": "active",
@@ -935,6 +958,12 @@ async def handle_checkout_completed(session: Dict):
                 "posts_this_month": 0,
                 "posts_reset_at": datetime.utcnow().isoformat()
             }).eq("id", user_id).execute()
+            
+            # PRODUCTION: Also update user_profiles.subscription_tier for dashboard
+            supabase.table("user_profiles").update({
+                "subscription_tier": plan
+            }).eq("user_id", user_id).execute()
+            
             logger.info(f"[STRIPE] Checkout completed for user {user_id}, plan: {plan}")
         except Exception as e:
             logger.error(f"[STRIPE] Failed to update user after checkout: {e}")
