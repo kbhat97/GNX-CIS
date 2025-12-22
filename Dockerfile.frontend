@@ -18,13 +18,34 @@ RUN npm install && npm run build:css
 # Return to app directory
 WORKDIR /app
 
-# Set environment variables - Cloud Run provides PORT=8080
+# Create custom HTTP server script with cache-busting headers
+RUN echo 'import http.server\n\
+    import socketserver\n\
+    import os\n\
+    from functools import partial\n\
+    \n\
+    class NoCacheHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):\n\
+    def end_headers(self):\n\
+    # Add cache-busting headers\n\
+    self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")\n\
+    self.send_header("Pragma", "no-cache")\n\
+    self.send_header("Expires", "0")\n\
+    super().end_headers()\n\
+    \n\
+    PORT = int(os.environ.get("PORT", 8080))\n\
+    Handler = partial(NoCacheHTTPRequestHandler, directory="/app/dashboard")\n\
+    \n\
+    with socketserver.TCPServer(("0.0.0.0", PORT), Handler) as httpd:\n\
+    print(f"Serving on port {PORT} with no-cache headers")\n\
+    httpd.serve_forever()\n\
+    ' > /app/serve.py
+
+# Set environment variables
 ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
 
 # Expose port
 EXPOSE 8080
 
-# Serve static files using Python's http.server
-# Cloud Run requires binding to 0.0.0.0:$PORT
-CMD python3 -m http.server $PORT --bind 0.0.0.0 --directory /app/dashboard
+# Use custom server with cache-busting headers
+CMD ["python3", "/app/serve.py"]
