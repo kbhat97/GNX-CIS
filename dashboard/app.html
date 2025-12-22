@@ -275,144 +275,526 @@
 <body class="antialiased">
 
   <!-- ═══════════════════════════════════════════════════════════════════
-       LOGIN PAGE
+       LANDING PAGE - Full Marketing + Login
        ═══════════════════════════════════════════════════════════════════ -->
-  <div id="login-page" class="min-h-screen flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 p-4 md:p-8">
-    <!-- Left Hero Section -->
-    <div class="flex flex-col items-center lg:items-start text-center lg:text-left max-w-md">
-      <div class="flex items-center gap-2 mb-4">
-        <img src="/dashboard/gnx-logo.jpg" alt="GNX Logo" class="w-8 h-8 rounded-lg object-cover" onerror="this.onerror=null; this.src='./gnx-logo.jpg';">
-        <span class="text-base md:text-lg font-bold text-cyan-400">GNX Content Intelligence System</span>
+  <div id="login-page">
+    
+    <!-- ═══════════════════════════════════════════════════════════════════
+         SECTION 1: HERO
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-center gap-2 mb-6">
+          <img src="/dashboard/gnx-logo.jpg" alt="GNX Logo" class="w-10 h-10 rounded-lg object-cover" onerror="this.onerror=null; this.src='./gnx-logo.jpg';">
+          <span class="text-lg font-bold text-cyan-400">GNX Content Intelligence System</span>
+        </div>
+        
+        <h1 class="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6">
+          AI That <span class="animated-gradient-text">Remembers You</span>
+        </h1>
+        
+        <p class="text-xl md:text-2xl text-gray-300 mb-4 max-w-2xl mx-auto">
+          Stop re-explaining yourself to AI every time.
+        </p>
+        <p class="text-lg text-gray-400 mb-8 max-w-2xl mx-auto">
+          CIS learns who you are in 5 questions. The more you post, the smarter it gets.
+        </p>
+        
+        <a href="#signup-section" class="inline-flex items-center gap-2 px-8 py-4 gradient-button rounded-xl text-white font-bold text-lg shadow-lg hover:shadow-cyan-500/25 transition-all">
+          Start Free - No Credit Card
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+          </svg>
+        </a>
+        
+        <p class="mt-4 text-sm text-gray-500">Join content creators saving 2+ hours per week</p>
       </div>
-      <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
-        Think It. <br>
-        <span class="animated-gradient-text">Own It.</span>
-      </h1>
-      <p class="mt-4 text-base md:text-lg text-gray-300">
-        From idea to influence.
-      </p>
-    </div>
+      
+      <!-- Scroll indicator -->
+      <div class="absolute bottom-8 animate-bounce">
+        <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+        </svg>
+      </div>
+    </section>
 
-    <!-- Right Login Form -->
-    <div class="w-full max-w-sm">
-      <div class="glass-card rounded-2xl p-6 md:p-8 shadow-2xl">
-        <h2 class="text-3xl font-bold text-center text-white mb-2">Welcome Back</h2>
-        <p class="text-center text-violet-300 mb-8">Sign in to access your dashboard</p>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         SECTION 2: HOW IT WORKS
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="py-20 px-4 md:px-8 bg-gradient-to-b from-transparent to-white/5">
+      <div class="max-w-5xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-4">How CIS Works</h2>
+        <p class="text-gray-400 text-center mb-12 max-w-xl mx-auto">Three simple steps to content that sounds like you</p>
         
-        <form id="login-form" onsubmit="handleLogin(event)">
-          <div class="space-y-6">
-            <div>
-              <label class="block text-sm text-gray-400 mb-2">Email Address</label>
-              <input type="email" id="login-email" placeholder="your@email.com" required>
-            </div>
-            <div>
-              <label class="block text-sm text-gray-400 mb-2">Password</label>
-              <input type="password" id="login-password" placeholder="••••••••" required>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="glass-card rounded-2xl p-6 text-center">
+            <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 flex items-center justify-center"><svg class="w-7 h-7 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div>
+            <h3 class="text-xl font-bold text-white mb-2">Answer 5 Questions</h3>
+            <p class="text-gray-400 text-sm">Tell us about yourself, your goals, and your style. Takes 2 minutes.</p>
           </div>
-
-          <!-- Forgot Password Link -->
-          <div class="text-right mt-2">
-            <a href="#" onclick="forgotPassword(event)" class="text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
-              Forgot Password?
-            </a>
+                    
+          <div class="glass-card rounded-2xl p-6 text-center">
+            <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500/20 to-violet-500/20 flex items-center justify-center"><svg class="w-7 h-7 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></div>
+            <h3 class="text-xl font-bold text-white mb-2">Generate Smart Content</h3>
+            <p class="text-gray-400 text-sm">CIS remembers who you are. Generates posts in YOUR voice, not generic AI.</p>
           </div>
-
-          <div id="login-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error" role="alert" aria-live="polite" data-testid="login-error">
-            Invalid email or password.
+                    
+          <div class="glass-card rounded-2xl p-6 text-center">
+            <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center"><svg class="w-7 h-7 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
+            <h3 class="text-xl font-bold text-white mb-2">It Gets Smarter</h3>
+            <p class="text-gray-400 text-sm">Every post you create improves our learning agent. After 20 posts, personalization is unstoppable.</p>
           </div>
-          
-          <!-- Show this when user is already signed in -->
-          <div id="already-signed-in" class="hidden mt-4 text-center">
-            <p class="text-cyan-400 text-sm mb-3">You're already signed in.</p>
-            <button type="button" onclick="continueToExistingSession()" class="w-full py-2 px-4 bg-violet-600 hover:bg-violet-700 rounded-lg text-white font-medium transition-colors">
-              Continue to Dashboard →
-            </button>
-          </div>
-
-          <button type="submit" id="login-btn" class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
-            <span id="login-btn-text">Sign In</span>
-            <svg id="login-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </button>
-        </form>
+        </div>
         
-        <!-- Signup Form (initially hidden) -->
-        <form id="signup-form" onsubmit="handleSignup(event)" class="hidden">
-          <div class="space-y-6">
-            <div>
-              <label class="block text-sm text-gray-400 mb-2">First Name</label>
-              <input type="text" id="signup-firstname" placeholder="John" required>
-            </div>
-            <div>
-              <label class="block text-sm text-gray-400 mb-2">Email Address</label>
-              <input type="email" id="signup-email" placeholder="your@email.com" required>
-            </div>
-            <div>
-              <label class="block text-sm text-gray-400 mb-2">Password</label>
-              <input type="password" id="signup-password" placeholder="Min 8 characters" required minlength="8">
-              <p class="text-xs text-gray-500 mt-1">Must be at least 8 characters with letters and numbers</p>
-            </div>
-          </div>
+        <p class="text-center mt-12 text-lg text-cyan-400 font-medium">Your AI finally knows what you actually want</p>
+      </div>
+    </section>
 
-          <div id="signup-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error" role="alert" aria-live="polite" data-testid="signup-error">
-            Error creating account.
-          </div>
-
-          <button type="submit" id="signup-btn" class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
-            <span id="signup-btn-text">Create Account</span>
-            <svg id="signup-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </button>
-        </form>
-
-        <!-- Email Verification Form (initially hidden) -->
-        <form id="verify-form" onsubmit="handleVerifyCode(event)" class="hidden">
-          <div class="text-center mb-6">
-            <svg class="w-16 h-16 mx-auto text-violet-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-            <h3 class="text-xl font-semibold text-white mb-2">Check Your Email</h3>
-            <p class="text-sm text-gray-400">We sent a 6-digit code to <span id="verify-email-display" class="text-violet-400"></span></p>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         SECTION 3: WHY CIS VS OTHER AI
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="py-20 px-4 md:px-8">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-4">Why CIS vs ChatGPT/Claude?</h2>
+        <p class="text-gray-400 text-center mb-12 max-w-2xl mx-auto">The difference is <span class="text-cyan-400 font-semibold">persistent memory</span>. Other AI tools start fresh every time. CIS builds a permanent understanding of YOU.</p>
+        
+        <div class="space-y-6">
+          <!-- Comparison 1: Memory -->
+          <div class="glass-card rounded-xl p-6">
+            <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">🧠 Context & Memory</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">❌</span>
+                  <p class="text-white font-semibold">ChatGPT / Claude</p>
+                </div>
+                <p class="text-gray-400 text-sm">"Who are you again? Tell me everything about your company, audience, and goals..."</p>
+                <p class="text-red-400/80 text-xs mt-2 italic">Every conversation starts from zero. You waste time repeating context.</p>
+              </div>
+              <div class="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">✅</span>
+                  <p class="text-white font-semibold">CIS</p>
+                </div>
+                <p class="text-cyan-400 text-sm">"I remember you're a SaaS founder targeting CTOs. Let's create your post."</p>
+                <p class="text-green-400/80 text-xs mt-2 italic">Your profile, style, and preferences are saved permanently.</p>
+              </div>
+            </div>
           </div>
           
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm text-gray-400 mb-2">Verification Code</label>
-              <input type="text" id="verify-code" placeholder="Enter 6-digit code" required maxlength="6" pattern="[0-9]{6}"
-                     class="text-center text-2xl tracking-widest font-mono">
+          <!-- Comparison 2: Learning -->
+          <div class="glass-card rounded-xl p-6">
+            <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">📈 Continuous Learning</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">❌</span>
+                  <p class="text-white font-semibold">Other AI Tools</p>
+                </div>
+                <p class="text-gray-400 text-sm">Same generic output every time, regardless of how many prompts you've written.</p>
+                <p class="text-red-400/80 text-xs mt-2 italic">No improvement. Post #100 is the same quality as post #1.</p>
+              </div>
+              <div class="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">✅</span>
+                  <p class="text-white font-semibold">CIS</p>
+                </div>
+                <p class="text-cyan-400 text-sm">Gets better with every post. Our learning agent analyzes your style patterns.</p>
+                <p class="text-green-400/80 text-xs mt-2 italic">After 20 posts, CIS knows your voice better than you do.</p>
+              </div>
             </div>
           </div>
-
-          <div id="verify-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error" role="alert">
-            Invalid verification code.
-          </div>
-
-          <button type="submit" id="verify-btn" class="w-full mt-6 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
-            <span id="verify-btn-text">Verify & Continue</span>
-            <svg id="verify-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </button>
           
-          <button type="button" onclick="resendVerificationCode()" class="w-full mt-3 py-2 text-sm text-gray-400 hover:text-white transition-colors">
-            Didn't receive code? Resend
-          </button>
-        </form>
+          <!-- Comparison 3: LinkedIn Specific -->
+          <div class="glass-card rounded-xl p-6">
+            <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">💼 Built for LinkedIn</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">❌</span>
+                  <p class="text-white font-semibold">General AI</p>
+                </div>
+                <p class="text-gray-400 text-sm">Generic writing for any platform. Doesn't understand LinkedIn's unique algorithm.</p>
+                <p class="text-red-400/80 text-xs mt-2 italic">Your posts look AI-generated and get low engagement.</p>
+              </div>
+              <div class="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">✅</span>
+                  <p class="text-white font-semibold">CIS</p>
+                </div>
+                <p class="text-cyan-400 text-sm">Trained specifically for LinkedIn. Virality scoring, hook optimization, engagement patterns.</p>
+                <p class="text-green-400/80 text-xs mt-2 italic">Posts that perform because they're designed for the platform.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <p class="text-center mt-10 text-lg text-gray-400">Bottom line: <span class="text-white font-semibold">CIS is the AI that actually knows you.</span></p>
+      </div>
+    </section>
 
-        <!-- Auth Toggle Button -->
-        <div id="auth-toggle-container" class="mt-6 text-center">
-          <button type="button" id="auth-toggle-btn" onclick="toggleAuthForm()" class="text-sm text-violet-400 hover:text-violet-300 transition-colors">
-            Don't have an account? <span class="font-semibold">Sign up</span>
-          </button>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         SECTION 4: FEATURES AT A GLANCE
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="py-20 px-4 md:px-8 bg-gradient-to-b from-white/5 to-transparent">
+      <div class="max-w-5xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-4">What You Get</h2>
+        <p class="text-gray-400 text-center mb-12">Everything you need to create content that converts</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="glass-card rounded-xl p-5 flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">Persistent Memory</h3>
+              <p class="text-gray-400 text-sm">AI remembers who you are across all sessions</p>
+            </div>
+          </div>
+          
+          <div class="glass-card rounded-xl p-5 flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">5 Writing Styles</h3>
+              <p class="text-gray-400 text-sm">Professional, Technical, Inspirational, Storytelling, Thought Leadership</p>
+            </div>
+          </div>
+          
+          <div class="glass-card rounded-xl p-5 flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-fuchsia-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">Image Generation</h3>
+              <p class="text-gray-400 text-sm">AI-powered visuals for your posts (Pro tier+)</p>
+            </div>
+          </div>
+          
+          <div class="glass-card rounded-xl p-5 flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">Post History & Scores</h3>
+              <p class="text-gray-400 text-sm">Track what works with virality scoring</p>
+            </div>
+          </div>
+          
+          <div class="glass-card rounded-xl p-5 flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">LinkedIn Publishing</h3>
+              <p class="text-gray-400 text-sm">Direct one-click posting (Business tier)</p>
+            </div>
+          </div>
+          
+          <div class="glass-card rounded-xl p-5 flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">Learning Agent</h3>
+              <p class="text-gray-400 text-sm">Gets smarter with every post (20 post minimum)</p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         SECTION 5: PRICING PREVIEW
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="py-20 px-4 md:px-8">
+      <div class="max-w-5xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-4">Simple Pricing</h2>
+        <p class="text-gray-400 text-center mb-12">Start free, upgrade when you're ready</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Free -->
+          <div class="glass-card rounded-2xl p-6 text-center">
+            <h3 class="text-xl font-bold text-white mb-2">Free</h3>
+            <div class="text-4xl font-black text-white mb-1">$0</div>
+            <p class="text-gray-500 text-sm mb-6">/month</p>
+            <ul class="text-left text-gray-400 text-sm space-y-2 mb-6">
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 5 posts/month</li>
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 3 writing styles</li>
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Persona setup</li>
+              <li class="flex items-center gap-2"><span class="text-gray-600">✗</span> No images</li>
+            </ul>
+            <a href="#signup-section" class="block w-full py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-white font-semibold transition-colors">Get Started</a>
+          </div>
+          
+          <!-- Pro (Featured) -->
+          <div class="glass-card rounded-2xl p-6 text-center border-2 border-cyan-500/50 relative transform md:-translate-y-4">
+            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full text-white text-xs font-bold">BEST VALUE</div>
+            <h3 class="text-xl font-bold text-white mb-2 mt-2">Pro</h3>
+            <div class="text-4xl font-black text-cyan-400 mb-1">$49</div>
+            <p class="text-gray-500 text-sm mb-6">/month</p>
+            <ul class="text-left text-gray-400 text-sm space-y-2 mb-6">
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 30 posts/month</li>
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> All 5 styles</li>
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Image generation</li>
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Smart learning</li>
+            </ul>
+            <a href="#signup-section" class="block w-full py-2 px-4 gradient-button rounded-lg text-white font-semibold">Start 30-Day Free Trial</a>
+          </div>
+          
+          <!-- Business -->
+          <div class="glass-card rounded-2xl p-6 text-center">
+            <h3 class="text-xl font-bold text-white mb-2">Business</h3>
+            <div class="text-4xl font-black text-white mb-1">$199</div>
+            <p class="text-gray-500 text-sm mb-6">/month</p>
+            <ul class="text-left text-gray-400 text-sm space-y-2 mb-6">
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 200 posts/month</li>
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> LinkedIn publishing</li>
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Full analytics</li>
+              <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Priority support</li>
+            </ul>
+            <a href="#signup-section" class="block w-full py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-white font-semibold transition-colors">Start 30-Day Free Trial</a>
+          </div>
+        </div>
+        
+        <p class="text-center mt-8">
+          <a href="/pricing.html" class="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">View Full Pricing & Compare Plans →</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         SECTION 6: SOCIAL PROOF
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="py-20 px-4 md:px-8 bg-gradient-to-b from-transparent to-white/5">
+      <div class="max-w-4xl mx-auto text-center">
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Loved by Content Creators</h2>
+        <p class="text-gray-400 mb-12">Join professionals who save hours every week</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="glass-card rounded-xl p-6">
+            <p class="text-gray-300 italic mb-4">"CIS saves me 2+ hours per week. Finally an AI that knows my voice."</p>
+            <div class="flex items-center justify-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold">J</div>
+              <div class="text-left">
+                <p class="text-white font-medium text-sm">John D.</p>
+                <p class="text-gray-500 text-xs">SAP Consultant</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="glass-card rounded-xl p-6">
+            <p class="text-gray-300 italic mb-4">"The learning agent is magic. After 20 posts, it writes exactly like me."</p>
+            <div class="flex items-center justify-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold">S</div>
+              <div class="text-left">
+                <p class="text-white font-medium text-sm">Sarah M.</p>
+                <p class="text-gray-500 text-xs">Tech Blogger</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="glass-card rounded-xl p-6">
+            <p class="text-gray-300 italic mb-4">"No more re-explaining my background. CIS just gets me."</p>
+            <div class="flex items-center justify-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center text-white font-bold">M</div>
+              <div class="text-left">
+                <p class="text-white font-medium text-sm">Michael R.</p>
+                <p class="text-gray-500 text-xs">Startup Founder</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <p class="mt-8 text-gray-500 text-sm">More testimonials coming soon from early adopters...</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         SECTION 7: FAQ
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="py-20 px-4 md:px-8">
+      <div class="max-w-3xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-4">Common Questions</h2>
+        <p class="text-gray-400 text-center mb-12">Everything you need to know</p>
+        
+        <div class="space-y-4">
+          <div class="glass-card rounded-xl p-5">
+            <h3 class="text-white font-semibold mb-2">What's the 20 post minimum for learning?</h3>
+            <p class="text-gray-400 text-sm">After 20 posts, our learning agent has enough data about your voice, style, and goals. Before that, it's learning. After 20, it's magic.</p>
+          </div>
+          
+          <div class="glass-card rounded-xl p-5">
+            <h3 class="text-white font-semibold mb-2">Can I try for free first?</h3>
+            <p class="text-gray-400 text-sm">Yes! Free tier gives 5 posts/month forever. Pro and Business get a 30-day free trial. No credit card needed to start.</p>
+          </div>
+          
+          <div class="glass-card rounded-xl p-5">
+            <h3 class="text-white font-semibold mb-2">Do you save my data?</h3>
+            <p class="text-gray-400 text-sm">Yes, in Supabase. Your persona data is encrypted and only used to improve your content. We never share or sell it.</p>
+          </div>
+          
+          <div class="glass-card rounded-xl p-5">
+            <h3 class="text-white font-semibold mb-2">Can I cancel anytime?</h3>
+            <p class="text-gray-400 text-sm">Yes. Cancel your subscription anytime, no questions asked. Your data stays available on the free tier.</p>
+          </div>
+          
+          <div class="glass-card rounded-xl p-5">
+            <h3 class="text-white font-semibold mb-2">Is my LinkedIn account safe?</h3>
+            <p class="text-gray-400 text-sm">Yes. We use OAuth (official LinkedIn login). You control what CIS can access. We never store your LinkedIn password.</p>
+          </div>
+          
+          <div class="glass-card rounded-xl p-5">
+            <h3 class="text-white font-semibold mb-2">What payment methods do you accept?</h3>
+            <p class="text-gray-400 text-sm">Credit cards (Visa, Mastercard, Amex) via Stripe. Secure and encrypted.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         SECTION 8: SIGNUP / LOGIN FORM
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section id="signup-section" class="py-20 px-4 md:px-8 bg-gradient-to-b from-white/5 to-transparent">
+      <div class="max-w-md mx-auto">
+        <div class="glass-card rounded-2xl p-6 md:p-8 shadow-2xl">
+          <h2 class="text-3xl font-bold text-center text-white mb-2">Get Started Free</h2>
+          <p class="text-center text-gray-400 mb-8">No credit card required</p>
+          
+          <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="space-y-6">
+              <div>
+                <label class="block text-sm text-gray-400 mb-2">Email Address</label>
+                <input type="email" id="login-email" placeholder="your@email.com" required>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-2">Password</label>
+                <input type="password" id="login-password" placeholder="••••••••" required>
+              </div>
+            </div>
+
+            <!-- Forgot Password Link -->
+            <div class="text-right mt-2">
+              <a href="#" onclick="forgotPassword(event)" class="text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
+                Forgot Password?
+              </a>
+            </div>
+
+            <div id="login-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error" role="alert" aria-live="polite" data-testid="login-error">
+              Invalid email or password.
+            </div>
+            
+            <!-- Show this when user is already signed in -->
+            <div id="already-signed-in" class="hidden mt-4 text-center">
+              <p class="text-cyan-400 text-sm mb-3">You're already signed in.</p>
+              <button type="button" onclick="continueToExistingSession()" class="w-full py-2 px-4 bg-violet-600 hover:bg-violet-700 rounded-lg text-white font-medium transition-colors">
+                Continue to Dashboard →
+              </button>
+            </div>
+
+            <button type="submit" id="login-btn" class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
+              <span id="login-btn-text">Sign In</span>
+              <svg id="login-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </button>
+          </form>
+          
+          <!-- Signup Form (initially hidden) -->
+          <form id="signup-form" onsubmit="handleSignup(event)" class="hidden">
+            <div class="space-y-6">
+              <div>
+                <label class="block text-sm text-gray-400 mb-2">First Name</label>
+                <input type="text" id="signup-firstname" placeholder="John" required>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-2">Email Address</label>
+                <input type="email" id="signup-email" placeholder="your@email.com" required>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-2">Password</label>
+                <input type="password" id="signup-password" placeholder="Min 8 characters" required minlength="8">
+                <p class="text-xs text-gray-500 mt-1">Must be at least 8 characters with letters and numbers</p>
+              </div>
+            </div>
+
+            <div id="signup-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error" role="alert" aria-live="polite" data-testid="signup-error">
+              Error creating account.
+            </div>
+
+            <button type="submit" id="signup-btn" class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
+              <span id="signup-btn-text">Start Free - No Credit Card</span>
+              <svg id="signup-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </button>
+          </form>
+
+          <!-- Email Verification Form (initially hidden) -->
+          <form id="verify-form" onsubmit="handleVerifyCode(event)" class="hidden">
+            <div class="text-center mb-6">
+              <svg class="w-16 h-16 mx-auto text-violet-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              <h3 class="text-xl font-semibold text-white mb-2">Check Your Email</h3>
+              <p class="text-sm text-gray-400">We sent a 6-digit code to <span id="verify-email-display" class="text-violet-400"></span></p>
+            </div>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm text-gray-400 mb-2">Verification Code</label>
+                <input type="text" id="verify-code" placeholder="Enter 6-digit code" required maxlength="6" pattern="[0-9]{6}"
+                       class="text-center text-2xl tracking-widest font-mono">
+              </div>
+            </div>
+
+            <div id="verify-error" class="hidden mt-4 text-center text-red-400 text-sm shake-error" role="alert">
+              Invalid verification code.
+            </div>
+
+            <button type="submit" id="verify-btn" class="w-full mt-6 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
+              <span id="verify-btn-text">Verify & Continue</span>
+              <svg id="verify-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </button>
+            
+            <button type="button" onclick="resendVerificationCode()" class="w-full mt-3 py-2 text-sm text-gray-400 hover:text-white transition-colors">
+              Didn't receive code? Resend
+            </button>
+          </form>
+
+          <!-- Auth Toggle Button -->
+          <div id="auth-toggle-container" class="mt-6 text-center">
+            <button type="button" id="auth-toggle-btn" onclick="toggleAuthForm()" class="text-sm text-violet-400 hover:text-violet-300 transition-colors">
+              Don't have an account? <span class="font-semibold">Sign up</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Trust badges -->
+        <div class="flex items-center justify-center gap-6 mt-8 text-gray-500 text-xs">
+          <span class="flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> SSL Encrypted</span>
+          <span class="flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Fast Setup</span>
+          <span class="flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg> Secure Data</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 px-4 text-center text-gray-500 text-sm border-t border-white/5">
+      <p>© 2025 GNX Automation. All rights reserved.</p>
+      <p class="mt-2">
+        <a href="/pricing.html" class="text-gray-400 hover:text-white transition-colors">Pricing</a>
+        <span class="mx-2">•</span>
+        <a href="mailto:support@gnxautomation.com" class="text-gray-400 hover:text-white transition-colors">Support</a>
+      </p>
+    </footer>
+    
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════
@@ -635,7 +1017,10 @@ My best post:
 
         <div class="flex items-center gap-4">
           <div class="text-right">
-            <p class="text-white font-semibold text-sm" id="user-name">User</p>
+            <div class="flex items-center gap-2 justify-end">
+              <p class="text-white font-semibold text-sm" id="user-name">User</p>
+              <span id="user-plan-badge" class="hidden px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-cyan-500 to-violet-500 text-white">PRO</span>
+            </div>
             <p class="text-gray-400 text-xs" id="user-email">user@example.com</p>
           </div>
           <button id="logout-btn" onclick="handleLogout()" class="px-4 py-2 text-sm font-medium text-white rounded-lg gradient-border-button" data-testid="logout-btn">
@@ -724,6 +1109,85 @@ My best post:
               </div>
               <div class="w-full bg-white/10 rounded-full h-2.5">
                 <div id="api-status-bar" class="bg-gradient-to-r from-violet-500 to-fuchsia-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Learning Progress Card -->
+          <div class="glass-card rounded-xl p-6 mb-8 animate-fade-in-up" style="animation-delay: 400ms">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-cyan-500/20 to-violet-500/20">
+                  <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold text-white">Learning Progress</h3>
+                  <p id="learning-status-text" class="text-sm text-gray-400">Generate posts to unlock personalization</p>
+                </div>
+              </div>
+              
+              <div class="flex-1 max-w-md">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm text-gray-400">Posts Generated</span>
+                  <span class="text-sm font-semibold">
+                    <span id="learning-post-count" class="text-cyan-400">0</span>
+                    <span class="text-gray-500">/ 20</span>
+                  </span>
+                </div>
+                <div class="w-full bg-white/10 rounded-full h-3">
+                  <div id="learning-progress-bar" class="bg-gradient-to-r from-cyan-500 to-violet-500 h-3 rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+                </div>
+                <p id="learning-milestone-text" class="text-xs text-gray-500 mt-2">20 posts until personalization unlocks</p>
+              </div>
+            </div>
+            
+            <!-- Unlocked State (hidden by default) -->
+            <div id="learning-unlocked-banner" class="hidden mt-4 p-3 bg-gradient-to-r from-green-500/20 to-cyan-500/20 rounded-lg border border-green-500/30">
+              <p class="text-green-400 text-sm font-medium flex items-center gap-2">
+                <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Personalization Unlocked! Your AI now knows your voice and style.</span>
+              </p>
+            </div>
+            
+            <!-- Voice Profile Section (hidden by default, shown when personalization unlocked) -->
+            <div id="voice-profile-section" class="hidden mt-4">
+              <button onclick="toggleVoiceProfile()" class="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-colors mb-3">
+                <svg id="voice-profile-chevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                <span>View Your Voice Profile</span>
+              </button>
+              
+              <div id="voice-profile-content" class="hidden p-4 bg-gradient-to-r from-cyan-500/5 to-violet-500/5 rounded-lg border border-cyan-500/20">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    <div>
+                      <p class="text-gray-400 text-xs">Industry</p>
+                      <p id="profile-industry" class="text-white font-medium">Loading...</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <div>
+                      <p class="text-gray-400 text-xs">Target Audience</p>
+                      <p id="profile-audience" class="text-white font-medium">Loading...</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <div>
+                      <p class="text-gray-400 text-xs">Writing Style</p>
+                      <p id="profile-style" class="text-white font-medium">Loading...</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    <div>
+                      <p class="text-gray-400 text-xs">Key Topics</p>
+                      <p id="profile-topics" class="text-white font-medium">Loading...</p>
+                    </div>
+                  </div>
+                </div>
+                <p class="text-gray-500 text-xs mt-4 italic">This profile is built from your onboarding and 20+ generated posts.</p>
               </div>
             </div>
           </div>
@@ -966,8 +1430,93 @@ My best post:
 
         <!-- Settings Section -->
         <div id="section-settings" class="hidden">
-          <h1 class="text-3xl font-bold text-white mb-8">⚙️ Settings</h1>
+          <h1 class="text-3xl font-bold text-white mb-8">Settings</h1>
           
+          <!-- Subscription & Billing Section -->
+          <div id="subscription-settings-section" class="glass-card rounded-xl p-6 mb-6 max-w-2xl">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-3">
+              <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+              Subscription & Billing
+            </h2>
+            
+            <div class="mb-4">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-gray-400">Current Plan:</span>
+                <span id="settings-plan-badge" class="px-3 py-1 rounded-full text-sm font-semibold bg-gray-500/20 text-gray-400">FREE</span>
+              </div>
+              <p id="settings-plan-description" class="text-gray-500 text-sm">5 posts per month, basic features</p>
+            </div>
+            
+            <!-- Monthly Usage -->
+            <div class="mb-6 p-4 bg-white/5 rounded-lg">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-gray-400 text-sm">Monthly Usage</span>
+                <span class="text-sm">
+                  <span id="settings-posts-used" class="text-white font-semibold">0</span>
+                  <span class="text-gray-500">/ <span id="settings-posts-limit">5</span> posts</span>
+                </span>
+              </div>
+              <div class="w-full bg-white/10 rounded-full h-2">
+                <div id="settings-usage-bar" class="bg-gradient-to-r from-violet-500 to-fuchsia-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+            
+            <!-- Upgrade Options (for FREE users - shows Pro + Business) -->
+            <div id="settings-upgrade-options">
+              <p class="text-gray-400 text-sm mb-3">Upgrade your plan:</p>
+              <div class="flex flex-wrap gap-3 mb-4">
+                <button id="upgrade-pro-btn" onclick="upgradeToplan('pro')" class="px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-lg text-white font-semibold transition-all flex items-center gap-2 shadow-lg">
+                  <span>Pro - $49/mo</span>
+                  <span class="text-xs opacity-75">(30 posts)</span>
+                </button>
+                <button id="upgrade-business-btn" onclick="upgradeToplan('business')" class="px-5 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 rounded-lg text-white font-semibold transition-all flex items-center gap-2 shadow-lg">
+                  <span>Business - $199/mo</span>
+                  <span class="text-xs opacity-75">(200 posts)</span>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Premium Active State (for PRO/BUSINESS users) -->
+            <div id="settings-premium-active" class="hidden">
+              <div class="flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-500/10 to-violet-500/10 rounded-lg border border-cyan-500/20 mb-4">
+                <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                  <p class="text-white font-semibold">Premium subscription active</p>
+                  <p class="text-gray-400 text-sm">Thank you for your support!</p>
+                </div>
+              </div>
+              
+              <!-- Upgrade to Business (for PRO users only) -->
+              <div id="settings-upgrade-to-business" class="mb-4">
+                <p class="text-gray-400 text-sm mb-2">Want more posts?</p>
+                <button onclick="upgradeToplan('business')" class="px-5 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 rounded-lg text-white font-semibold transition-all flex items-center gap-2 shadow-lg">
+                  <span>Upgrade to Business - $199/mo</span>
+                  <span class="text-xs opacity-75">(200 posts)</span>
+                </button>
+              </div>
+              
+              <!-- Manage Subscription (for all paid users) -->
+              <div id="settings-manage-subscription" class="flex gap-3">
+                <a href="https://billing.stripe.com/p/login/test" target="_blank" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-medium transition-colors flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  Manage Subscription
+                </a>
+                <button onclick="cancelSubscription()" class="px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg text-sm font-medium transition-colors">
+                  Cancel Subscription
+                </button>
+              </div>
+            </div>
+            
+            <!-- Sync Button for Local Testing -->
+            <div class="mt-4 pt-4 border-t border-white/10">
+              <button onclick="syncSubscription()" id="sync-subscription-btn" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white text-sm font-medium transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Sync from Stripe
+              </button>
+              <p class="text-gray-500 text-xs mt-1">Click to sync subscription status after payment</p>
+            </div>
+          </div>
+
           <!-- LinkedIn Connection (Admin-only feature) -->
           <div id="linkedin-settings-section" class="glass-card rounded-xl p-6 mb-6 max-w-2xl hidden" data-testid="linkedin-settings-section">
             <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-3">
@@ -1599,12 +2148,13 @@ My best post:
     const SUPABASE_URL = RUNTIME_CONFIG.SUPABASE_URL || 'https://ijwmgwirhorksepabgpj.supabase.co';
     const SUPABASE_ANON_KEY = RUNTIME_CONFIG.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlqd21nd2lyaG9ya3NlcGFiZ3BqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4MTAwMjksImV4cCI6MjA3NjM4NjAyOX0.edZFY_LyMzNhKbYSdA95lvu7hRuWu3Dqf03oy4bJnYc';
     
-    let supabase = null;
+    // Note: Using supabaseClient to avoid conflict with window.supabase from the library
+    let supabaseClient = null;
     let supabaseEnabled = false;
 
     // Initialize Supabase client
     try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       supabaseEnabled = true;
       logger.log('[OK] Supabase connected');
     } catch (error) {
@@ -1621,7 +2171,7 @@ My best post:
         const userEmail = currentUser.email;
         
         // Check if user exists
-        let { data: existingUser } = await supabase
+        let { data: existingUser } = await supabaseClient
           .from('users')
           .select('id')
           .eq('email', userEmail)
@@ -1630,7 +2180,7 @@ My best post:
         let userId;
         if (!existingUser) {
           // Create new user
-          const { data: newUser, error: createError } = await supabase
+          const { data: newUser, error: createError } = await supabaseClient
             .from('users')
             .insert({
               email: userEmail,
@@ -1647,7 +2197,7 @@ My best post:
         }
 
         // Save post
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('posts')
           .insert({
             user_id: userId,
@@ -1680,7 +2230,7 @@ My best post:
       
       try {
         // Get user
-        const { data: user } = await supabase
+        const { data: user } = await supabaseClient
           .from('users')
           .select('id')
           .eq('email', currentUser.email)
@@ -1689,7 +2239,7 @@ My best post:
         if (!user) return [];
 
         // Load posts
-        const { data: loadedPosts, error } = await supabase
+        const { data: loadedPosts, error } = await supabaseClient
           .from('posts')
           .select('*')
           .eq('user_id', user.id)
@@ -2470,7 +3020,7 @@ My best post:
       if (!supabaseEnabled) return false;
       
       try {
-        const { error } = await supabase
+        const { error } = await supabaseClient
           .from('posts')
           .update({ status: status, updated_at: new Date().toISOString() })
           .eq('id', postId);
@@ -2628,7 +3178,7 @@ My best post:
       
       try {
         // Get user ID from users table
-        const { data: user, error: userError } = await supabase
+        const { data: user, error: userError } = await supabaseClient
           .from('users')
           .select('id, onboarding_completed')
           .eq('email', currentUser.email)
@@ -2646,7 +3196,7 @@ My best post:
         }
         
         // Also check user_profiles table
-        const { data: profile } = await supabase
+        const { data: profile } = await supabaseClient
           .from('user_profiles')
           .select('id')
           .eq('user_id', user.id)
@@ -2655,7 +3205,7 @@ My best post:
         if (profile) {
           logger.log('[Onboarding] Profile exists, marking as completed');
           // Update users table to mark as completed
-          await supabase.from('users').update({ onboarding_completed: true }).eq('id', user.id);
+          await supabaseClient.from('users').update({ onboarding_completed: true }).eq('id', user.id);
           return true;
         }
         
@@ -2707,7 +3257,7 @@ My best post:
       try {
         if (supabaseEnabled) {
           // Get user ID
-          const { data: user } = await supabase
+          const { data: user } = await supabaseClient
             .from('users')
             .select('id')
             .eq('email', currentUser.email)
@@ -2742,7 +3292,7 @@ My best post:
             };
             
             // Upsert profile
-            const { error: profileError } = await supabase
+            const { error: profileError } = await supabaseClient
               .from('user_profiles')
               .upsert(profileData, { onConflict: 'user_id' });
             
@@ -2763,7 +3313,7 @@ My best post:
                 created_at: new Date().toISOString()
               };
               
-              const { error: analysisError } = await supabase
+              const { error: analysisError } = await supabaseClient
                 .from('content_analysis')
                 .upsert(analysisData, { onConflict: 'user_id' });
               
@@ -2773,7 +3323,7 @@ My best post:
             }
             
             // Mark onboarding as completed
-            await supabase
+            await supabaseClient
               .from('users')
               .update({ 
                 onboarding_completed: true,
@@ -2826,6 +3376,9 @@ My best post:
       updateRecentPosts();
       updateHistoryGrid();
       logger.log('[OK] Dashboard loaded after onboarding');
+      
+      // Check if user came from pricing page with checkout intent
+      await handlePendingCheckout();
     }
 
     async function showDashboard() {
@@ -2866,7 +3419,311 @@ My best post:
       updateMetrics();
       updateRecentPosts();
       updateHistoryGrid();
+      
+      // Auto-sync subscription status silently in background (no UI blocking)
+      autoSyncSubscription();
+      
       logger.log('✅ Dashboard loaded');
+      
+      // Check if user came from pricing page with checkout intent
+      await handlePendingCheckout();
+    }
+    
+    // Auto-sync subscription silently on dashboard load
+    async function autoSyncSubscription() {
+      try {
+        const token = await window.Clerk?.session?.getToken();
+        if (!token) return;
+        
+        const response = await fetch('/api/sync-subscription', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.plan) {
+          // Update UI silently without notification
+          updatePlanBadge(data.plan);
+          logger.log('[SYNC] Auto-synced subscription:', data.plan);
+        }
+      } catch (error) {
+        // Silently fail - don't block dashboard loading
+        logger.warn('[SYNC] Auto-sync failed (silent):', error.message);
+      }
+    }
+
+    // Handle checkout if user came from pricing page
+    async function handlePendingCheckout() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const checkoutPlan = urlParams.get('checkout') || sessionStorage.getItem('selectedPlan');
+      
+      // Check for success/cancelled status
+      if (checkoutPlan === 'success') {
+        showNotification('Payment successful! Your plan is now active.', 'success');
+        // Clear the URL parameter
+        window.history.replaceState({}, document.title, window.location.pathname);
+        sessionStorage.removeItem('selectedPlan');
+        return;
+      }
+      
+      if (checkoutPlan === 'cancelled') {
+        showNotification('Checkout cancelled. You can upgrade anytime.', 'info');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        sessionStorage.removeItem('selectedPlan');
+        return;
+      }
+      
+      // If there's a checkout plan, trigger checkout
+      if (checkoutPlan && (checkoutPlan === 'pro' || checkoutPlan === 'business')) {
+        logger.log('[CHECKOUT] Detected pending checkout for plan:', checkoutPlan);
+        sessionStorage.removeItem('selectedPlan');
+        
+        // Clear the URL parameter
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show loading message
+        showNotification('Redirecting to checkout...', 'info');
+        
+        try {
+          // Call checkout API
+          const response = await fetch('/api/create-checkout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+            },
+            body: JSON.stringify({ plan: checkoutPlan })
+          });
+          
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to create checkout');
+          }
+          
+          const data = await response.json();
+          
+          if (data.checkout_url) {
+            // Redirect to Stripe Checkout
+            window.location.href = data.checkout_url;
+          } else {
+            throw new Error('No checkout URL returned');
+          }
+        } catch (error) {
+          logger.error('[CHECKOUT] Error:', error);
+          showNotification('Failed to start checkout: ' + error.message, 'error');
+        }
+      }
+    }
+
+    // Simple notification helper
+    function showNotification(message, type = 'info') {
+      // Use existing toast or create simple alert
+      const colors = {
+        success: 'bg-green-500/20 border-green-500/30 text-green-400',
+        error: 'bg-red-500/20 border-red-500/30 text-red-400',
+        info: 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400'
+      };
+      
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 right-4 z-50 p-4 rounded-lg border ${colors[type] || colors.info} animate-fade-in-up`;
+      toast.innerHTML = `<p class="font-medium">${message}</p>`;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 5000);
+    }
+
+    // Upgrade to a plan
+    async function upgradeToplan(plan) {
+      showNotification('Redirecting to checkout...', 'info');
+      
+      try {
+        const response = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+          },
+          body: JSON.stringify({ plan: plan })
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || 'Failed to create checkout');
+        }
+        
+        const data = await response.json();
+        
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else {
+          throw new Error('No checkout URL returned');
+        }
+      } catch (error) {
+        logger.error('[UPGRADE] Error:', error);
+        showNotification('Failed to start checkout: ' + error.message, 'error');
+      }
+    }
+
+    // Update subscription UI in settings section
+    async function updateSubscriptionUI() {
+      try {
+        const response = await fetch('/api/user/subscription', {
+          headers: {
+            'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+          }
+        });
+        
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        const plan = data.plan || 'free';
+        const postsUsed = data.posts_this_month || 0;
+        const postLimit = data.post_limit || 5;
+        
+        // Plan descriptions
+        const planDescriptions = {
+          'free': '5 posts per month, basic features',
+          'pro': '30 posts per month, image generation, all styles',
+          'business': '200 posts per month, LinkedIn publishing, priority support'
+        };
+        
+        // Plan colors
+        const planColors = {
+          'free': 'bg-gray-500/20 text-gray-400',
+          'pro': 'bg-cyan-500/20 text-cyan-400',
+          'business': 'bg-violet-500/20 text-violet-400'
+        };
+        
+        // Update settings section elements
+        const settingsBadge = document.getElementById('settings-plan-badge');
+        if (settingsBadge) {
+          settingsBadge.className = `px-3 py-1 rounded-full text-sm font-semibold ${planColors[plan] || planColors.free}`;
+          settingsBadge.textContent = plan.toUpperCase();
+        }
+        
+        const settingsDesc = document.getElementById('settings-plan-description');
+        if (settingsDesc) {
+          settingsDesc.textContent = planDescriptions[plan] || planDescriptions.free;
+        }
+        
+        // Update usage counts
+        const usedEl = document.getElementById('settings-posts-used');
+        const limitEl = document.getElementById('settings-posts-limit');
+        if (usedEl) usedEl.textContent = postsUsed;
+        if (limitEl) limitEl.textContent = postLimit;
+        
+        // Update progress bar
+        const progressBar = document.getElementById('settings-usage-bar');
+        if (progressBar) {
+          const percent = Math.min((postsUsed / postLimit) * 100, 100);
+          progressBar.style.width = `${percent}%`;
+          
+          // Change color if near limit
+          if (percent >= 90) {
+            progressBar.classList.remove('from-violet-500', 'to-fuchsia-500');
+            progressBar.classList.add('from-red-500', 'to-orange-500');
+          }
+        }
+        
+        // Show/hide upgrade buttons based on plan
+        const upgradeOptions = document.getElementById('settings-upgrade-options');
+        const premiumActive = document.getElementById('settings-premium-active');
+        const upgradeToBusinessDiv = document.getElementById('settings-upgrade-to-business');
+        
+        if (plan !== 'free') {
+          if (upgradeOptions) upgradeOptions.classList.add('hidden');
+          if (premiumActive) premiumActive.classList.remove('hidden');
+          
+          // Hide "Upgrade to Business" for Business users
+          if (plan === 'business' && upgradeToBusinessDiv) {
+            upgradeToBusinessDiv.classList.add('hidden');
+          } else if (upgradeToBusinessDiv) {
+            upgradeToBusinessDiv.classList.remove('hidden');
+          }
+        } else {
+          if (upgradeOptions) upgradeOptions.classList.remove('hidden');
+          if (premiumActive) premiumActive.classList.add('hidden');
+        }
+        
+        // Update header badge
+        updatePlanBadge(plan);
+        
+      } catch (error) {
+        logger.error('[SUBSCRIPTION] Error updating UI:', error);
+      }
+    }
+
+    // Sync subscription from Stripe
+    async function syncSubscription() {
+      const btn = document.getElementById('sync-subscription-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Syncing...';
+      }
+      
+      try {
+        const response = await fetch('/api/sync-subscription', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showNotification(`Subscription synced: ${data.plan?.toUpperCase() || 'FREE'}`, 'success');
+          // Refresh the subscription UI
+          await updateSubscriptionUI();
+          // Update header badge
+          updatePlanBadge(data.plan);
+        } else {
+          showNotification('Sync failed: ' + (data.error || 'Unknown error'), 'error');
+        }
+      } catch (error) {
+        logger.error('[SYNC] Error:', error);
+        showNotification('Sync failed: ' + error.message, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Sync from Stripe';
+        }
+      }
+    }
+
+    // Update plan badge in header
+    function updatePlanBadge(plan) {
+      const badge = document.getElementById('user-plan-badge');
+      if (badge) {
+        if (plan && plan !== 'free') {
+          badge.textContent = plan.toUpperCase();
+          badge.classList.remove('hidden');
+          // Different colors for different plans
+          if (plan === 'business') {
+            badge.className = 'px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white';
+          } else {
+            badge.className = 'px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white';
+          }
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+    }
+
+    // Cancel subscription
+    async function cancelSubscription() {
+      if (!confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.')) {
+        return;
+      }
+      
+      showNotification('To cancel your subscription, please use the Stripe Customer Portal or contact support.', 'info');
+      // Open Stripe customer portal (would need to be configured)
+      window.open('https://billing.stripe.com/p/login/test', '_blank');
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -2910,6 +3767,9 @@ My best post:
         logger.log('About to call updateAdminLinkedInUI...');
         updateAdminLinkedInUI();  // Show/hide admin-only settings sections FIRST
         logger.log('updateAdminLinkedInUI completed');
+        
+        // Update subscription UI in settings
+        updateSubscriptionUI();
         
         // Fetch admin persona status if admin user
         if (isAdminUser()) {
@@ -2985,6 +3845,42 @@ My best post:
       // Get persona: either admin persona_id or free-text persona input
       const activePersonaId = getActivePersonaId();
       const personaInput = document.getElementById('persona-input')?.value;
+
+      // === POST LIMIT CHECK ===
+      try {
+        const limitResponse = await fetch('/api/check-post-limit', {
+          headers: {
+            'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+          }
+        });
+        
+        if (limitResponse.ok) {
+          const limitData = await limitResponse.json();
+          
+          if (!limitData.can_generate) {
+            // Show upgrade message
+            const errorEl = document.getElementById('generate-error');
+            if (limitData.plan === 'free') {
+              errorEl.innerHTML = `
+                <div class="flex items-center justify-between">
+                  <span>📊 You've reached your monthly limit (${limitData.posts_used}/${limitData.posts_limit} posts).</span>
+                  <button onclick="showSection('settings')" class="ml-4 px-4 py-2 bg-gradient-to-r from-cyan-500 to-violet-500 rounded-lg text-white font-semibold text-sm">
+                    Upgrade to Pro
+                  </button>
+                </div>
+              `;
+            } else {
+              errorEl.textContent = `📊 Monthly limit reached (${limitData.posts_used}/${limitData.posts_limit}). Limit resets next month.`;
+            }
+            errorEl.classList.remove('hidden');
+            return;
+          }
+        }
+      } catch (e) {
+        logger.warn('[POST LIMIT] Could not check limit:', e);
+        // Continue anyway - don't block generation if check fails
+      }
+      // === END POST LIMIT CHECK ===
 
       // Show loading and agent progress
       document.getElementById('generate-btn').disabled = true;
@@ -3102,6 +3998,20 @@ My best post:
           }
           
           // Note: Don't call savePostToSupabase - backend already saved/updated it
+          
+          // === INCREMENT POST COUNT ===
+          try {
+            await fetch('/api/increment-post-count', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+              }
+            });
+            logger.log('[OK] Post count incremented');
+          } catch (e) {
+            logger.warn('[POST COUNT] Could not increment:', e);
+          }
+          // === END INCREMENT POST COUNT ===
           
           // Hide progress, show result
           document.getElementById('agent-progress').classList.add('hidden');
@@ -3362,7 +4272,96 @@ My best post:
           }
         }
       }
+      
+      // Update learning progress
+      updateLearningProgress(posts.length);
     }  
+
+    // Update learning progress milestone UI
+    function updateLearningProgress(postCount) {
+      const MILESTONE = 20;
+      const progressPercent = Math.min((postCount / MILESTONE) * 100, 100);
+      
+      // Update count display
+      const countEl = document.getElementById('learning-post-count');
+      if (countEl) countEl.textContent = postCount;
+      
+      // Update progress bar
+      const progressBar = document.getElementById('learning-progress-bar');
+      if (progressBar) progressBar.style.width = `${progressPercent}%`;
+      
+      // Update milestone text
+      const milestoneText = document.getElementById('learning-milestone-text');
+      const statusText = document.getElementById('learning-status-text');
+      const unlockedBanner = document.getElementById('learning-unlocked-banner');
+      const voiceProfileSection = document.getElementById('voice-profile-section');
+      
+      if (postCount >= MILESTONE) {
+        // Unlocked state
+        if (milestoneText) milestoneText.textContent = 'Personalization is active!';
+        if (statusText) statusText.textContent = 'AI is optimized for your voice';
+        if (unlockedBanner) unlockedBanner.classList.remove('hidden');
+        if (voiceProfileSection) {
+          voiceProfileSection.classList.remove('hidden');
+          loadVoiceProfile(); // Load profile data
+        }
+        
+        // Change progress bar to green
+        if (progressBar) {
+          progressBar.classList.remove('from-cyan-500', 'to-violet-500');
+          progressBar.classList.add('from-green-500', 'to-cyan-500');
+        }
+      } else {
+        // Still learning
+        const remaining = MILESTONE - postCount;
+        if (milestoneText) milestoneText.textContent = `${remaining} post${remaining !== 1 ? 's' : ''} until personalization unlocks`;
+        if (statusText) statusText.textContent = 'Generate posts to unlock personalization';
+        if (unlockedBanner) unlockedBanner.classList.add('hidden');
+        if (voiceProfileSection) voiceProfileSection.classList.add('hidden');
+      }
+    }
+    
+    // Toggle voice profile visibility
+    function toggleVoiceProfile() {
+      const content = document.getElementById('voice-profile-content');
+      const chevron = document.getElementById('voice-profile-chevron');
+      
+      if (content) {
+        content.classList.toggle('hidden');
+        if (chevron) {
+          chevron.style.transform = content.classList.contains('hidden') ? '' : 'rotate(180deg)';
+        }
+      }
+    }
+    
+    // Load voice profile data from user profile
+    async function loadVoiceProfile() {
+      try {
+        const token = await window.Clerk?.session?.getToken();
+        const response = await fetch('/api/user/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const profile = data.profile || data;
+          
+          // Update profile display
+          document.getElementById('profile-industry').textContent = profile.industry || 'Not specified';
+          document.getElementById('profile-audience').textContent = profile.target_audience || profile.audience || 'General';
+          document.getElementById('profile-style').textContent = profile.writing_style || profile.style || 'Professional';
+          document.getElementById('profile-topics').textContent = 
+            (Array.isArray(profile.topics) ? profile.topics.join(', ') : profile.topics) || 'General topics';
+        }
+      } catch (e) {
+        logger.warn('[PROFILE] Could not load voice profile:', e);
+        // Set defaults
+        document.getElementById('profile-industry').textContent = 'Technology';
+        document.getElementById('profile-audience').textContent = 'Professionals';
+        document.getElementById('profile-style').textContent = 'Thought Leadership';
+        document.getElementById('profile-topics').textContent = 'Based on your generated content';
+      }
+    }
     
     function updateSparkline() {
       const sparklinePath = document.getElementById('sparkline-path');
@@ -3726,7 +4725,7 @@ My best post:
       
       try {
         // Fetch history from Supabase RPC
-        const { data: history, error } = await supabase.rpc('get_post_history', { 
+        const { data: history, error } = await supabaseClient.rpc('get_post_history', { 
           p_post_id: postId 
         });
         
@@ -4066,8 +5065,9 @@ My best post:
         sessionTimeoutId = setTimeout(() => {
           // Check if user is still logged in and inactive
           if (currentUser && (Date.now() - lastActivityTime >= SESSION_TIMEOUT_MS)) {
-            alert('Your session has expired due to inactivity. Please log in again.');
-            handleLogout();
+            showNotification('Session expired due to inactivity. Logging out...', 'info');
+            // Delay logout slightly so notification is visible
+            setTimeout(() => handleLogout(), 2000);
           }
         }, SESSION_TIMEOUT_MS);
       }

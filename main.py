@@ -17,7 +17,7 @@ load_dotenv()
 # ============================================
 # IMPORTS
 # ============================================
-from fastapi import FastAPI, Depends, HTTPException, status, Header, Body
+from fastapi import FastAPI, Depends, HTTPException, status, Header, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -108,6 +108,49 @@ logger.info(f"   CLERK_SECRET_KEY: {'[OK] SET' if CLERK_SECRET_KEY else '[X] NOT
 logger.info(f"   SUPABASE_URL: {'[OK] SET' if SUPABASE_URL else '[X] NOT SET'}")
 logger.info(f"   SUPABASE_KEY: {'[OK] SET' if SUPABASE_KEY else '[X] NOT SET'}")
 
+# Stripe Configuration
+# Import secret manager utility
+try:
+    from utils.secret_manager import load_stripe_secrets
+    stripe_secrets = load_stripe_secrets()
+    STRIPE_SECRET_KEY = stripe_secrets.get("STRIPE_SECRET_KEY", "")
+    STRIPE_PUBLISHABLE_KEY = stripe_secrets.get("STRIPE_PUBLISHABLE_KEY", "")
+    STRIPE_PRICE_PRO = stripe_secrets.get("STRIPE_PRICE_PRO", "")
+    STRIPE_PRICE_BUSINESS = stripe_secrets.get("STRIPE_PRICE_BUSINESS", "")
+    # Load webhook secrets - we'll determine which one to use based on the endpoint
+    STRIPE_WEBHOOK_SECRET_CIS = stripe_secrets.get("STRIPE_WEBHOOK_SECRET_CIS_PRODUCTION", "")
+    STRIPE_WEBHOOK_SECRET_ENGAGING = stripe_secrets.get("STRIPE_WEBHOOK_SECRET_ENGAGING_VICTORY", "")
+    # Use the CIS production webhook as default
+    STRIPE_WEBHOOK_SECRET = STRIPE_WEBHOOK_SECRET_CIS or STRIPE_WEBHOOK_SECRET_ENGAGING
+    STRIPE_COUPON_ID = stripe_secrets.get("STRIPE_COUPON_ID", "")
+    logger.info("[OK] Stripe secrets loaded from Secret Manager")
+except ImportError as e:
+    logger.warning(f"[WARN] Secret Manager not available, falling back to environment variables: {e}")
+    # Fallback to environment variables
+    STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+    STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+    STRIPE_PRICE_PRO = os.getenv("STRIPE_PRICE_PRO", "")
+    STRIPE_PRICE_BUSINESS = os.getenv("STRIPE_PRICE_BUSINESS", "")
+    STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    STRIPE_COUPON_ID = os.getenv("STRIPE_COUPON_ID", "")
+
+# Initialize Stripe
+STRIPE_READY = False
+try:
+    import stripe
+    if STRIPE_SECRET_KEY:
+        stripe.api_key = STRIPE_SECRET_KEY
+        STRIPE_READY = True
+        logger.info(f"[OK] Stripe initialized")
+    else:
+        logger.warning("[WARN] STRIPE_SECRET_KEY not set - payments disabled")
+except ImportError:
+    logger.warning("[WARN] Stripe library not installed - run: pip install stripe")
+
+logger.info(f"   STRIPE_SECRET_KEY: {'[OK] SET' if STRIPE_SECRET_KEY else '[X] NOT SET'}")
+logger.info(f"   STRIPE_PRICE_PRO: {'[OK] ' + STRIPE_PRICE_PRO[:20] + '...' if STRIPE_PRICE_PRO else '[X] NOT SET'}")
+logger.info(f"   STRIPE_PRICE_BUSINESS: {'[OK] ' + STRIPE_PRICE_BUSINESS[:20] + '...' if STRIPE_PRICE_BUSINESS else '[X] NOT SET'}")
+
 # ============================================
 # INITIALIZE SERVICES
 # ============================================
@@ -116,10 +159,15 @@ logger.info(f"   SUPABASE_KEY: {'[OK] SET' if SUPABASE_KEY else '[X] NOT SET'}")
 supabase = None
 SUPABASE_READY = False
 
-if SUPABASE_URL and SUPABASE_KEY and not TEST_MODE:
+# Try to use service role key (bypasses RLS), fallback to anon key
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+supabase_key_to_use = SUPABASE_SERVICE_KEY or SUPABASE_KEY
+
+if SUPABASE_URL and supabase_key_to_use and not TEST_MODE:
     try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        logger.info("[OK] Supabase initialized successfully")
+        supabase = create_client(SUPABASE_URL, supabase_key_to_use)
+        key_type = "service_role" if SUPABASE_SERVICE_KEY else "anon"
+        logger.info(f"[OK] Supabase initialized with {key_type} key")
         SUPABASE_READY = True
     except Exception as e:
         logger.error(f"[ERROR] Supabase initialization failed: {e}")
@@ -146,8 +194,9 @@ else:
 content_agent = None
 if CONTENT_AGENT_AVAILABLE:
     try:
-        content_agent = ContentAgent()
-        logger.info("[OK] ContentAgent initialized")
+        # Pass supabase client for hook history functionality (IMP-004)
+        content_agent = ContentAgent(supabase_client=supabase if SUPABASE_READY else None)
+        logger.info("[OK] ContentAgent initialized" + (" with hook history" if SUPABASE_READY else ""))
     except Exception as e:
         logger.error(f"[ERROR] Failed to initialize ContentAgent: {e}")
 else:
@@ -174,12 +223,13 @@ app = FastAPI(
     version="2.0.0",
 )
 
-# Root route - redirect to dashboard
-@app.get("/")
-async def root():
-    """Redirect root to dashboard"""
+# Pricing page route
+@app.get("/pricing.html")
+@app.get("/pricing")
+async def pricing_redirect():
+    """Redirect to pricing page"""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/dashboard/app.html", status_code=302)
+    return RedirectResponse(url="/dashboard/pricing.html", status_code=302)
 
 # Mount static files directory (Phase 8)
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
@@ -394,8 +444,8 @@ async def get_db_user(current_user: Dict = Depends(get_current_user)) -> Dict[st
         return result.data[0]
     
     except Exception as e:
-        logger.error(f"[ERROR] Failed to get/create DB user: {e}")
-        raise HTTPException(status_code=500, detail="User database error")
+        logger.error(f"[ERROR] Failed to get/create DB user: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"User database error: {str(e)}")
 
 # ============================================
 # HEALTH CHECK ENDPOINTS
@@ -681,36 +731,461 @@ async def save_questionnaire(
         logger.error(f"Questionnaire save error: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.get("/user/profile")
-async def get_user_profile(db_user: Dict = Depends(get_db_user)):
-    """Get user's profile"""
-    if not SUPABASE_READY and os.getenv("TEST_MODE") != "1":
-        return {"status": "error", "message": "Database not available"}
+# ============================================
+# STRIPE PAYMENT ENDPOINTS
+# ============================================
 
+# Post limits by plan
+POST_LIMITS = {
+    "free": 5,
+    "pro": 30,
+    "business": 200
+}
+
+class CheckoutRequest(BaseModel):
+    plan: str  # "pro" or "business"
+    promo_code: Optional[str] = None
+    success_url: Optional[str] = None
+    cancel_url: Optional[str] = None
+
+@app.post("/api/create-checkout")
+async def create_checkout_session(
+    request: CheckoutRequest,
+    db_user: Dict = Depends(get_db_user)
+):
+    """Create a Stripe Checkout session for subscription"""
+    if not STRIPE_READY:
+        raise HTTPException(status_code=503, detail="Payment system not available")
+    
     try:
-        # --- TEST_MODE short‑circuit ---
+        # Determine price based on plan
+        plan = request.plan.lower()
+        if plan == "pro":
+            price_id = STRIPE_PRICE_PRO
+        elif plan == "business":
+            price_id = STRIPE_PRICE_BUSINESS
+        else:
+            raise HTTPException(status_code=400, detail="Invalid plan. Use 'pro' or 'business'")
+        
+        if not price_id:
+            raise HTTPException(status_code=500, detail="Price not configured for this plan")
+        
+        # Build checkout session params
+        checkout_params = {
+            "mode": "subscription",
+            "payment_method_types": ["card"],
+            "line_items": [{
+                "price": price_id,
+                "quantity": 1,
+            }],
+            "success_url": request.success_url or f"{API_BASE_URL}/dashboard/app.html?checkout=success",
+            "cancel_url": request.cancel_url or f"{API_BASE_URL}/dashboard/app.html?checkout=cancelled",
+            "client_reference_id": str(db_user.get("id", "")),
+            "subscription_data": {
+                "trial_period_days": 30,  # 30-day free trial
+                "metadata": {
+                    "user_id": str(db_user.get("id", "")),
+                    "plan": plan
+                }
+            },
+            "metadata": {
+                "user_id": str(db_user.get("id", "")),
+                "plan": plan
+            }
+        }
+        
+        # Only add customer_email if we have a valid email
+        user_email = db_user.get("email") or db_user.get("user_email")
+        if user_email and "@" in user_email:
+            checkout_params["customer_email"] = user_email
+        
+        # Add promo code if provided
+        if request.promo_code or STRIPE_COUPON_ID:
+            coupon_id = request.promo_code or STRIPE_COUPON_ID
+            checkout_params["discounts"] = [{"coupon": coupon_id}]
+        
+        # Create checkout session
+        session = stripe.checkout.Session.create(**checkout_params)
+        
+        logger.info(f"[STRIPE] Checkout session created for user {db_user.get('id')}, plan: {plan}")
+        
+        return {
+            "checkout_url": session.url,
+            "session_id": session.id
+        }
+        
+    except stripe.error.StripeError as e:
+        logger.error(f"[STRIPE] Error creating checkout: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[STRIPE] Checkout error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create checkout session")
+
+
+@app.post("/api/stripe-webhook")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events"""
+    if not STRIPE_READY:
+        raise HTTPException(status_code=503, detail="Stripe not configured")
+    
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+    
+    try:
+        # Verify webhook signature if secret is configured
+        if STRIPE_WEBHOOK_SECRET:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, STRIPE_WEBHOOK_SECRET
+            )
+        else:
+            # For testing without webhook secret
+            event = json.loads(payload)
+            logger.warning("[STRIPE] Webhook secret not configured - signature not verified")
+        
+        event_type = event.get("type", "")
+        data = event.get("data", {}).get("object", {})
+        
+        logger.info(f"[STRIPE] Webhook received: {event_type}")
+        
+        # Handle subscription events
+        if event_type == "customer.subscription.created":
+            await handle_subscription_created(data)
+        elif event_type == "customer.subscription.updated":
+            await handle_subscription_updated(data)
+        elif event_type == "customer.subscription.deleted":
+            await handle_subscription_deleted(data)
+        elif event_type == "checkout.session.completed":
+            await handle_checkout_completed(data)
+        
+        return {"status": "success"}
+        
+    except stripe.error.SignatureVerificationError as e:
+        logger.error(f"[STRIPE] Webhook signature verification failed: {e}")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception as e:
+        logger.error(f"[STRIPE] Webhook error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def handle_subscription_created(subscription: Dict):
+    """Handle new subscription"""
+    user_id = subscription.get("metadata", {}).get("user_id")
+    plan = subscription.get("metadata", {}).get("plan", "pro")
+    customer_id = subscription.get("customer")
+    status = subscription.get("status")
+    
+    if user_id and SUPABASE_READY:
+        try:
+            supabase.table("users").update({
+                "subscription_plan": plan,
+                "subscription_status": status,
+                "stripe_customer_id": customer_id,
+                "posts_this_month": 0,
+                "posts_reset_at": datetime.utcnow().isoformat()
+            }).eq("id", user_id).execute()
+            logger.info(f"[STRIPE] User {user_id} subscribed to {plan}")
+        except Exception as e:
+            logger.error(f"[STRIPE] Failed to update user subscription: {e}")
+
+
+async def handle_subscription_updated(subscription: Dict):
+    """Handle subscription update (upgrade/downgrade)"""
+    user_id = subscription.get("metadata", {}).get("user_id")
+    plan = subscription.get("metadata", {}).get("plan", "pro")
+    status = subscription.get("status")
+    
+    if user_id and SUPABASE_READY:
+        try:
+            supabase.table("users").update({
+                "subscription_plan": plan,
+                "subscription_status": status
+            }).eq("id", user_id).execute()
+            logger.info(f"[STRIPE] User {user_id} subscription updated to {plan}, status: {status}")
+        except Exception as e:
+            logger.error(f"[STRIPE] Failed to update subscription: {e}")
+
+
+async def handle_subscription_deleted(subscription: Dict):
+    """Handle subscription cancellation"""
+    user_id = subscription.get("metadata", {}).get("user_id")
+    
+    if user_id and SUPABASE_READY:
+        try:
+            supabase.table("users").update({
+                "subscription_plan": "free",
+                "subscription_status": "canceled"
+            }).eq("id", user_id).execute()
+            logger.info(f"[STRIPE] User {user_id} subscription canceled")
+        except Exception as e:
+            logger.error(f"[STRIPE] Failed to cancel subscription: {e}")
+
+
+async def handle_checkout_completed(session: Dict):
+    """Handle successful checkout"""
+    user_id = session.get("client_reference_id") or session.get("metadata", {}).get("user_id")
+    plan = session.get("metadata", {}).get("plan", "pro")
+    customer_id = session.get("customer")
+    
+    if user_id and SUPABASE_READY:
+        try:
+            supabase.table("users").update({
+                "subscription_plan": plan,
+                "subscription_status": "active",
+                "stripe_customer_id": customer_id,
+                "posts_this_month": 0,
+                "posts_reset_at": datetime.utcnow().isoformat()
+            }).eq("id", user_id).execute()
+            logger.info(f"[STRIPE] Checkout completed for user {user_id}, plan: {plan}")
+        except Exception as e:
+            logger.error(f"[STRIPE] Failed to update user after checkout: {e}")
+
+
+@app.get("/api/user/subscription")
+async def get_user_subscription(db_user: Dict = Depends(get_db_user)):
+    """Get user's current subscription status"""
+    try:
+        return {
+            "plan": db_user.get("subscription_plan", "free"),
+            "status": db_user.get("subscription_status", "active"),
+            "posts_this_month": db_user.get("posts_this_month", 0),
+            "post_limit": POST_LIMITS.get(db_user.get("subscription_plan", "free"), 5),
+            "stripe_customer_id": db_user.get("stripe_customer_id")
+        }
+    except Exception as e:
+        logger.error(f"[STRIPE] Error fetching subscription: {e}")
+        return {"plan": "free", "status": "active", "posts_this_month": 0, "post_limit": 5}
+
+
+@app.get("/api/user/profile")
+async def get_user_voice_profile(db_user: Dict = Depends(get_db_user)):
+    """
+    Get user's voice profile for personalization display.
+    
+    Returns voice profile fields (industry, audience, style, topics, goal) 
+    used by the Voice Profile tooltip on the dashboard.
+    """
+    try:
+        # --- TEST_MODE short-circuit ---
         if os.getenv("TEST_MODE") == "1":
-            logger.warning("[TEST_MODE] Active - returning mock profile payload.")
+            logger.warning("[TEST_MODE] Active - returning mock voice profile.")
             return {
                 "status": "success",
-                "id": "test_user_id_001",          # <‑‑ top‑level id for tests
-                "email": "test@example.com",
-                "full_name": "Integration Tester",
+                "id": "test_user_id_001",
+                "industry": "Technology",
+                "target_audience": "Professionals",
+                "writing_style": "Professional",
+                "topics": "AI, Leadership, Innovation",
+                "goal": "Thought Leadership",
                 "onboarding_completed": True
             }
-        # --- Normal logic below (real DB) ---
-        result = supabase.table("user_profiles").select("*").eq("user_id", db_user["id"]).execute()
-
-        if not result.data:
-            return {"status": "no_profile", "message": "User has not completed onboarding"}
-
-        profile = result.data[0]
-        flat_profile = {**profile, "id": profile.get("user_id")}
-        return {"status": "success", **flat_profile}
-
+        
+        user_id = db_user.get("id")
+        
+        # Try to get user_profiles data
+        if SUPABASE_READY:
+            try:
+                result = supabase.table("user_profiles").select("*").eq("user_id", user_id).execute()
+                if result.data:
+                    profile = result.data[0]
+                    return {
+                        "status": "success",
+                        "id": user_id,
+                        "industry": profile.get("industry", "Technology"),
+                        "target_audience": profile.get("audience_persona") or profile.get("target_audience", "Professionals"),
+                        "writing_style": profile.get("writing_style") or profile.get("content_style", "Professional"),
+                        "topics": profile.get("content_topics") or profile.get("topics", "General topics"),
+                        "goal": profile.get("content_goal") or profile.get("primary_goal", "Thought Leadership"),
+                        "onboarding_completed": True
+                    }
+                else:
+                    # No profile found - user may not have completed onboarding
+                    return {
+                        "status": "no_profile",
+                        "id": user_id,
+                        "message": "User has not completed onboarding",
+                        "industry": "Technology",
+                        "target_audience": "Professionals",
+                        "writing_style": "Professional",
+                        "topics": "General topics",
+                        "goal": "Thought Leadership",
+                        "onboarding_completed": False
+                    }
+            except Exception as e:
+                logger.warning(f"[PROFILE] Could not fetch user_profiles: {e}")
+        
+        # Fallback to users table data or defaults
+        return {
+            "status": "success",
+            "id": user_id,
+            "industry": db_user.get("industry", "Technology"),
+            "target_audience": db_user.get("target_audience", "Professionals"),
+            "writing_style": db_user.get("writing_style", "Professional"),
+            "topics": db_user.get("topics", "General topics"),
+            "goal": "Thought Leadership",
+            "onboarding_completed": db_user.get("onboarding_completed", False)
+        }
     except Exception as e:
-        logger.error(f"Profile fetch error: {e}")
-        return {"status": "error", "message": str(e)}
+        logger.error(f"[PROFILE] Error: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "industry": "Technology",
+            "target_audience": "Professionals",
+            "writing_style": "Professional",
+            "topics": "General",
+            "goal": "Thought Leadership"
+        }
+
+
+@app.get("/api/check-post-limit")
+async def check_post_limit(db_user: Dict = Depends(get_db_user)):
+    """Check if user can generate more posts this month"""
+    plan = db_user.get("subscription_plan", "free")
+    posts_this_month = db_user.get("posts_this_month", 0)
+    limit = POST_LIMITS.get(plan, 5)
+    
+    can_generate = posts_this_month < limit
+    remaining = max(0, limit - posts_this_month)
+    
+    return {
+        "can_generate": can_generate,
+        "posts_used": posts_this_month,
+        "posts_limit": limit,
+        "posts_remaining": remaining,
+        "plan": plan,
+        "upgrade_required": not can_generate and plan == "free"
+    }
+
+
+@app.post("/api/increment-post-count")
+async def increment_post_count(db_user: Dict = Depends(get_db_user)):
+    """Increment user's monthly post count after generation"""
+    if not SUPABASE_READY:
+        return {"success": False, "error": "Database not available"}
+    
+    try:
+        user_id = db_user.get("id")
+        current_count = db_user.get("posts_this_month", 0)
+        
+        # Increment count
+        supabase.table("users").update({
+            "posts_this_month": current_count + 1
+        }).eq("id", user_id).execute()
+        
+        return {"success": True, "new_count": current_count + 1}
+    except Exception as e:
+        logger.error(f"[STRIPE] Error incrementing post count: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/sync-subscription")
+async def sync_subscription_from_stripe(db_user: Dict = Depends(get_db_user)):
+    """Manually sync subscription status from Stripe - for local testing without webhooks"""
+    if not STRIPE_READY:
+        return {"success": False, "error": "Stripe not configured"}
+    
+    if not SUPABASE_READY:
+        return {"success": False, "error": "Database not available"}
+    
+    try:
+        user_id = str(db_user.get("id"))
+        user_email = db_user.get("email") or db_user.get("user_email")
+        stripe_customer_id = db_user.get("stripe_customer_id")
+        
+        logger.info(f"[STRIPE SYNC] Looking for customer: user_id={user_id}, email={user_email}")
+        
+        customer = None
+        
+        # Method 1: By existing customer ID
+        if stripe_customer_id:
+            try:
+                customer = stripe.Customer.retrieve(stripe_customer_id)
+                logger.info(f"[STRIPE SYNC] Found by customer_id: {customer.id}")
+            except Exception as e:
+                logger.warning(f"[STRIPE SYNC] Customer ID lookup failed: {e}")
+        
+        # Method 2: By email
+        if not customer and user_email:
+            try:
+                customers_resp = stripe.Customer.list(email=user_email, limit=1)
+                if customers_resp.data:
+                    customer = customers_resp.data[0]
+                    logger.info(f"[STRIPE SYNC] Found by email: {customer.id}")
+            except Exception as e:
+                logger.warning(f"[STRIPE SYNC] Email lookup failed: {e}")
+        
+        # Method 3: Search checkout sessions by user_id
+        if not customer:
+            logger.info(f"[STRIPE SYNC] Searching checkout sessions for user_id: {user_id}")
+            try:
+                sessions_resp = stripe.checkout.Session.list(limit=20)
+                for session in sessions_resp.data:
+                    client_ref = getattr(session, 'client_reference_id', None)
+                    metadata = getattr(session, 'metadata', {}) or {}
+                    session_user_id = metadata.get("user_id") if isinstance(metadata, dict) else None
+                    session_customer = getattr(session, 'customer', None)
+                    
+                    if (client_ref == user_id or session_user_id == user_id) and session_customer:
+                        customer = stripe.Customer.retrieve(session_customer)
+                        logger.info(f"[STRIPE SYNC] Found via checkout session: {customer.id}")
+                        break
+            except Exception as e:
+                logger.error(f"[STRIPE SYNC] Session search failed: {e}")
+        
+        if not customer:
+            logger.info("[STRIPE SYNC] No customer found")
+            return {"success": True, "message": "No Stripe customer found", "plan": "free"}
+        
+        # Get subscriptions for customer
+        try:
+            subs_resp = stripe.Subscription.list(customer=customer.id, status="all", limit=1)
+            subscriptions = subs_resp.data if subs_resp.data else []
+            logger.info(f"[STRIPE SYNC] Found {len(subscriptions)} subscriptions")
+        except Exception as e:
+            logger.error(f"[STRIPE SYNC] Subscription lookup failed: {e}")
+            subscriptions = []
+        
+        if subscriptions:
+            sub = subscriptions[0]
+            status = getattr(sub, 'status', 'trialing')
+            
+            # Get price ID from subscription items
+            plan = "pro"  # default
+            try:
+                items = getattr(sub, 'items', None)
+                if items and hasattr(items, 'data') and items.data:
+                    price_id = items.data[0].price.id
+                    logger.info(f"[STRIPE SYNC] Price ID: {price_id}")
+                    if price_id == STRIPE_PRICE_BUSINESS:
+                        plan = "business"
+                    elif price_id == STRIPE_PRICE_PRO:
+                        plan = "pro"
+            except Exception as e:
+                logger.warning(f"[STRIPE SYNC] Could not get price: {e}")
+            
+            # Update database
+            supabase.table("users").update({
+                "subscription_plan": plan,
+                "subscription_status": status,
+                "stripe_customer_id": customer.id
+            }).eq("id", db_user.get("id")).execute()
+            
+            logger.info(f"[STRIPE SYNC] Updated user: {plan} ({status})")
+            return {"success": True, "plan": plan, "status": status, "customer_id": customer.id}
+        else:
+            # No subscription found
+            supabase.table("users").update({
+                "subscription_plan": "free",
+                "subscription_status": "active",
+                "stripe_customer_id": customer.id
+            }).eq("id", db_user.get("id")).execute()
+            
+            return {"success": True, "plan": "free", "message": "No active subscription"}
+    
+    except Exception as e:
+        logger.error(f"[STRIPE SYNC] Error: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
 
 # ============================================
 # LINKEDIN ENDPOINTS
@@ -1040,9 +1515,9 @@ class LinkedInPublishRequest(BaseModel):
     image_url: Optional[str] = None
 
 
-@app.post("/api/linkedin/publish")
-async def publish_to_linkedin(request: LinkedInPublishRequest):
-    """Publish post directly to LinkedIn with image support (requires connected account)"""
+@app.post("/api/linkedin/publish-legacy")
+async def publish_to_linkedin_legacy(request: LinkedInPublishRequest):
+    """LEGACY: Publish post to LinkedIn (use /api/linkedin/publish with JWT instead)"""
     try:
         if not SUPABASE_READY:
             return {"success": False, "error": "Database not available"}
@@ -1320,6 +1795,22 @@ async def api_generate(request: ApiGenerateRequest):
                 
                 content = content_result.get("post_text", "")
                 reasoning = content_result.get("reasoning", "")
+                
+                # CRITICAL: Strip markdown - LinkedIn doesn't support it, renders as literal asterisks
+                # This fixes the issue where **bold** and *italic* show as raw characters
+                import re
+                # Remove bold markers: **text** or __text__
+                content = re.sub(r'\*\*(.+?)\*\*', r'\1', content)
+                content = re.sub(r'__(.+?)__', r'\1', content)
+                # Remove italic markers: *text* or _text_ (careful not to remove hashtag underscores)
+                content = re.sub(r'(?<!\w)\*([^*]+)\*(?!\w)', r'\1', content)
+                content = re.sub(r'(?<![#\w])_([^_]+)_(?!\w)', r'\1', content)
+                # Remove code blocks: `code` or ```code```
+                content = re.sub(r'```[^`]*```', '', content)
+                content = re.sub(r'`([^`]+)`', r'\1', content)
+                # Remove headers: # Header
+                content = re.sub(r'^#{1,6}\s+', '', content, flags=re.MULTILINE)
+                logger.info("[OK] Stripped markdown formatting for LinkedIn compatibility")
                 
                 # SEPARATE SCORING via ViralityAgent (fixes LLM self-evaluation bias)
                 # ContentAgent generates content, ViralityAgent scores it independently

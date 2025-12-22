@@ -19,201 +19,224 @@ except ImportError:
 IMAGE_HOOK_LIMIT = 250  # Increased for complete sentences
 
 # ═══════════════════════════════════════════════════════════════════
-# STYLE-BASED IMAGE PROMPT LIBRARY
-# Each style maps to a specialized visual template
+# STYLE-BASED IMAGE PROMPT LIBRARY (Updated Dec 2024)
+# Each style has a DISTINCT visual identity - not all handwritten
+# Research: Gemini text rendering, explicit text specs, font control
 # ═══════════════════════════════════════════════════════════════════
 
-# Quality rules appended to ALL image prompts
+# Quality rules appended to ALL image prompts (research-backed)
 IMAGE_QUALITY_RULES = """
 
-=== CRITICAL QUALITY RULES (MUST FOLLOW) ===
-1. SPELLING CHECK: VERIFY EVERY WORD IS SPELLED CORRECTLY before rendering.
-   - "tension" NOT "tention"
-   - "palpable" NOT "paldable"  
-   - "improvement" NOT "imprevvement"
-   - Double-check ALL text character by character.
-2. NO TRUNCATED TEXT: All text must be fully visible - no text cut off at edges or running outside the image.
-3. MARGINS: Keep at least 60px padding from all edges. No text or elements should touch the border.
-4. COMPLETE SENTENCES: Every text element must be a complete word or phrase - no half-words.
-5. READABLE: All text must be large enough to read clearly (minimum 16pt equivalent).
-6. NO DUPLICATES: Each text element should appear ONLY ONCE in the image.
-7. ASPECT RATIO: Image must be exactly 16:9 (1200x675 pixels) - landscape orientation.
-8. LINE LENGTH: Maximum 50 characters per line of text. Break long text into multiple shorter lines.
-9. TEXT FITTING: Ensure ALL text fits within the visible area. If text is too long, wrap to next line or reduce font size.
+=== CRITICAL TEXT RENDERING RULES (MUST FOLLOW) ===
+1. TEXT ACCURACY: Render EXACTLY the text provided. Verify spelling character-by-character.
+   - Double-check every word before rendering
+   - Common errors to avoid: "tention" → "tension", "imprevvement" → "improvement"
+   
+2. COMPLETE WORDS ONLY: Every word must be fully visible. NO truncated or cut-off text.
+   - If text doesn't fit, reduce font size rather than cutting off
+   - All characters of every word must be inside the visible image area
+
+3. TEXT FITTING RULES:
+   - Maximum 40 characters per line
+   - If headline > 40 chars, wrap to 2-3 lines
+   - Each line must be centered
+   - Use line breaks at natural phrase boundaries
+
+4. SAFE MARGINS: Keep 80px padding from ALL edges
+   - No text or design elements within 80px of any border
+   - This prevents edge cropping on LinkedIn
+
+5. FONT SPECIFICATIONS:
+   - Headlines: Bold, clean sans-serif font (like Montserrat Bold or Roboto Bold)
+   - Body text: Regular weight, highly legible
+   - Minimum apparent font size: 24pt equivalent
+
+6. ASPECT RATIO: Exactly 16:9 (1200x675 pixels) - landscape orientation for LinkedIn
+
+7. COLOR CONTRAST: Ensure text has strong contrast against background
+   - Light text on dark backgrounds OR dark text on light backgrounds
+   - Avoid text on busy/patterned areas
 """
 
 IMAGE_PROMPT_LIBRARY = {
-    "storytelling": """Create a HANDWRITTEN SKETCH STYLE INFOGRAPHIC that tells a visual story:
+    "professional": """Create a CORPORATE INFOGRAPHIC for LinkedIn:
 
-=== CONTENT TO VISUALIZE ===
+=== CONTENT ===
 {content}
 
 === DESIGN SPECIFICATIONS ===
-STYLE: Handwritten sketch on cream/white paper, like a consultant explaining on a whiteboard
+STYLE: Clean, modern corporate infographic — like a McKinsey or Deloitte presentation slide
 FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
-ASPECT RATIO: Must be exactly 16:9 horizontal/landscape
-BACKGROUND: Clean white or light cream paper texture with subtle texture
+BACKGROUND: Gradient from dark navy (#1a1a2e) to deep blue (#16213e)
 
-=== REQUIRED VISUAL ELEMENTS ===
-1. HEADLINE at top: "{headline}" (handwritten style, bold)
-   - CRITICAL: If headline is longer than 50 characters, MUST wrap into 2-3 SHORT lines
-   - Each line MAXIMUM 50 characters
-   - Center-align the wrapped headline
-   - Ensure ALL text is visible with 60px margins from edges
-2. NARRATIVE FLOW showing the story progression:
-   - Use curved arrows (→) connecting story beats
-   - Show "before" → "transformation" → "after" journey
-   - Include small character sketches (stick figures with expressions)
-3. KEY MOMENTS highlighted in speech bubbles or callout boxes
-4. EMOTIONAL MARKERS: Use faces/emojis to show feelings at each stage
-5. METRICS in circles: {metrics}
-6. CALL TO ACTION at bottom with engagement question
+=== LAYOUT ===
+1. HEADLINE at top center: "{headline}"
+   - Font: Bold, clean sans-serif (like Montserrat Bold)
+   - Color: White (#FFFFFF)
+   - Size: Large, prominent
+   - If > 40 characters, split into 2 centered lines
+   
+2. KEY DATA POINTS: Display 2-3 metrics in large circular badges
+   - Numbers in bold: {metrics}
+   - Cyan accent color (#00bcd4) for highlights
+   
+3. VISUAL ELEMENTS:
+   - Clean geometric shapes (circles, rectangles)
+   - Thin accent lines connecting elements
+   - Simple business icons (chart, lightbulb, target)
+   
+4. BOTTOM: Subtle call-to-action question
 
-=== HANDWRITTEN STYLE ===
-- Black ink with blue/red accents for emphasis
-- Varying line thickness like real hand drawing
-- Annotations with arrows pointing to key insights
-- Small doodles and icons related to the story
-- Make it feel personal and authentic
+=== STYLE NOTES ===
+- Minimalist, sophisticated, executive-ready
+- No clip art or cartoons
+- Professional color palette: navy, white, cyan accents
+- Clean typography hierarchy
 
-DO NOT use stock photos or photorealistic images. MUST look hand-drawn.""",
+DO NOT use stock photos. Create abstract geometric corporate design.""",
 
-    "technical": """Create a HANDWRITTEN TECHNICAL SKETCH that explains this concept:
+    "technical": """Create a TECHNICAL BLUEPRINT DIAGRAM for LinkedIn:
 
-=== CONTENT TO VISUALIZE ===
+=== CONTENT ===
 {content}
 
 === DESIGN SPECIFICATIONS ===
-STYLE: Hand-drawn technical diagram on whiteboard/paper, like an engineer sketching on a whiteboard
+STYLE: Engineering blueprint / architecture diagram — like an AWS or Google Cloud diagram
 FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
-ASPECT RATIO: Must be exactly 16:9 horizontal/landscape
-BACKGROUND: White or cream paper with subtle texture
+BACKGROUND: Dark slate (#1e2939) with subtle grid pattern
 
-=== REQUIRED VISUAL ELEMENTS ===
-1. TITLE at top: "{headline}" (handwritten but legible)
-   - CRITICAL: If headline is longer than 50 characters, MUST wrap into 2-3 SHORT lines
-   - Each line MAXIMUM 50 characters
-   - Ensure ALL text is visible with 60px margins from edges
-2. HAND-DRAWN FLOWCHART showing the process:
-   - Sketched rectangles for processes
-   - Hand-drawn diamonds for decision points
-   - Sketched cylinders for databases
-   - Arrows with handwritten labels
-3. NUMBERED STEPS in circles
-4. SKETCHED ICONS for tools/technologies
-5. METRICS in hand-circled callouts: {metrics}
-6. Simple legend with hand-drawn symbols
+=== LAYOUT ===
+1. HEADLINE at top: "{headline}"
+   - Font: Monospace or technical sans-serif (like Source Code Pro or IBM Plex Mono)
+   - Color: Bright green (#00ff88) or cyan (#00bcd4)
+   - If > 40 characters, split into 2 lines
+   
+2. DIAGRAM ELEMENTS:
+   - Flowchart boxes with rounded corners
+   - Connecting arrows with labels
+   - Database cylinders, server icons, API boxes
+   - Color-coded components (different colors for different parts)
+   
+3. METRICS: Display key numbers: {metrics}
+   - In highlighted boxes or badges
+   - Use bright accent colors
+   
+4. LEGEND: Small component legend in corner
 
-=== SKETCH STYLE ===
-- Black ink with blue/green accents
-- Slightly imperfect lines (hand-drawn look)
-- Handwritten labels and annotations
-- Grid paper or whiteboard texture
-- Feels like an expert explaining at a whiteboard
+=== STYLE NOTES ===
+- Technical, precise, engineering aesthetic
+- Neon accents on dark background
+- Grid lines for structure
+- Clean, readable at a glance
 
-DO NOT use stock photos. MUST look hand-sketched and authentic.""",
+DO NOT use stock photos. Create technical diagram style.""",
 
-    "thought_leadership": """Create a HANDWRITTEN THOUGHT LEADERSHIP SKETCH with bold insights:
+    "thought_leadership": """Create a BOLD TYPOGRAPHY POSTER for LinkedIn:
 
-=== CONTENT TO VISUALIZE ===
+=== CONTENT ===
 {content}
 
 === DESIGN SPECIFICATIONS ===
-STYLE: Hand-sketched bold statement graphic, like a CEO presenting on whiteboard
+STYLE: Bold statement poster — like a TED Talk title card or viral quote graphic
 FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
-ASPECT RATIO: Must be exactly 16:9 horizontal/landscape
-BACKGROUND: White or cream paper with bold hand-drawn elements
+BACKGROUND: Solid dark background (#121212) OR bold gradient (purple to blue)
 
-=== REQUIRED VISUAL ELEMENTS ===
-1. MAIN STATEMENT at center: "{headline}" (large, bold, handwritten)
-   - CRITICAL: If headline is longer than 50 characters, MUST wrap into 2-3 SHORT lines
-   - Each line MAXIMUM 50 characters
-   - Center-align the wrapped headline
-   - Ensure ALL text is visible with 60px margins from edges
-2. CONTRARIAN ELEMENT: Hand-drawn "X" over myth, arrow to truth
-3. KEY POINTS as 3-4 hand-drawn bullet callouts with sketched icons
-4. METRICS in bold hand-drawn circles: {metrics}
-5. VISUAL HIERARCHY: Main point biggest, supporting points smaller
-6. PROVOCATIVE QUESTION at bottom with hand-drawn underline
+=== LAYOUT ===
+1. MAIN STATEMENT prominently centered: "{headline}"
+   - Font: Extra bold, impactful sans-serif (like Impact or Bebas Neue style)
+   - Color: White or bright accent color
+   - Size: LARGE — this should dominate the image
+   - If > 40 characters, break into 2-3 powerful lines
+   - Consider using different colors for key words
+   
+2. SUPPORTING ELEMENT:
+   - Single powerful statistic: {metrics}
+   - OR contrasting "myth vs reality" layout
+   - Minimal icons if any
+   
+3. VISUAL EMPHASIS:
+   - Underlines, highlights, or boxes on key words
+   - Strong color accents (red, orange, or electric blue)
+   - Negative space is important
 
-=== SKETCH STYLE ===
-- Bold black ink with blue/red accents for emphasis
-- Large, confident handwritten text
-- Hand-drawn boxes, circles, and arrows
-- Simple sketched icons for visual impact
-- Make it look like an expert's bold presentation
+=== STYLE NOTES ===
+- Maximum impact, minimal clutter
+- Typography IS the design
+- Bold, confident, provocative
+- Think: billboard, not infographic
 
-DO NOT use stock photos. MUST look hand-drawn and impactful.""",
+DO NOT use stock photos. Typography and color only.""",
 
-    "inspirational": """Create a HANDWRITTEN INSPIRATIONAL JOURNEY sketch:
+    "inspirational": """Create a CLEAN MOTIVATIONAL VISUAL for LinkedIn:
 
-=== CONTENT TO VISUALIZE ===
+=== DESIGN SPECIFICATIONS ===
+STYLE: Premium motivational poster — like a high-end Nike or Apple campaign
+FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
+BACKGROUND: Gradient sunrise colors (warm oranges, golds) with mountain silhouette
+
+=== LAYOUT (MINIMAL - NO STORY TEXT) ===
+1. HEADLINE at TOP CENTER: "{headline}"
+   - Font: Bold, clean sans-serif
+   - Color: White with subtle shadow
+   - Large, prominent, easy to read
+   - Split into 2 lines if needed
+   
+2. VISUAL FOCUS (center/bottom):
+   - Silhouette of person at mountain peak with arms raised
+   - Warm sunrise glow behind them
+   - Subtle upward path/stairs leading to peak
+   
+3. ONE KEY NUMBER (large, accent color): {metrics}
+   - Display prominently near the silhouette
+   - Use gold or white color
+   
+4. BOTTOM: Simple hashtags or call-to-action
+
+=== CRITICAL: KEEP IT CLEAN ===
+- DO NOT add paragraphs of story text
+- DO NOT add body copy or long descriptions
+- ONLY: Headline + Visual + One Metric + Hashtags
+- Lots of breathing room and negative space
+- Premium, inspirational, NOT cluttered
+
+DO NOT use stock photos. Use silhouettes and gradients only.""",
+
+    "storytelling": """Create a NARRATIVE STORYBOARD for LinkedIn:
+
+=== CONTENT ===
 {content}
 
 === DESIGN SPECIFICATIONS ===
-STYLE: Hand-drawn motivational journey, like a coach sketching your success path
+STYLE: Story timeline / journey map — like a documentary infographic or case study visual
 FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
-ASPECT RATIO: Must be exactly 16:9 horizontal/landscape
-BACKGROUND: White or cream paper with warm hand-drawn elements
+BACKGROUND: Light cream or warm white (#f5f5f0) with subtle texture
 
-=== REQUIRED VISUAL ELEMENTS ===
-1. HEADLINE at top: "{headline}" (inspiring, handwritten style)
-   - CRITICAL: If headline is longer than 50 characters, MUST wrap into 2-3 SHORT lines
-   - Each line MAXIMUM 50 characters
-   - Center-align the wrapped headline
-   - Ensure ALL text is visible with 60px margins from edges
-2. TRANSFORMATION JOURNEY (hand-drawn):
-   - Sketched figure on left showing "before" (small, struggling)
-   - Hand-drawn winding path/mountain in middle with milestones
-   - Triumphant figure on right showing "after" (success!)
-3. MILESTONE MARKERS along the path (numbered circles)
-4. MOTIVATIONAL PHRASES in hand-drawn speech bubbles
-5. METRICS as hand-drawn achievement badges: {metrics}
-6. CALL TO ACTION at bottom with hand-drawn arrow
+=== LAYOUT ===
+1. HEADLINE at top: "{headline}"
+   - Font: Friendly but professional sans-serif
+   - Color: Dark charcoal (#333333)
+   - If > 40 characters, split into 2 lines
+   
+2. STORY FLOW (left to right):
+   - 3-4 story beats shown as connected panels or points
+   - "BEFORE" → "TURNING POINT" → "AFTER" structure
+   - Simple iconic illustrations at each stage
+   - Curved connecting line or arrow showing progression
+   
+3. KEY MOMENT highlighted:
+   - Quote bubble or callout box
+   - The pivotal insight or lesson
+   
+4. METRICS as milestones: {metrics}
+   - Displayed along the journey path
 
-=== SKETCH STYLE ===
-- Black ink with warm color accents (orange, gold, red)
-- Hand-drawn hearts, stars, and growth symbols
-- Upward-pointing arrows and elements
-- Stick figures with expressive faces
-- Feels warm, personal, and achievable
+=== STYLE NOTES ===
+- Warm, personal, narrative feel
+- Clean illustrations (not photos)
+- Easy to follow left-to-right
+- Human, relatable, authentic
 
-DO NOT use stock photos. MUST look hand-sketched and motivating.""",
-
-    "professional": """Create a HANDWRITTEN BUSINESS INFOGRAPHIC sketch:
-
-=== CONTENT TO VISUALIZE ===
-{content}
-
-=== DESIGN SPECIFICATIONS ===
-STYLE: Hand-drawn business infographic, like a consultant's whiteboard explanation
-FORMAT: 16:9 aspect ratio (1200x675 pixels) for LinkedIn
-ASPECT RATIO: Must be exactly 16:9 horizontal/landscape
-BACKGROUND: White or cream paper with grid lines (like graph paper)
-
-=== REQUIRED VISUAL ELEMENTS ===
-1. HEADLINE at top: "{headline}" (professional handwritten)
-   - CRITICAL: If headline is longer than 50 characters, MUST wrap into 2-3 SHORT lines
-   - Each line MAXIMUM 50 characters
-   - Center-align the wrapped headline
-   - Ensure ALL text is visible with 60px margins from edges
-2. DATA VISUALIZATION (hand-sketched):
-   - Hand-drawn bar charts or line graphs
-   - Before/After comparison with arrows
-   - ROI stats in circled callouts
-3. KEY INSIGHTS as 3-4 hand-drawn icon+text pairs
-4. METRICS prominently in hand-drawn circles: {metrics}
-5. Simple icons (lightbulb, chart, checkmark)
-6. TAKEAWAY at bottom with hand-drawn box
-
-=== SKETCH STYLE ===
-- Black ink with blue accent color
-- Clean but hand-drawn lines
-- Simple sketched charts and graphs
-- Professional handwritten fonts
-- Looks like a consultant explaining at whiteboard
-
-DO NOT use stock photos. MUST look hand-sketched and professional."""
+DO NOT use stock photos. Use illustrations or icons to tell the story."""
 }
 
 # Default fallback template
@@ -257,8 +280,10 @@ async def generate_ai_image(hook_text: str, topic: str, style: str = "profession
         # Extract first sentence as main headline (cleaned up)
         sentences = content_to_analyze.split('.')
         first_sentence = sentences[0].replace('**', '').replace('\n', ' ').strip()
-        if len(first_sentence) > 60:
-            first_sentence = first_sentence[:60] + "..."
+        # Phase 1 Fix: Shorter headline (50 chars) + word boundary truncation
+        if len(first_sentence) > 50:
+            truncated = first_sentence[:50].rsplit(' ', 1)[0]
+            first_sentence = truncated + "..." if truncated else first_sentence[:50] + "..."
         
         # Remove first sentence from content to avoid duplication in image
         remaining_content = '.'.join(sentences[1:]).strip() if len(sentences) > 1 else content_to_analyze

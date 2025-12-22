@@ -23,7 +23,6 @@ def mock_user():
         "username": "testuser"
     }
 
-
 @pytest.fixture
 def mock_gemini_response():
     """Mock Gemini API response"""
