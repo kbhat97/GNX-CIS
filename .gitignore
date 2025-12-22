@@ -7,7 +7,7 @@ __pycache__/
 build/
 develop-eggs/
 dist/
-# But keep dashboard/dist for production CSS
+# Dashboard dist contains Vite production build - MUST be committed for deployment
 !dashboard/dist/
 downloads/
 eggs/

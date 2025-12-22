@@ -1,30 +1,53 @@
-FROM python:3.11-slim
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Install Node.js for Tailwind CSS build
-RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Copy package files
+COPY dashboard/package*.json ./
 
-# Copy dashboard files
-COPY dashboard/ ./dashboard/
+# Install dependencies
+RUN npm ci --only=production=false
 
-# Build Tailwind CSS
-WORKDIR /app/dashboard
-RUN npm install && npm run build:css
+# Copy source code
+COPY dashboard/ ./
 
-# Return to app directory
-WORKDIR /app
+# Build the application with Vite
+RUN npm run build
 
-# Set environment variables
-ENV PORT=8080
-ENV PYTHONUNBUFFERED=1
+# Production stage - use nginx for optimal static file serving
+FROM nginx:alpine
 
-# Expose port
+# Copy built assets from builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+RUN echo 'server { \
+    listen 8080; \
+    server_name _; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    location / { \
+    try_files $uri $uri/ /index.html; \
+    } \
+    # Cache static assets \
+    location ~* \\.(?:css|js|jpg|jpeg|gif|png|svg|ico|woff|woff2|ttf|eot)$ { \
+    expires 1y; \
+    add_header Cache-Control "public, immutable"; \
+    } \
+    # Security headers \
+    add_header X-Frame-Options "SAMEORIGIN" always; \
+    add_header X-Content-Type-Options "nosniff" always; \
+    add_header X-XSS-Protection "1; mode=block" always; \
+    # Gzip compression \
+    gzip on; \
+    gzip_vary on; \
+    gzip_min_length 1024; \
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json; \
+    }' > /etc/nginx/conf.d/default.conf
+
+# Expose port 8080 (Cloud Run requirement)
 EXPOSE 8080
 
-# Serve static files using Python's http.server
-# Cloud Run requires binding to 0.0.0.0:$PORT
-CMD python3 -m http.server $PORT --bind 0.0.0.0 --directory /app/dashboard
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
+

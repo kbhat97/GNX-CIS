@@ -69,6 +69,9 @@
             linear-gradient(#fff 0 0) content-box, 
             linear-gradient(#fff 0 0);
         -webkit-mask-composite: destination-out; 
+        mask: 
+            linear-gradient(#fff 0 0) content-box, 
+            linear-gradient(#fff 0 0);
         mask-composite: exclude;
         opacity: 0;
         transition: opacity 0.3s ease;
@@ -136,24 +139,10 @@
     }
 
   </style>
-<script type="importmap">
-{
-  "imports": {
-    "rxjs": "https://aistudiocdn.com/rxjs@^7.8.2?conditions=es2015",
-    "rxjs/operators": "https://aistudiocdn.com/rxjs@^7.8.2/operators?conditions=es2015",
-    "rxjs/ajax": "https://aistudiocdn.com/rxjs@^7.8.2/ajax?conditions=es2015",
-    "rxjs/webSocket": "https://aistudiocdn.com/rxjs@^7.8.2/webSocket?conditions=es2015",
-    "rxjs/testing": "https://aistudiocdn.com/rxjs@^7.8.2/testing?conditions=es2015",
-    "rxjs/fetch": "https://aistudiocdn.com/rxjs@^7.8.2/fetch?conditions=es2015",
-    "@angular/platform-browser": "https://next.esm.sh/@angular/platform-browser@^21.0.3?external=rxjs",
-    "@angular/core": "https://next.esm.sh/@angular/core@^21.0.3?external=rxjs",
-    "@angular/common": "https://next.esm.sh/@angular/common@^21.0.3?external=rxjs",
-    "@angular/compiler": "https://next.esm.sh/@angular/compiler@^21.0.3?external=rxjs"
-  }
-}
-</script>
 </head>
 <body class="antialiased">
   <app-root></app-root>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>
+
