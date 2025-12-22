@@ -83,6 +83,8 @@ testsprite_tests/
 
 # Exception: Allow E2E test files
 !tests/e2e/test_*.py
+# Exception: Allow unit test files in tests/
+!tests/test_*.py
 
 # Development documentation (internal)
 CIS_*.md

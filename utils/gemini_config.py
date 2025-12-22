@@ -8,10 +8,24 @@ import logging
 from typing import Literal
 
 import google.generativeai as genai
+from google.generativeai.types import GenerationConfig
 
 from config import config
 
 logger = logging.getLogger(__name__)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DIVERSITY_CONFIG: Tuned for content variety in LinkedIn posts
+# Research-backed parameters (Google Dev, Sept 2024; Anthropic, 2024)
+# NOTE: Gemini 2.5 Flash doesn't support presence_penalty/frequency_penalty
+# NOTE: max_output_tokens increased to 4096 to ensure complete responses
+# ═══════════════════════════════════════════════════════════════════════════════
+DIVERSITY_CONFIG = GenerationConfig(
+    temperature=0.9,           # Higher for creative variety (default ~0.7)
+    top_p=0.92,                # Nucleus sampling - broader token selection
+    max_output_tokens=4096,    # Increased from 1024 - prompt is large, need room for response
+)
 
 
 class GeminiConfig:

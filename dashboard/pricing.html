@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing - CIS Content Intelligence System</title>
+  <meta name="description" content="Simple, transparent pricing for CIS. Start free, upgrade when you're ready. All plans include our learning agent.">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='65' font-family='Arial' font-size='50' font-weight='bold' fill='white' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    @keyframes gradient-animation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes text-gradient-animation {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    body {
+      margin: 0;
+      color: #E0E0E0;
+      background-color: #0a0a1a;
+      background-image:
+        radial-gradient(at 20% 20%, hsla(212, 90%, 50%, 0.25) 0px, transparent 50%),
+        radial-gradient(at 80% 20%, hsla(282, 90%, 50%, 0.25) 0px, transparent 50%),
+        radial-gradient(at 20% 80%, hsla(332, 90%, 50%, 0.25) 0px, transparent 50%),
+        radial-gradient(at 80% 80%, hsla(182, 90%, 50%, 0.25) 0px, transparent 50%);
+      font-family: 'Poppins', system-ui, sans-serif;
+      background-size: 200% 200%;
+      animation: gradient-animation 30s ease infinite;
+      min-height: 100vh;
+    }
+
+    .animated-gradient-text {
+      background-image: linear-gradient(90deg, #22d3ee, #3b82f6, #22d3ee);
+      background-size: 200% auto;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: text-gradient-animation 4s linear infinite;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 40px rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .gradient-button {
+      background-image: linear-gradient(to right, #0ea5e9, #3b82f6, #0ea5e9);
+      background-size: 200% auto;
+      transition: all 0.5s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .gradient-button:hover {
+      background-position: right center;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .pricing-card-featured {
+      border: 2px solid rgba(34, 211, 238, 0.5);
+      box-shadow: 0 0 40px rgba(34, 211, 238, 0.15);
+    }
+
+    .pricing-card-featured:hover {
+      border-color: rgba(34, 211, 238, 0.7);
+      box-shadow: 0 10px 60px rgba(34, 211, 238, 0.25);
+    }
+  </style>
+</head>
+<body class="antialiased">
+  
+  <!-- Header -->
+  <header class="sticky top-0 z-50 glass-card py-4 px-6">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <a href="/dashboard/app.html" class="flex items-center gap-2">
+        <img src="/dashboard/gnx-logo.jpg" alt="GNX Logo" class="w-8 h-8 rounded-lg object-cover" onerror="this.onerror=null; this.src='gnx-logo.jpg';">
+        <span class="text-lg font-bold text-cyan-400">GNX CIS</span>
+      </a>
+      <nav class="flex items-center gap-6">
+        <a href="/dashboard/app.html" class="text-gray-400 hover:text-white text-sm font-medium transition-colors">Home</a>
+        <a href="/pricing.html" class="text-white text-sm font-medium">Pricing</a>
+        <a href="/dashboard/app.html#signup-section" class="px-4 py-2 gradient-button rounded-lg text-white text-sm font-semibold">Sign In</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="py-20 px-4 text-center">
+    <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
+      Simple, <span class="animated-gradient-text">Transparent</span> Pricing
+    </h1>
+    <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-2">
+      Choose the plan that fits your content creation needs.
+    </p>
+    <p class="text-gray-500">All plans include our learning agent. Start free, upgrade anytime.</p>
+  </section>
+
+  <!-- Pricing Cards -->
+  <section class="pb-20 px-4">
+    <div class="max-w-5xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        
+        <!-- Free Plan -->
+        <div class="glass-card rounded-2xl p-8">
+          <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-white mb-2">Free</h2>
+            <div class="text-5xl font-black text-white mb-1">$0</div>
+            <p class="text-gray-500">/month</p>
+            <p class="text-sm text-gray-400 mt-2">Perfect for testing</p>
+          </div>
+          
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>5 posts/month</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>3 writing styles</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>Persona setup (5 questions)</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>Learning agent starts here</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>Post history visible</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-500">
+              <span class="text-gray-600 text-lg">✗</span>
+              <span>No image generation</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-500">
+              <span class="text-gray-600 text-lg">✗</span>
+              <span>LinkedIn: Copy-paste only</span>
+            </li>
+          </ul>
+          
+          <a href="/dashboard/app.html#signup-section" class="block w-full py-3 px-4 bg-gray-700 hover:bg-gray-600 rounded-xl text-white font-semibold text-center transition-colors">
+            Get Started Free
+          </a>
+          <p class="text-center text-gray-500 text-xs mt-3">No credit card required</p>
+        </div>
+        
+        <!-- Pro Plan (Featured) -->
+        <div class="glass-card pricing-card-featured rounded-2xl p-8 relative transform md:-translate-y-4">
+          <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full text-white text-sm font-bold shadow-lg">
+            BEST VALUE
+          </div>
+          
+          <div class="text-center mb-6 mt-2">
+            <h2 class="text-2xl font-bold text-white mb-2">Pro</h2>
+            <div class="text-5xl font-black text-cyan-400 mb-1">$49</div>
+            <p class="text-gray-500">/month</p>
+            <p class="text-sm text-cyan-400 mt-2">Most popular for creators</p>
+          </div>
+          
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span><strong class="text-white">30 posts/month</strong></span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>All 5 writing styles</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span><strong class="text-white">Image generation included</strong></span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>Persona setup + full learning</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>Advanced post history</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>After 20 posts: Smart personalization</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>Email support</span>
+            </li>
+          </ul>
+          
+          <button onclick="handleCheckout('pro')" class="block w-full py-3 px-4 gradient-button rounded-xl text-white font-semibold text-center cursor-pointer">
+            Start 30-Day Free Trial
+          </button>
+          <p class="text-center text-gray-500 text-xs mt-3">Billed monthly. Cancel anytime.</p>
+        </div>
+        
+        <!-- Business Plan -->
+        <div class="glass-card rounded-2xl p-8 relative">
+          <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full text-white text-sm font-bold shadow-lg">
+            FOR PROFESSIONALS
+          </div>
+          
+          <div class="text-center mb-6 mt-2">
+            <h2 class="text-2xl font-bold text-white mb-2">Business</h2>
+            <div class="text-5xl font-black text-white mb-1">$199</div>
+            <p class="text-gray-500">/month</p>
+            <p class="text-sm text-violet-400 mt-2">For professionals & teams</p>
+          </div>
+          
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span><strong class="text-white">200 posts/month</strong></span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>All 5 writing styles</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>Image generation</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span><strong class="text-white">Direct LinkedIn publishing</strong></span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>Full analytics + engagement tracking</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>Maximum personalization</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-300">
+              <span class="text-green-400 text-lg">✓</span>
+              <span>Priority email support</span>
+            </li>
+          </ul>
+          
+          <button onclick="handleCheckout('business')" class="block w-full py-3 px-4 bg-violet-600 hover:bg-violet-700 rounded-xl text-white font-semibold text-center transition-colors cursor-pointer">
+            Start 30-Day Free Trial
+          </button>
+          <p class="text-center text-gray-500 text-xs mt-3">Billed monthly. Cancel anytime.</p>
+        </div>
+        
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Comparison Table -->
+  <section class="py-16 px-4 bg-white/5">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-2xl md:text-3xl font-bold text-white text-center mb-12">Compare Plans</h2>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-white/10">
+              <th class="py-4 px-4 text-gray-400 font-medium">Feature</th>
+              <th class="py-4 px-4 text-center text-gray-400 font-medium">Free</th>
+              <th class="py-4 px-4 text-center text-cyan-400 font-medium">Pro</th>
+              <th class="py-4 px-4 text-center text-violet-400 font-medium">Business</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-300">
+            <tr class="border-b border-white/5">
+              <td class="py-4 px-4">Posts per month</td>
+              <td class="py-4 px-4 text-center">5</td>
+              <td class="py-4 px-4 text-center text-white font-semibold">30</td>
+              <td class="py-4 px-4 text-center text-white font-semibold">200</td>
+            </tr>
+            <tr class="border-b border-white/5">
+              <td class="py-4 px-4">Writing styles</td>
+              <td class="py-4 px-4 text-center">3</td>
+              <td class="py-4 px-4 text-center text-white">5</td>
+              <td class="py-4 px-4 text-center text-white">5</td>
+            </tr>
+            <tr class="border-b border-white/5">
+              <td class="py-4 px-4">Image generation</td>
+              <td class="py-4 px-4 text-center text-red-400">✗</td>
+              <td class="py-4 px-4 text-center text-green-400">✓</td>
+              <td class="py-4 px-4 text-center text-green-400">✓</td>
+            </tr>
+            <tr class="border-b border-white/5">
+              <td class="py-4 px-4">LinkedIn publishing</td>
+              <td class="py-4 px-4 text-center text-red-400">✗</td>
+              <td class="py-4 px-4 text-center text-red-400">✗</td>
+              <td class="py-4 px-4 text-center text-green-400">✓</td>
+            </tr>
+            <tr class="border-b border-white/5">
+              <td class="py-4 px-4">Analytics</td>
+              <td class="py-4 px-4 text-center text-red-400">✗</td>
+              <td class="py-4 px-4 text-center text-gray-400">Basic</td>
+              <td class="py-4 px-4 text-center text-white">Advanced</td>
+            </tr>
+            <tr class="border-b border-white/5">
+              <td class="py-4 px-4">Learning optimization</td>
+              <td class="py-4 px-4 text-center text-gray-400 text-sm">After 20 posts</td>
+              <td class="py-4 px-4 text-center text-gray-400 text-sm">After 20 posts</td>
+              <td class="py-4 px-4 text-center text-gray-400 text-sm">After 20 posts</td>
+            </tr>
+            <tr class="border-b border-white/5">
+              <td class="py-4 px-4">Support</td>
+              <td class="py-4 px-4 text-center text-gray-500">Community</td>
+              <td class="py-4 px-4 text-center">Email</td>
+              <td class="py-4 px-4 text-center text-white">Priority Email</td>
+            </tr>
+            <tr>
+              <td class="py-4 px-4 font-semibold text-white">Price</td>
+              <td class="py-4 px-4 text-center text-white font-bold">$0</td>
+              <td class="py-4 px-4 text-center text-cyan-400 font-bold">$49</td>
+              <td class="py-4 px-4 text-center text-violet-400 font-bold">$199</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="py-20 px-4">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl md:text-3xl font-bold text-white text-center mb-12">Frequently Asked Questions</h2>
+      
+      <div class="space-y-4">
+        <div class="glass-card rounded-xl p-5">
+          <h3 class="text-white font-semibold mb-2">What happens after my free trial?</h3>
+          <p class="text-gray-400 text-sm">Your plan converts to paid. You can cancel anytime before the trial ends—no charge.</p>
+        </div>
+        
+        <div class="glass-card rounded-xl p-5">
+          <h3 class="text-white font-semibold mb-2">Can I change plans later?</h3>
+          <p class="text-gray-400 text-sm">Yes. Upgrade or downgrade anytime. Changes take effect on your next billing cycle.</p>
+        </div>
+        
+        <div class="glass-card rounded-xl p-5">
+          <h3 class="text-white font-semibold mb-2">What's included in "Learning"?</h3>
+          <p class="text-gray-400 text-sm">After 20 posts, our learning agent has analyzed your voice and style. It then generates content specifically for YOU, not generic content.</p>
+        </div>
+        
+        <div class="glass-card rounded-xl p-5">
+          <h3 class="text-white font-semibold mb-2">Do you offer annual billing?</h3>
+          <p class="text-gray-400 text-sm">Not yet, but contact us if interested. We can work something out for committed users.</p>
+        </div>
+        
+        <div class="glass-card rounded-xl p-5">
+          <h3 class="text-white font-semibold mb-2">Is there a student/nonprofit discount?</h3>
+          <p class="text-gray-400 text-sm">Contact us. We support builders and creators who are making a difference.</p>
+        </div>
+        
+        <div class="glass-card rounded-xl p-5">
+          <h3 class="text-white font-semibold mb-2">What payment methods do you accept?</h3>
+          <p class="text-gray-400 text-sm">Credit cards (Visa, Mastercard, Amex) via Stripe. All payments are secure and encrypted.</p>
+        </div>
+        
+        <div class="glass-card rounded-xl p-5">
+          <h3 class="text-white font-semibold mb-2">Can I get a refund?</h3>
+          <p class="text-gray-400 text-sm">Free trials: Full refund within 7 days. Paid plans: Email us, we'll work it out.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Section -->
+  <section class="py-16 px-4 border-t border-white/5">
+    <div class="max-w-4xl mx-auto text-center">
+      <h3 class="text-xl font-semibold text-white mb-8">Trusted by Content Creators</h3>
+      <div class="flex flex-wrap items-center justify-center gap-8 text-gray-400">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          <span>SSL Encrypted</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>Fast Setup</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span>Secure Data</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          <span>24hr Support</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-20 px-4 bg-gradient-to-r from-cyan-500/10 to-violet-500/10">
+    <div class="max-w-2xl mx-auto text-center">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Get Started?</h2>
+      <p class="text-gray-400 mb-8">Join content creators who are saving hours every week with CIS.</p>
+      <a href="/dashboard/app.html#signup-section" class="inline-flex items-center gap-2 px-8 py-4 gradient-button rounded-xl text-white font-bold text-lg shadow-lg">
+        Start Free - No Credit Card
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-4 text-center border-t border-white/5">
+    <div class="max-w-4xl mx-auto">
+      <div class="flex items-center justify-center gap-2 mb-4">
+        <img src="/dashboard/gnx-logo.jpg" alt="GNX Logo" class="w-6 h-6 rounded-lg object-cover" onerror="this.onerror=null; this.src='gnx-logo.jpg';">
+        <span class="text-sm font-semibold text-gray-400">GNX Content Intelligence System</span>
+      </div>
+      <p class="text-gray-500 text-sm mb-4">© 2025 GNX Automation. All rights reserved.</p>
+      <div class="flex items-center justify-center gap-6 text-sm">
+        <a href="/dashboard/app.html" class="text-gray-400 hover:text-white transition-colors">Home</a>
+        <a href="/pricing.html" class="text-gray-400 hover:text-white transition-colors">Pricing</a>
+        <a href="mailto:support@gnxautomation.com" class="text-gray-400 hover:text-white transition-colors">Support</a>
+      </div>
+      <p class="mt-6 text-gray-600 text-xs">
+        Questions? Email us at <a href="mailto:support@gnxautomation.com" class="text-cyan-500 hover:text-cyan-400">support@gnxautomation.com</a><br>
+        Response time: Usually within 24 hours
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Handle checkout button clicks
+    function handleCheckout(plan) {
+      // Store selected plan in sessionStorage for checkout flow
+      sessionStorage.setItem('selectedPlan', plan);
+      
+      // Redirect to main app with checkout parameter
+      window.location.href = '/dashboard/app.html?checkout=' + plan + '#signup-section';
+    }
+  </script>
+
+</body>
+</html>
