@@ -1,4 +1,23 @@
-# Python
+# ========================================
+# CRITICAL - NEVER COMMIT THESE
+# ========================================
+
+# All markdown files EXCEPT README.md (prevents doc leaks)
+*.md
+!README.md
+
+# Internal documentation and strategy files
+docs/
+
+# Extra files not for git
+extra_ignore/
+
+# Personas data (may contain user info)
+personas/
+
+# ========================================
+# PYTHON
+# ========================================
 __pycache__/
 *.py[cod]
 *$py.class
