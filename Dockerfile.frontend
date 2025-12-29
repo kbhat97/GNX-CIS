@@ -10,7 +10,9 @@ COPY dashboard/robots.txt /usr/share/nginx/html/
 COPY dashboard/sitemap.xml /usr/share/nginx/html/
 COPY dashboard/gnx-logo.jpg /usr/share/nginx/html/
 
-# Create dist directory and copy CSS (handles case when dist/ is empty or missing)
+# Copy pre-built assets from dashboard/dist/
+# IMPORTANT: Assets must be built BEFORE docker build (npm install && npm run build)
+# The COPY command will fail if dashboard/dist/ doesn't exist on the build host
 RUN mkdir -p /usr/share/nginx/html/dist/
 COPY dashboard/dist/ /usr/share/nginx/html/dist/
 
