@@ -59,11 +59,18 @@
           'Network request failed',
           /Loading chunk .* failed/,
         ],
-        // Add context to errors
+        // Add context to errors - use anonymized ID instead of raw email (PII)
         beforeSend(event) {
-          // Add user email if available
           if (window.currentUser?.email) {
-            event.user = { email: window.currentUser.email };
+            // Use a simple hash of email for user identification without exposing PII
+            const emailHash = window.currentUser.email.split('').reduce((hash, char) => {
+              return ((hash << 5) - hash) + char.charCodeAt(0);
+            }, 0).toString(16);
+            event.user = { 
+              id: emailHash,
+              // Only include email in development for easier debugging
+              ...(window.location.hostname === 'localhost' ? { email: window.currentUser.email } : {})
+            };
           }
           return event;
         }
@@ -2508,14 +2515,26 @@ My best post:
     let supabaseClient = null;
     let supabaseEnabled = false;
 
-    // Initialize Supabase client
-    try {
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      supabaseEnabled = true;
-      logger.log('[OK] Supabase connected');
-    } catch (error) {
-      logger.warn('[WARN] Supabase not available:', error);
-      supabaseEnabled = false;
+    // Initialize Supabase client after the SDK has actually loaded
+    function initSupabaseClient() {
+      try {
+        if (!window.supabase) {
+          throw new Error('Supabase SDK not loaded');
+        }
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseEnabled = true;
+        logger.log('[OK] Supabase connected');
+      } catch (error) {
+        logger.warn('[WARN] Supabase not available:', error);
+        supabaseEnabled = false;
+      }
+    }
+
+    // Hook into the lazy-loaded SDK lifecycle
+    window.addEventListener('supabase-ready', initSupabaseClient);
+    // In case the SDK loaded before this script ran
+    if (window.__SUPABASE_READY && window.supabase) {
+      initSupabaseClient();
     }
 
     // Save post to Supabase
@@ -4267,11 +4286,22 @@ My best post:
           throw new Error('API unavailable');
         }
       } catch (e) {
-        // Detect if the error is due to ad blocker (TypeError: Failed to fetch)
-        const isBlocked = e.name === 'TypeError' && e.message.includes('Failed to fetch');
+        // Detect the cause of the error with layered checks
+        const isFetchError = e.name === 'TypeError' && e.message.includes('Failed to fetch');
+        const isOffline = !navigator.onLine;
         
-        if (isBlocked) {
-          // Ad blocker detected
+        // Determine error type
+        let errorType = 'offline'; // default
+        if (isFetchError && !isOffline) {
+          // Online but fetch failed - likely ad blocker or CORS
+          errorType = 'blocked';
+        } else if (isOffline) {
+          // Browser reports offline
+          errorType = 'offline';
+        }
+        
+        if (errorType === 'blocked') {
+          // Likely ad blocker (online but fetch failed)
           statusEl.textContent = 'Blocked';
           statusEl.classList.remove('text-green-400', 'text-red-400');
           statusEl.classList.add('text-yellow-400');
@@ -4293,8 +4323,8 @@ My best post:
           showBlockedWarning();
           logger.warn('[API] Request blocked by browser extension (ad blocker)');
         } else {
-          // Genuine API error
-          statusEl.textContent = 'Offline';
+          // Genuine network error or API offline
+          statusEl.textContent = isOffline ? 'No Internet' : 'Offline';
           statusEl.classList.remove('text-green-400', 'text-yellow-400');
           statusEl.classList.add('text-red-400');
           barEl.style.width = '0%';
@@ -4308,6 +4338,11 @@ My best post:
               svg.classList.remove('text-gray-400', 'text-green-400', 'text-yellow-400');
               svg.classList.add('text-red-400');
             }
+          }
+          
+          // Show appropriate warning
+          if (isOffline) {
+            showNetworkWarning();
           }
         }
       }
@@ -4338,6 +4373,42 @@ My best post:
           </div>
         `;
         document.body.appendChild(warning);
+      }
+    }
+    
+    // Show warning about network connectivity issues
+    function showNetworkWarning() {
+      let warning = document.getElementById('api-network-warning');
+      if (!warning) {
+        warning = document.createElement('div');
+        warning.id = 'api-network-warning';
+        warning.className = 'fixed bottom-4 right-4 max-w-md p-4 bg-red-500/10 border border-red-500/30 rounded-xl backdrop-blur-sm z-50 animate-fade-in-up';
+        warning.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="text-2xl">🌐</div>
+            <div class="flex-1">
+              <h4 class="font-semibold text-red-400 mb-1">No Internet Connection</h4>
+              <p class="text-sm text-gray-300 mb-2">
+                Please check your internet connection and try again.
+              </p>
+              <button onclick="location.reload()" class="text-xs text-red-400 hover:text-red-300 underline mr-3">
+                Retry
+              </button>
+              <button onclick="this.closest('#api-network-warning').remove()" class="text-xs text-gray-400 hover:text-gray-300 underline">
+                Dismiss
+              </button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(warning);
+        
+        // Auto-remove when back online
+        window.addEventListener('online', function onOnline() {
+          const w = document.getElementById('api-network-warning');
+          if (w) w.remove();
+          window.removeEventListener('online', onOnline);
+          checkApiStatus(); // Re-check API status
+        }, { once: true });
       }
     }
 

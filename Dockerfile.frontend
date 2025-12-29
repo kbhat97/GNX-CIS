@@ -1,5 +1,6 @@
 # Simple nginx-based frontend for serving static HTML
-FROM nginx:alpine
+# Pin to specific nginx version for deterministic builds
+FROM nginx:1.27-alpine
 
 # Copy static HTML files
 COPY dashboard/app.html /usr/share/nginx/html/
@@ -9,7 +10,8 @@ COPY dashboard/robots.txt /usr/share/nginx/html/
 COPY dashboard/sitemap.xml /usr/share/nginx/html/
 COPY dashboard/gnx-logo.jpg /usr/share/nginx/html/
 
-# Copy CSS from dist if it exists
+# Create dist directory and copy CSS (handles case when dist/ is empty or missing)
+RUN mkdir -p /usr/share/nginx/html/dist/
 COPY dashboard/dist/ /usr/share/nginx/html/dist/
 
 # Copy nginx configuration
