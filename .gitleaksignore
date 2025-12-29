@@ -1,0 +1,7 @@
+# Gitleaks false positive ignores
+# Clerk publishable keys are designed to be public (pk_test_* and pk_live_*)
+# These are NOT secret keys - only sk_* keys are secrets
+# See: https://clerk.com/docs/security/overview
+
+# False positive: Clerk publishable key in dashboard/app.html
+aea0eb7b6e2cf6a283ceb5478fab882cf3be3d45:dashboard/app.html:generic-api-key:99
