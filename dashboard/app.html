@@ -36,10 +36,10 @@
   <!-- Favicon - Inline to prevent 404 -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='65' font-family='Arial' font-size='50' font-weight='bold' fill='white' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
   
-  <!-- Tailwind CSS - CDN with defer for non-blocking load -->
-  <script src="https://cdn.tailwindcss.com" defer></script>
+  <!-- Tailwind CSS - Async loading with deferred config to reduce TBT -->
   <script>
-    tailwind.config = {
+    // Store Tailwind config - will be applied in onload handler
+    window.tailwindConfig = {
       theme: {
         extend: {
           fontFamily: {
@@ -47,11 +47,9 @@
           },
         }
       }
-    }
+    };
   </script>
-  
-  <!-- Custom CSS enhancement (optional, may not load in production) -->
-  <link href="/dist/output.css" rel="stylesheet" onerror="console.log('Using CDN Tailwind - local CSS not available')">
+  <script async src="https://cdn.tailwindcss.com" onload="if(window.tailwind){tailwind.config=window.tailwindConfig;}"></script>
   
   <!-- Console Log Filter: Suppress known CDN/SDK warnings in production -->
   <script>
@@ -66,7 +64,15 @@
       };
     })();
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <!-- Supabase SDK - Lazy-load after DOM ready to reduce TBT -->
+  <script>
+    window.addEventListener('DOMContentLoaded', function() {
+      var supabaseScript = document.createElement('script');
+      supabaseScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      supabaseScript.async = true;
+      document.head.appendChild(supabaseScript);
+    });
+  </script>
   
   <!-- 
     TODO PRODUCTION: Replace Clerk test keys with production keys
@@ -84,18 +90,80 @@
     window.__clerk_publishable_key = 'pk_test_bmV3LWFhcmR2YXJrLTMzLmNsZXJrLmFjY291bnRzLmRldiQ';
   </script>
   
-  <!-- Clerk.js SDK for Production Authentication -->
-  <script 
-    data-clerk-publishable-key="pk_test_bmV3LWFhcmR2YXJrLTMzLmNsZXJrLmFjY291bnRzLmRldiQ"
-    src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
-    crossorigin="anonymous"
-    async>
+  <!-- Clerk.js SDK - Deferred loading for better TBT (loads after DOM ready) -->
+  <script>
+    // Lazy-load Clerk after initial paint to reduce Total Blocking Time
+    window.addEventListener('DOMContentLoaded', function() {
+      var clerkScript = document.createElement('script');
+      clerkScript.src = 'https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js';
+      clerkScript.setAttribute('data-clerk-publishable-key', 'pk_test_bmV3LWFhcmR2YXJrLTMzLmNsZXJrLmFjY291bnRzLmRldiQ');
+      clerkScript.crossOrigin = 'anonymous';
+      clerkScript.async = true;
+      document.head.appendChild(clerkScript);
+    });
   </script>
   
   <!-- Fonts - Using preload to prevent render blocking -->
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
   <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       CRITICAL CSS - Inline styles for above-the-fold content
+       Prevents FOUC (Flash of Unstyled Content) while Tailwind loads async
+       ═══════════════════════════════════════════════════════════════════ */
+    
+    /* CLS PREVENTION - Reserve space for dynamic content */
+    #login-page > section:first-child {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      text-align: center;
+    }
+    
+    /* Main content containers - stable dimensions */
+    .max-w-4xl.mx-auto,
+    .max-w-5xl.mx-auto,
+    .max-w-3xl.mx-auto {
+      contain: layout style;
+      width: 100%;
+      max-width: 56rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    /* Critical Tailwind utilities for hero (fallback while Tailwind loads) */
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-center { justify-content: center; }
+    .text-center { text-align: center; }
+    .text-white { color: white; }
+    .font-bold { font-weight: 700; }
+    .font-black { font-weight: 900; }
+    .mb-6 { margin-bottom: 1.5rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .mb-8 { margin-bottom: 2rem; }
+    .gap-2 { gap: 0.5rem; }
+    .rounded-xl { border-radius: 0.75rem; }
+    .rounded-lg { border-radius: 0.5rem; }
+    .px-8 { padding-left: 2rem; padding-right: 2rem; }
+    .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+    .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+    .text-5xl { font-size: 3rem; line-height: 1; }
+    .inline-flex { display: inline-flex; }
+    .hidden { display: none !important; }
+    
+    /* Hero text - prevent font-swap CLS */
+    h1, h2, h3 {
+      font-display: swap;
+      line-height: 1.2;
+    }
+    
     /* ═══════════════════════════════════════════════════════════════════
        ANIMATIONS
        ═══════════════════════════════════════════════════════════════════ */
@@ -155,7 +223,7 @@
       font-family: 'Inter', system-ui, sans-serif;
       background-size: cover;
       background-attachment: fixed;
-      animation: gradient-animation 30s ease infinite;
+      /* Removed animation to fix CLS - static gradient looks better anyway */
       min-height: 100vh;
     }
 
@@ -172,7 +240,7 @@
       background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      animation: text-gradient-animation 4s linear infinite;
+      /* Animation removed to fix CLS - static gradient still looks great */
     }
 
     .glass-card {
@@ -318,7 +386,7 @@
   </style>
 </head>
 <body class="antialiased">
-
+  <main id="main-content">
   <!-- ═══════════════════════════════════════════════════════════════════
        LANDING PAGE - Full Marketing + Login
        ═══════════════════════════════════════════════════════════════════ -->
@@ -330,7 +398,11 @@
     <section class="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center">
       <div class="max-w-4xl mx-auto">
         <div class="flex items-center justify-center gap-2 mb-6">
-          <img src="/gnx-logo.jpg" alt="GNX Logo" class="w-10 h-10 rounded-lg object-cover" onerror="this.onerror=null; this.src='./gnx-logo.jpg';">
+          <svg width="40" height="40" viewBox="0 0 100 100" class="w-10 h-10 rounded-lg" aria-label="GNX Logo">
+            <defs><linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
+            <rect width="100" height="100" rx="20" fill="url(#logo-grad)"/>
+            <text x="50" y="65" font-family="Arial" font-size="50" font-weight="bold" fill="white" text-anchor="middle">G</text>
+          </svg>
           <span class="text-lg font-bold text-cyan-400">GNX Content Intelligence System</span>
         </div>
         
@@ -805,7 +877,7 @@
       <!-- Header -->
       <div class="text-center mb-10">
         <div class="flex items-center justify-center gap-3 mb-4">
-          <img src="/gnx-logo.jpg" alt="GNX Logo" class="w-10 h-10 rounded-lg object-cover" onerror="this.onerror=null; this.src='./gnx-logo.jpg';">
+          <img src="/gnx-logo.jpg" alt="GNX Logo" width="40" height="40" class="w-10 h-10 rounded-lg object-cover" onerror="this.onerror=null; this.src='./gnx-logo.jpg';">
           <span class="text-lg font-semibold text-cyan-400">GNX CIS</span>
         </div>
         <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">Let's Personalize Your Experience</h1>
@@ -5224,5 +5296,6 @@ My best post:
     initializeClerk();
   </script>
 
+  </main>
 </body>
 </html>
