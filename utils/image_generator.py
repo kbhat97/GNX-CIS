@@ -8,6 +8,18 @@ import emoji
 import base64
 import io
 
+# Import Supabase Storage for persistent image URLs
+try:
+    from utils.supabase_storage import upload_image_to_supabase
+    SUPABASE_STORAGE_AVAILABLE = True
+except ImportError:
+    try:
+        from supabase_storage import upload_image_to_supabase
+        SUPABASE_STORAGE_AVAILABLE = True
+    except ImportError:
+        SUPABASE_STORAGE_AVAILABLE = False
+        print("[IMAGE] Supabase storage not available - using local storage")
+
 # Try to import google genai for Nano Banana support
 try:
     from google import genai
@@ -327,6 +339,13 @@ async def generate_ai_image(hook_text: str, topic: str, style: str = "profession
                     output_path = os.path.join(OUTPUT_DIR, filename)
                     image.save(output_path)
                     print(f"[OK] Nano Banana AI image generated: {filename}")
+                    
+                    # Upload to Supabase Storage for persistent URL
+                    if SUPABASE_STORAGE_AVAILABLE:
+                        public_url = upload_image_to_supabase(output_path, style_key)
+                        if public_url:
+                            return public_url
+                    
                     return os.path.abspath(output_path)
                 except AttributeError:
                     # Fallback: try raw data approach
@@ -339,6 +358,13 @@ async def generate_ai_image(hook_text: str, topic: str, style: str = "profession
                     with open(output_path, 'wb') as f:
                         f.write(image_data)
                     print(f"[OK] Nano Banana AI image generated (raw): {filename}")
+                    
+                    # Upload to Supabase Storage for persistent URL
+                    if SUPABASE_STORAGE_AVAILABLE:
+                        public_url = upload_image_to_supabase(output_path, style_key)
+                        if public_url:
+                            return public_url
+                    
                     return os.path.abspath(output_path)
         
         print("No image data in Nano Banana response")
@@ -501,6 +527,12 @@ def create_branded_image(text: str, author_name: str, subtitle: str = "SAP Progr
         filename = f"post_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.png"
         output_path = os.path.join(OUTPUT_DIR, filename)
         img.save(output_path, format='PNG')
+        
+        # Upload to Supabase Storage for persistent URL
+        if SUPABASE_STORAGE_AVAILABLE:
+            public_url = upload_image_to_supabase(output_path, "branded")
+            if public_url:
+                return public_url
         
         return os.path.abspath(output_path)
 

@@ -108,6 +108,8 @@ steps:
       - "--update-secrets=STRIPE_PRICE_BUSINESS=STRIPE_PRICE_BUSINESS:latest"
       - "--update-secrets=STRIPE_WEBHOOK_SECRET_CIS_PRODUCTION=STRIPE_WEBHOOK_SECRET_CIS_PRODUCTION:latest"
       - "--update-secrets=STRIPE_WEBHOOK_SECRET_ENGAGING_VICTORY=STRIPE_WEBHOOK_SECRET_ENGAGING_VICTORY:latest"
+      - "--update-secrets=SUPABASE_URL=SUPABASE_URL:latest"
+      - "--update-secrets=SUPABASE_SERVICE_KEY=SUPABASE_SERVICE_KEY:latest"
       - "--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID"
     waitFor: ["push-api"]
 

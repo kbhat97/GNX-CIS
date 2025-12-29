@@ -198,9 +198,13 @@ async def generate_post(request: GenerateRequest):
                     )
                 
                 if image_path:
-                    # Convert to URL path for serving
-                    filename = os.path.basename(image_path)
-                    image_url = f"/static/outputs/{filename}"
+                    # Check if it's already a full URL (Supabase Storage)
+                    if image_path.startswith('http://') or image_path.startswith('https://'):
+                        image_url = image_path  # Already a permanent URL
+                    else:
+                        # Convert local path to URL path for serving (fallback)
+                        filename = os.path.basename(image_path)
+                        image_url = f"/static/outputs/{filename}"
             except Exception as img_err:
                 print(f"Image generation warning: {img_err}")
         else:
@@ -301,8 +305,13 @@ async def generate_image_for_post(request: GenerateImageRequest):
             )
         
         if image_path:
-            filename = os.path.basename(image_path)
-            return {"image_url": f"/static/outputs/{filename}", "success": True}
+            # Check if it's already a full URL (Supabase Storage)
+            if image_path.startswith('http://') or image_path.startswith('https://'):
+                return {"image_url": image_path, "success": True}
+            else:
+                # Convert local path to URL path for serving (fallback)
+                filename = os.path.basename(image_path)
+                return {"image_url": f"/static/outputs/{filename}", "success": True}
         else:
             raise HTTPException(status_code=500, detail="Image generation failed")
             
