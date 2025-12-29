@@ -3843,7 +3843,14 @@ My best post:
         }
       } catch (error) {
         logger.error('[SYNC] Error:', error);
-        showNotification('Sync failed: ' + error.message, 'error');
+        // Detect ad blocker
+        const isBlocked = error.name === 'TypeError' && error.message.includes('Failed to fetch');
+        if (isBlocked) {
+          showNotification('🛡️ Sync blocked by ad blocker. Please disable it and refresh.', 'error');
+          showBlockedWarning();
+        } else {
+          showNotification('Sync failed: ' + error.message, 'error');
+        }
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -3954,40 +3961,100 @@ My best post:
         const response = await fetch(`${API_BASE}/health`);
         if (response.ok) {
           statusEl.textContent = 'Online';
-          statusEl.classList.remove('text-red-400');
+          statusEl.classList.remove('text-red-400', 'text-yellow-400');
           statusEl.classList.add('text-green-400');
           barEl.style.width = '100%';
           barEl.className = 'bg-gradient-to-r from-green-500 to-emerald-500 h-2.5 rounded-full transition-all duration-500';
           
           // Update icon
           if (iconEl) {
-            iconEl.classList.remove('bg-gray-500/20', 'bg-red-500/20');
+            iconEl.classList.remove('bg-gray-500/20', 'bg-red-500/20', 'bg-yellow-500/20');
             iconEl.classList.add('bg-green-500/20');
             const svg = iconEl.querySelector('svg');
             if (svg) {
-              svg.classList.remove('text-gray-400', 'text-red-400');
+              svg.classList.remove('text-gray-400', 'text-red-400', 'text-yellow-400');
               svg.classList.add('text-green-400');
             }
           }
+          
+          // Hide any blocked warning
+          const blockedWarning = document.getElementById('api-blocked-warning');
+          if (blockedWarning) blockedWarning.classList.add('hidden');
         } else {
           throw new Error('API unavailable');
         }
       } catch (e) {
-        statusEl.textContent = 'Offline';
-        statusEl.classList.remove('text-green-400');
-        statusEl.classList.add('text-red-400');
-        barEl.style.width = '0%';
+        // Detect if the error is due to ad blocker (TypeError: Failed to fetch)
+        const isBlocked = e.name === 'TypeError' && e.message.includes('Failed to fetch');
         
-        // Update icon
-        if (iconEl) {
-          iconEl.classList.remove('bg-gray-500/20', 'bg-green-500/20');
-          iconEl.classList.add('bg-red-500/20');
-          const svg = iconEl.querySelector('svg');
-          if (svg) {
-            svg.classList.remove('text-gray-400', 'text-green-400');
-            svg.classList.add('text-red-400');
+        if (isBlocked) {
+          // Ad blocker detected
+          statusEl.textContent = 'Blocked';
+          statusEl.classList.remove('text-green-400', 'text-red-400');
+          statusEl.classList.add('text-yellow-400');
+          barEl.style.width = '50%';
+          barEl.className = 'bg-gradient-to-r from-yellow-500 to-orange-500 h-2.5 rounded-full transition-all duration-500';
+          
+          // Update icon
+          if (iconEl) {
+            iconEl.classList.remove('bg-gray-500/20', 'bg-green-500/20', 'bg-red-500/20');
+            iconEl.classList.add('bg-yellow-500/20');
+            const svg = iconEl.querySelector('svg');
+            if (svg) {
+              svg.classList.remove('text-gray-400', 'text-green-400', 'text-red-400');
+              svg.classList.add('text-yellow-400');
+            }
+          }
+          
+          // Show ad blocker warning
+          showBlockedWarning();
+          logger.warn('[API] Request blocked by browser extension (ad blocker)');
+        } else {
+          // Genuine API error
+          statusEl.textContent = 'Offline';
+          statusEl.classList.remove('text-green-400', 'text-yellow-400');
+          statusEl.classList.add('text-red-400');
+          barEl.style.width = '0%';
+          
+          // Update icon
+          if (iconEl) {
+            iconEl.classList.remove('bg-gray-500/20', 'bg-green-500/20', 'bg-yellow-500/20');
+            iconEl.classList.add('bg-red-500/20');
+            const svg = iconEl.querySelector('svg');
+            if (svg) {
+              svg.classList.remove('text-gray-400', 'text-green-400', 'text-yellow-400');
+              svg.classList.add('text-red-400');
+            }
           }
         }
+      }
+    }
+    
+    // Show warning about ad blocker blocking API requests
+    function showBlockedWarning() {
+      let warning = document.getElementById('api-blocked-warning');
+      if (!warning) {
+        warning = document.createElement('div');
+        warning.id = 'api-blocked-warning';
+        warning.className = 'fixed bottom-4 right-4 max-w-md p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl backdrop-blur-sm z-50 animate-fade-in-up';
+        warning.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="text-2xl">🛡️</div>
+            <div class="flex-1">
+              <h4 class="font-semibold text-yellow-400 mb-1">Ad Blocker Detected</h4>
+              <p class="text-sm text-gray-300 mb-2">
+                Your browser extension is blocking API requests. The API is online but your browser is preventing connections.
+              </p>
+              <p class="text-xs text-gray-400 mb-3">
+                <strong>To fix:</strong> Disable ad blockers (uBlock Origin, Brave Shields, Privacy Badger) or whitelist this site.
+              </p>
+              <button onclick="this.closest('#api-blocked-warning').remove()" class="text-xs text-yellow-400 hover:text-yellow-300 underline">
+                Dismiss
+              </button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(warning);
       }
     }
 
