@@ -36,7 +36,173 @@
   <!-- Favicon - Inline to prevent 404 -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='65' font-family='Arial' font-size='50' font-weight='bold' fill='white' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
   
-  <!-- Tailwind CSS - Async loading with deferred config to reduce TBT -->
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SENTRY ERROR TRACKING - Catches errors BEFORE they break the app
+       Must load first to catch all errors
+       ═══════════════════════════════════════════════════════════════════ -->
+  <script
+    src="https://js.sentry-cdn.com/ea2facc11fdca5c6cd2abe7cf65b6b9a.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script>
+    // Initialize Sentry
+    if (window.Sentry) {
+      Sentry.init({
+        dsn: "https://ea2facc11fdca5c6cd2abe7cf65b6b9a@o4510477822918656.ingest.us.sentry.io/4510477840613376",
+        environment: window.location.hostname === 'localhost' ? 'development' : 'production',
+        // Only send 10% of errors in production to avoid quota issues
+        sampleRate: window.location.hostname === 'localhost' ? 1.0 : 0.1,
+        // Ignore common non-critical errors
+        ignoreErrors: [
+          'ResizeObserver loop',
+          'Non-Error promise rejection',
+          'Network request failed',
+          /Loading chunk .* failed/,
+        ],
+        // Add context to errors - use anonymized ID instead of raw email (PII)
+        beforeSend(event) {
+          if (window.currentUser?.email) {
+            // Use a simple hash of email for user identification without exposing PII
+            const emailHash = window.currentUser.email.split('').reduce((hash, char) => {
+              return ((hash << 5) - hash) + char.charCodeAt(0);
+            }, 0).toString(16);
+            event.user = { 
+              id: emailHash,
+              // Only include email in development for easier debugging
+              ...(window.location.hostname === 'localhost' ? { email: window.currentUser.email } : {})
+            };
+          }
+          return event;
+        }
+      });
+      console.log('[Sentry] Error tracking initialized');
+    }
+  </script>
+  
+  <!-- ═══════════════════════════════════════════════════════════════════
+       GLOBAL ERROR BOUNDARY - Prevents blank screens on JS errors
+       Shows user-friendly message and allows recovery
+       ═══════════════════════════════════════════════════════════════════ -->
+  <script>
+    // Track if critical error has occurred
+    window.__APP_HAS_CRITICAL_ERROR = false;
+    window.__APP_ERROR_COUNT = 0;
+    
+    // Show error UI to user
+    function showErrorUI(error, source) {
+      window.__APP_HAS_CRITICAL_ERROR = true;
+      window.__APP_ERROR_COUNT++;
+      
+      // Only show UI for first error (avoid spamming)
+      if (window.__APP_ERROR_COUNT > 1) return;
+      
+      // Create error overlay
+      const overlay = document.createElement('div');
+      overlay.id = 'error-overlay';
+      overlay.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 10, 26, 0.95);
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      `;
+      
+      const isAuthError = String(error).toLowerCase().includes('clerk') || 
+                          String(error).toLowerCase().includes('auth') ||
+                          String(source || '').includes('clerk');
+      
+      const isNetworkError = String(error).toLowerCase().includes('failed to fetch') ||
+                             String(error).toLowerCase().includes('network');
+      
+      let title = '⚠️ Something Went Wrong';
+      let message = 'An unexpected error occurred. Please try refreshing the page.';
+      let suggestion = '';
+      
+      if (isAuthError) {
+        title = '🔐 Authentication Error';
+        message = 'There was a problem with the login system.';
+        suggestion = 'This is often caused by an ad blocker. Please disable it for this site and refresh.';
+      } else if (isNetworkError) {
+        title = '🌐 Connection Error';
+        message = 'Unable to connect to our servers.';
+        suggestion = 'Please check your internet connection or try disabling your ad blocker.';
+      }
+      
+      overlay.innerHTML = `
+        <div style="max-width: 450px; text-align: center; font-family: system-ui, sans-serif;">
+          <h1 style="font-size: 28px; color: white; margin-bottom: 16px;">${title}</h1>
+          <p style="color: #9ca3af; margin-bottom: 12px; line-height: 1.6;">${message}</p>
+          ${suggestion ? `<p style="color: #facc15; font-size: 14px; margin-bottom: 20px; padding: 12px; background: rgba(250, 204, 21, 0.1); border-radius: 8px;">${suggestion}</p>` : ''}
+          <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <button onclick="location.reload()" style="padding: 12px 24px; background: linear-gradient(to right, #0ea5e9, #3b82f6); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+              🔄 Refresh Page
+            </button>
+            <button onclick="document.getElementById('error-overlay').remove(); window.__APP_ERROR_COUNT = 0;" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer;">
+              ✖️ Dismiss
+            </button>
+          </div>
+          <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">
+            Error details logged for our team to investigate.
+          </p>
+        </div>
+      `;
+      
+      document.body.appendChild(overlay);
+    }
+    
+    // Global error handler
+    window.onerror = function(message, source, lineno, colno, error) {
+      console.error('[GlobalError]', message, 'at', source, lineno);
+      
+      // Report to Sentry
+      if (window.Sentry && error) {
+        Sentry.captureException(error, {
+          extra: { source, lineno, colno }
+        });
+      }
+      
+      // Determine if this is a critical error that should show UI
+      const isCritical = 
+        String(message).includes('undefined is not') ||
+        String(message).includes('is not a function') ||
+        String(message).includes('Cannot read property') ||
+        String(message).includes('SyntaxError') ||
+        String(source || '').includes('clerk') ||
+        String(source || '').includes('supabase');
+      
+      if (isCritical) {
+        showErrorUI(message, source);
+      }
+      
+      return false; // Don't suppress the error in console
+    };
+    
+    // Unhandled promise rejection handler
+    window.onunhandledrejection = function(event) {
+      const error = event.reason;
+      console.error('[UnhandledRejection]', error);
+      
+      // Report to Sentry
+      if (window.Sentry) {
+        Sentry.captureException(error || new Error('Unhandled rejection'));
+      }
+      
+      // Check if this is a critical auth/network error
+      const errorMsg = String(error?.message || error || '');
+      if (errorMsg.includes('Failed to fetch') || 
+          errorMsg.includes('Clerk') || 
+          errorMsg.includes('Authentication')) {
+        showErrorUI(errorMsg, 'promise');
+      }
+    };
+    
+    console.log('[ErrorBoundary] Global error handling initialized');
+  </script>
+  
+  <!-- Tailwind CSS - Async loading with fallback detection -->
   <script>
     // Store Tailwind config - will be applied in onload handler
     window.tailwindConfig = {
@@ -48,8 +214,44 @@
         }
       }
     };
+    
+    // Track Tailwind loading state
+    window.__TAILWIND_LOADED = false;
   </script>
-  <script async src="https://cdn.tailwindcss.com" onload="if(window.tailwind){tailwind.config=window.tailwindConfig;}"></script>
+  <script 
+    async 
+    src="https://cdn.tailwindcss.com" 
+    onload="window.__TAILWIND_LOADED=true; if(window.tailwind){tailwind.config=window.tailwindConfig;} console.log('[Tailwind] Loaded successfully');"
+    onerror="window.__TAILWIND_LOAD_ERROR=true; console.error('[Tailwind] CDN blocked - likely ad blocker');"
+  ></script>
+  
+  <!-- Tailwind CDN Fallback Warning (shown if blocked) -->
+  <script>
+    // Check if Tailwind loaded after a delay
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        if (!window.__TAILWIND_LOADED && !window.tailwind) {
+          console.warn('[Tailwind] CSS not loaded - showing fallback warning');
+          
+          // Create ad blocker warning banner
+          var banner = document.createElement('div');
+          banner.id = 'cdn-blocked-banner';
+          banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(to right,#f59e0b,#ef4444);padding:12px 20px;text-align:center;font-family:system-ui,sans-serif;';
+          banner.innerHTML = '<span style="color:white;font-weight:600;">⚠️ Ad blocker detected - styles may be broken. </span>' +
+            '<a href="javascript:void(0)" onclick="location.reload()" style="color:white;text-decoration:underline;margin-left:8px;">Refresh</a>' +
+            '<span style="color:white;margin-left:8px;">or disable your ad blocker for this site.</span>' +
+            '<button onclick="this.parentElement.remove()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:white;font-size:20px;cursor:pointer;">×</button>';
+          
+          document.body.insertBefore(banner, document.body.firstChild);
+          
+          // Report to Sentry
+          if (window.Sentry) {
+            Sentry.captureMessage('Tailwind CDN blocked - likely ad blocker', 'warning');
+          }
+        }
+      }, 3000); // Check after 3 seconds
+    });
+  </script>
   
   <!-- Console Log Filter: Suppress known CDN/SDK warnings in production -->
   <script>
@@ -64,12 +266,36 @@
       };
     })();
   </script>
-  <!-- Supabase SDK - Lazy-load after DOM ready to reduce TBT -->
+  <!-- Supabase SDK - Lazy-load with error handling -->
   <script>
+    // Track Supabase loading state
+    window.__SUPABASE_READY = false;
+    window.__SUPABASE_LOAD_ERROR = null;
+    
     window.addEventListener('DOMContentLoaded', function() {
       var supabaseScript = document.createElement('script');
-      supabaseScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      // Pin to specific version to prevent breaking changes
+      supabaseScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.2/dist/umd/supabase.min.js';
       supabaseScript.async = true;
+      
+      supabaseScript.onload = function() {
+        window.__SUPABASE_READY = true;
+        console.log('[Supabase] SDK loaded successfully');
+        window.dispatchEvent(new CustomEvent('supabase-ready'));
+      };
+      
+      supabaseScript.onerror = function(e) {
+        window.__SUPABASE_LOAD_ERROR = 'Failed to load Supabase SDK';
+        console.error('[Supabase] Failed to load SDK:', e);
+        
+        // Report to Sentry
+        if (window.Sentry) {
+          Sentry.captureMessage('Supabase SDK failed to load', 'error');
+        }
+        
+        window.dispatchEvent(new CustomEvent('supabase-error'));
+      };
+      
       document.head.appendChild(supabaseScript);
     });
   </script>
@@ -86,19 +312,72 @@
   <!-- Clerk Configuration - MUST be set BEFORE Clerk.js loads -->
   <script>
     // Set Clerk publishable key before the script loads
-    // TODO PRODUCTION: Replace with 'pk_live_...' key
-    window.__clerk_publishable_key = 'pk_test_bmV3LWFhcmR2YXJrLTMzLmNsZXJrLmFjY291bnRzLmRldiQ';
+    // Production key for cis.gnxautomation.com
+    window.__clerk_publishable_key = 'pk_live_Y2xlcmsuY2lzLmdueGF1dG9tYXRpb24uY29tJA';
   </script>
   
-  <!-- Clerk.js SDK - Deferred loading for better TBT (loads after DOM ready) -->
+  <!-- Clerk.js SDK - Deferred loading with ready state tracking -->
   <script>
+    // Track Clerk loading state globally
+    window.__CLERK_READY = false;
+    window.__CLERK_LOAD_ERROR = null;
+    
     // Lazy-load Clerk after initial paint to reduce Total Blocking Time
     window.addEventListener('DOMContentLoaded', function() {
       var clerkScript = document.createElement('script');
-      clerkScript.src = 'https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js';
-      clerkScript.setAttribute('data-clerk-publishable-key', 'pk_test_bmV3LWFhcmR2YXJrLTMzLmNsZXJrLmFjY291bnRzLmRldiQ');
+      clerkScript.src = 'https://unpkg.com/@clerk/clerk-js@5.35.0/dist/clerk.browser.js';
+      clerkScript.setAttribute('data-clerk-publishable-key', 'pk_live_Y2xlcmsuY2lzLmdueGF1dG9tYXRpb24uY29tJA');
       clerkScript.crossOrigin = 'anonymous';
       clerkScript.async = true;
+      
+      // Track successful load
+      clerkScript.onload = function() {
+        console.log('[Clerk] Script loaded successfully');
+        // Clerk takes a moment to initialize after script loads
+        var checkClerk = setInterval(function() {
+          if (window.Clerk) {
+            clearInterval(checkClerk);
+            window.__CLERK_READY = true;
+            window.dispatchEvent(new CustomEvent('clerk-ready'));
+            console.log('[Clerk] Ready for authentication');
+            
+            // Enable auth buttons
+            var authButtons = document.querySelectorAll('[data-requires-clerk]');
+            authButtons.forEach(function(btn) {
+              btn.disabled = false;
+              btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+            
+            // Hide loading indicator if shown
+            var loadingIndicator = document.getElementById('clerk-loading-indicator');
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
+          }
+        }, 100);
+        
+        // Timeout after 10 seconds
+        setTimeout(function() {
+          if (!window.__CLERK_READY) {
+            clearInterval(checkClerk);
+            window.__CLERK_LOAD_ERROR = 'Clerk initialization timeout';
+            console.error('[Clerk] Failed to initialize within 10 seconds');
+            window.dispatchEvent(new CustomEvent('clerk-error', { detail: 'timeout' }));
+          }
+        }, 10000);
+      };
+      
+      // Track load failure
+      clerkScript.onerror = function(e) {
+        console.error('[Clerk] Failed to load script:', e);
+        window.__CLERK_LOAD_ERROR = 'Failed to load authentication';
+        window.dispatchEvent(new CustomEvent('clerk-error', { detail: 'load_failed' }));
+        
+        // Show user-friendly message
+        var loadingIndicator = document.getElementById('clerk-loading-indicator');
+        if (loadingIndicator) {
+          loadingIndicator.innerHTML = '<span class="text-yellow-400">⚠️ Auth loading slowly. <a href="javascript:location.reload()" class="underline">Refresh</a> or disable ad blocker.</span>';
+        }
+      };
+      
       document.head.appendChild(clerkScript);
     });
   </script>
@@ -732,7 +1011,18 @@
       <div class="max-w-md mx-auto">
         <div class="glass-card rounded-2xl p-6 md:p-8 shadow-2xl">
           <h2 class="text-3xl font-bold text-center text-white mb-2">Get Started Free</h2>
-          <p class="text-center text-gray-400 mb-8">No credit card required</p>
+          <p class="text-center text-gray-400 mb-6">No credit card required</p>
+          
+          <!-- Clerk Loading Indicator -->
+          <div id="clerk-loading-indicator" class="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
+            <span class="text-blue-400 text-sm flex items-center justify-center gap-2">
+              <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Loading secure login...
+            </span>
+          </div>
           
           <form id="login-form" onsubmit="handleLogin(event)">
             <div class="space-y-6">
@@ -765,7 +1055,7 @@
               </button>
             </div>
 
-            <button type="submit" id="login-btn" class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
+            <button type="submit" id="login-btn" data-requires-clerk class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
               <span id="login-btn-text">Sign In</span>
               <svg id="login-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -796,7 +1086,7 @@
               Error creating account.
             </div>
 
-            <button type="submit" id="signup-btn" class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
+            <button type="submit" id="signup-btn" data-requires-clerk class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
               <span id="signup-btn-text">Start Free - No Credit Card</span>
               <svg id="signup-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -2225,14 +2515,26 @@ My best post:
     let supabaseClient = null;
     let supabaseEnabled = false;
 
-    // Initialize Supabase client
-    try {
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      supabaseEnabled = true;
-      logger.log('[OK] Supabase connected');
-    } catch (error) {
-      logger.warn('[WARN] Supabase not available:', error);
-      supabaseEnabled = false;
+    // Initialize Supabase client after the SDK has actually loaded
+    function initSupabaseClient() {
+      try {
+        if (!window.supabase) {
+          throw new Error('Supabase SDK not loaded');
+        }
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseEnabled = true;
+        logger.log('[OK] Supabase connected');
+      } catch (error) {
+        logger.warn('[WARN] Supabase not available:', error);
+        supabaseEnabled = false;
+      }
+    }
+
+    // Hook into the lazy-loaded SDK lifecycle
+    window.addEventListener('supabase-ready', initSupabaseClient);
+    // In case the SDK loaded before this script ran
+    if (window.__SUPABASE_READY && window.supabase) {
+      initSupabaseClient();
     }
 
     // Save post to Supabase
@@ -3984,11 +4286,22 @@ My best post:
           throw new Error('API unavailable');
         }
       } catch (e) {
-        // Detect if the error is due to ad blocker (TypeError: Failed to fetch)
-        const isBlocked = e.name === 'TypeError' && e.message.includes('Failed to fetch');
+        // Detect the cause of the error with layered checks
+        const isFetchError = e.name === 'TypeError' && e.message.includes('Failed to fetch');
+        const isOffline = !navigator.onLine;
         
-        if (isBlocked) {
-          // Ad blocker detected
+        // Determine error type
+        let errorType = 'offline'; // default
+        if (isFetchError && !isOffline) {
+          // Online but fetch failed - likely ad blocker or CORS
+          errorType = 'blocked';
+        } else if (isOffline) {
+          // Browser reports offline
+          errorType = 'offline';
+        }
+        
+        if (errorType === 'blocked') {
+          // Likely ad blocker (online but fetch failed)
           statusEl.textContent = 'Blocked';
           statusEl.classList.remove('text-green-400', 'text-red-400');
           statusEl.classList.add('text-yellow-400');
@@ -4010,8 +4323,8 @@ My best post:
           showBlockedWarning();
           logger.warn('[API] Request blocked by browser extension (ad blocker)');
         } else {
-          // Genuine API error
-          statusEl.textContent = 'Offline';
+          // Genuine network error or API offline
+          statusEl.textContent = isOffline ? 'No Internet' : 'Offline';
           statusEl.classList.remove('text-green-400', 'text-yellow-400');
           statusEl.classList.add('text-red-400');
           barEl.style.width = '0%';
@@ -4025,6 +4338,11 @@ My best post:
               svg.classList.remove('text-gray-400', 'text-green-400', 'text-yellow-400');
               svg.classList.add('text-red-400');
             }
+          }
+          
+          // Show appropriate warning
+          if (isOffline) {
+            showNetworkWarning();
           }
         }
       }
@@ -4055,6 +4373,42 @@ My best post:
           </div>
         `;
         document.body.appendChild(warning);
+      }
+    }
+    
+    // Show warning about network connectivity issues
+    function showNetworkWarning() {
+      let warning = document.getElementById('api-network-warning');
+      if (!warning) {
+        warning = document.createElement('div');
+        warning.id = 'api-network-warning';
+        warning.className = 'fixed bottom-4 right-4 max-w-md p-4 bg-red-500/10 border border-red-500/30 rounded-xl backdrop-blur-sm z-50 animate-fade-in-up';
+        warning.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="text-2xl">🌐</div>
+            <div class="flex-1">
+              <h4 class="font-semibold text-red-400 mb-1">No Internet Connection</h4>
+              <p class="text-sm text-gray-300 mb-2">
+                Please check your internet connection and try again.
+              </p>
+              <button onclick="location.reload()" class="text-xs text-red-400 hover:text-red-300 underline mr-3">
+                Retry
+              </button>
+              <button onclick="this.closest('#api-network-warning').remove()" class="text-xs text-gray-400 hover:text-gray-300 underline">
+                Dismiss
+              </button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(warning);
+        
+        // Auto-remove when back online
+        window.addEventListener('online', function onOnline() {
+          const w = document.getElementById('api-network-warning');
+          if (w) w.remove();
+          window.removeEventListener('online', onOnline);
+          checkApiStatus(); // Re-check API status
+        }, { once: true });
       }
     }
 
