@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glassmorphic AI Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    @keyframes gradient-animation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    @keyframes text-gradient-animation {
+        0% { background-position: 0% center; }
+        100% { background-position: 200% center; }
+    }
+    
+    body {
+      color: #E0E0E0;
+      background-color: #0a0a1a;
+      background-image:
+        radial-gradient(at 20% 20%, hsla(212, 90%, 50%, 0.25) 0px, transparent 50%),
+        radial-gradient(at 80% 20%, hsla(282, 90%, 50%, 0.25) 0px, transparent 50%),
+        radial-gradient(at 20% 80%, hsla(332, 90%, 50%, 0.25) 0px, transparent 50%),
+        radial-gradient(at 80% 80%, hsla(182, 90%, 50%, 0.25) 0px, transparent 50%);
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+      background-size: 200% 200%;
+      animation: gradient-animation 30s ease infinite;
+    }
+    
+    .animated-gradient-text {
+        background-image: linear-gradient(90deg, #a78bfa, #f472b6, #a78bfa);
+        background-size: 200% auto;
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: text-gradient-animation 4s linear infinite;
+    }
+    
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .glass-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .glass-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: inherit;
+        padding: 1px; /* border thickness */
+        background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0));
+        -webkit-mask: 
+            linear-gradient(#fff 0 0) content-box, 
+            linear-gradient(#fff 0 0);
+        -webkit-mask-composite: destination-out; 
+        mask: 
+            linear-gradient(#fff 0 0) content-box, 
+            linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .glass-card:hover::before {
+        opacity: 1;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    .shake-error {
+      animation: shake 0.5s ease-in-out;
+    }
+    
+    .gradient-button {
+      background-image: linear-gradient(to right, #4f46e5, #9333ea, #4f46e5);
+      background-size: 200% auto;
+      transition: all 0.5s ease;
+    }
+    
+    .gradient-button:hover {
+      background-position: right center;
+      box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+      transform: translateY(-2px);
+    }
+    
+    .gradient-border-button {
+      background-color: transparent;
+      border: 1px solid transparent;
+      background-image: linear-gradient(rgba(10, 10, 26, 0.8), rgba(10, 10, 26, 0.8)), linear-gradient(to right, #4f46e5, #9333ea);
+      background-origin: border-box;
+      background-clip: content-box, border-box;
+      transition: all 0.3s ease;
+    }
+    
+    .gradient-border-button:hover {
+      background-image: linear-gradient(to right, #4f46e5, #9333ea), linear-gradient(to right, #4f46e5, #9333ea);
+      background-clip: padding-box, border-box;
+      box-shadow: 0 0 15px rgba(147, 51, 234, 0.4);
+    }
+    
+    .floating-label-input:focus-within label,
+    .floating-label-input input:not(:placeholder-shown) + label {
+        transform: translateY(-1.75rem) scale(0.85);
+        color: #a78bfa;
+    }
+    
+    @keyframes fade-in-up {
+      from {
+          opacity: 0;
+          transform: translateY(20px);
+      }
+      to {
+          opacity: 1;
+          transform: translateY(0);
+      }
+    }
+    
+    .animate-fade-in-up {
+      opacity: 0; /* Start hidden */
+      animation: fade-in-up 0.6s ease-out forwards;
+    }
+
+  </style>
+  <script type="module" crossorigin src="/assets/index-B5Qt9EMX.js"></script>
+</head>
+<body class="antialiased">
+  <app-root></app-root>
+</body>
+</html>
+

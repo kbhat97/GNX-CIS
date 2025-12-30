@@ -78,7 +78,7 @@ CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY", "")
 CLERK_PUBLISHABLE_KEY = os.getenv("CLERK_PUBLISHABLE_KEY", "")
 CLERK_JWKS_URL = os.getenv(
     "CLERK_JWKS_URL",
-    "https://new-aardvark-33.clerk.accounts.dev/.well-known/jwks.json",
+    "https://clerk.cis.gnxautomation.com/.well-known/jwks.json",  # Production Clerk
 )
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
@@ -743,6 +743,10 @@ POST_LIMITS = {
     "business": 200
 }
 
+# Admin emails for unlimited access and LinkedIn publishing
+# In production, this should come from database or Secret Manager
+ADMIN_EMAILS = os.getenv("ADMIN_EMAILS", "kunalsbhatt@gmail.com").split(",")
+
 class CheckoutRequest(BaseModel):
     plan: str  # "pro" or "business"
     promo_code: Optional[str] = None
@@ -971,18 +975,35 @@ async def handle_checkout_completed(session: Dict):
 
 @app.get("/api/user/subscription")
 async def get_user_subscription(db_user: Dict = Depends(get_db_user)):
-    """Get user's current subscription status"""
+    """Get user's current subscription status.
+    
+    Admin users get unlimited access with plan='admin'.
+    """
     try:
+        user_email = (db_user.get("email") or db_user.get("user_email") or "").lower().strip()
+        is_admin = user_email in [e.lower().strip() for e in ADMIN_EMAILS]
+        
+        if is_admin:
+            return {
+                "plan": "admin",
+                "status": "active",
+                "posts_this_month": db_user.get("posts_this_month", 0),
+                "post_limit": -1,  # -1 indicates unlimited
+                "stripe_customer_id": db_user.get("stripe_customer_id"),
+                "is_admin": True
+            }
+        
         return {
             "plan": db_user.get("subscription_plan", "free"),
             "status": db_user.get("subscription_status", "active"),
             "posts_this_month": db_user.get("posts_this_month", 0),
             "post_limit": POST_LIMITS.get(db_user.get("subscription_plan", "free"), 5),
-            "stripe_customer_id": db_user.get("stripe_customer_id")
+            "stripe_customer_id": db_user.get("stripe_customer_id"),
+            "is_admin": False
         }
     except Exception as e:
         logger.error(f"[STRIPE] Error fetching subscription: {e}")
-        return {"plan": "free", "status": "active", "posts_this_month": 0, "post_limit": 5}
+        return {"plan": "free", "status": "active", "posts_this_month": 0, "post_limit": 5, "is_admin": False}
 
 
 @app.get("/api/user/profile")
@@ -1068,7 +1089,26 @@ async def get_user_voice_profile(db_user: Dict = Depends(get_db_user)):
 
 @app.get("/api/check-post-limit")
 async def check_post_limit(db_user: Dict = Depends(get_db_user)):
-    """Check if user can generate more posts this month"""
+    """Check if user can generate more posts this month.
+    
+    Admin users (defined in ADMIN_EMAILS) have unlimited access.
+    """
+    user_email = (db_user.get("email") or db_user.get("user_email") or "").lower().strip()
+    
+    # Admin users have unlimited access
+    is_admin = user_email in [e.lower().strip() for e in ADMIN_EMAILS]
+    if is_admin:
+        return {
+            "can_generate": True,
+            "posts_used": db_user.get("posts_this_month", 0),
+            "posts_limit": -1,  # -1 indicates unlimited
+            "posts_remaining": -1,  # -1 indicates unlimited
+            "plan": "admin",
+            "upgrade_required": False,
+            "is_admin": True
+        }
+    
+    # Regular users - check against plan limits
     plan = db_user.get("subscription_plan", "free")
     posts_this_month = db_user.get("posts_this_month", 0)
     limit = POST_LIMITS.get(plan, 5)
@@ -1082,7 +1122,8 @@ async def check_post_limit(db_user: Dict = Depends(get_db_user)):
         "posts_limit": limit,
         "posts_remaining": remaining,
         "plan": plan,
-        "upgrade_required": not can_generate and plan == "free"
+        "upgrade_required": not can_generate and plan == "free",
+        "is_admin": False
     }
 
 
@@ -2407,10 +2448,7 @@ async def publish_post(
 # ============================================
 # POST EDITING ENDPOINTS
 # ============================================
-
-# Admin emails for LinkedIn publishing (server-side only - DO NOT expose to client)
-# In production, this should come from database or Secret Manager
-ADMIN_EMAILS = os.getenv("ADMIN_EMAILS", "kunalsbhatt@gmail.com").split(",")
+# NOTE: ADMIN_EMAILS is defined earlier in the file near POST_LIMITS
 
 class LinkedInPublishRequest(BaseModel):
     content: str
