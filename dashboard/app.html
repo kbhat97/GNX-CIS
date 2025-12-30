@@ -90,6 +90,7 @@
         }
       });
       
+      window.__SENTRY_INITIALIZED = true;
       console.log('[Sentry] Error tracking initialized (lightweight bundle)');
     }
     
@@ -2157,12 +2158,12 @@ My best post:
           const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
           
           if (clerkInstance.user && !isLocalhost) {
-            currentUser = {
+            setCurrentUser({
               email: clerkInstance.user.emailAddresses[0]?.emailAddress,
               name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
               clerk_id: clerkInstance.user.id,
               image_url: clerkInstance.user.imageUrl
-            };
+            });
             logger.log('[Auth] User already signed in (production auto-login):', currentUser.email);
             showDashboard();
           } else if (isLocalhost && clerkInstance.user) {
@@ -2181,12 +2182,12 @@ My best post:
     // Continue to dashboard for existing session (localhost)
     function continueToExistingSession() {
       if (clerkInstance && clerkInstance.user) {
-        currentUser = {
+        setCurrentUser({
           email: clerkInstance.user.emailAddresses[0]?.emailAddress,
           name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
           clerk_id: clerkInstance.user.id,
           image_url: clerkInstance.user.imageUrl
-        };
+        });
         logger.log('[Auth] Continuing with existing session:', currentUser.email);
         showDashboard();
       }
@@ -2198,6 +2199,12 @@ My best post:
     let currentPost = null;
     let selectedPostIndex = null;
     let improvingPost = null;  // Track post being improved (for hybrid history pattern)
+    
+    // Helper to set currentUser and keep window.currentUser in sync for Sentry
+    function setCurrentUser(user) {
+      currentUser = user;
+      window.currentUser = user;  // Keep synced for Sentry beforeSend()
+    }
     
     // Admin Persona Configuration
     // NOTE: Admin status is determined by server response (user.role = 'admin')
@@ -2656,21 +2663,21 @@ My best post:
 
         // Transform to dashboard format
         const transformedPosts = loadedPosts.map(p => {
-          // Fix image URL: handle different cases
-          // 1. Supabase Storage URLs (https://xxx.supabase.co/...) - use as-is
-          // 2. Relative paths (/static/outputs/...) - prepend API_BASE
-          // 3. Legacy localhost URLs - fix port
+          // Normalize image URL:
+          // 1) Fix legacy localhost port.
+          // 2) Absolute http(s) URLs (Supabase/CDN) are used as-is.
+          // 3) Everything else is treated as a relative path from API_BASE.
           let imageUrl = p.image_url;
           if (imageUrl) {
-            if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-              // Already a full URL (Supabase Storage or other CDN) - use as-is
-              // No changes needed
-            } else if (imageUrl.startsWith('/')) {
-              // Relative path - prepend API_BASE
-              imageUrl = API_BASE + imageUrl;
-            } else if (imageUrl.includes('localhost:8080')) {
-              // Fix old URLs with wrong port
+            if (imageUrl.includes('localhost:8080')) {
               imageUrl = imageUrl.replace('localhost:8080', 'localhost:8000');
+            }
+
+            if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+              if (!imageUrl.startsWith('/')) {
+                imageUrl = '/' + imageUrl;
+              }
+              imageUrl = API_BASE + imageUrl;
             }
           }
           
@@ -2749,12 +2756,12 @@ My best post:
           
           // Get user data
           const user = clerkInstance.user;
-          currentUser = {
+          setCurrentUser({
             email: user.emailAddresses[0]?.emailAddress || email,
             name: user.firstName || email.split('@')[0],
             clerk_id: user.id,
             image_url: user.imageUrl
-          };
+          });
           
           logger.log('[Auth] Login successful:', currentUser.email);
           showDashboard();
@@ -2927,13 +2934,13 @@ My best post:
           await clerkInstance.setActive({ session: signUpAttempt.createdSessionId });
           
           const user = clerkInstance.user;
-          currentUser = {
+          setCurrentUser({
             email: user.emailAddresses[0]?.emailAddress || email,
             name: user.firstName || firstName || email.split('@')[0],
             clerk_id: user.id,
             image_url: user.imageUrl,
             isFirstTimeUser: true
-          };
+          });
           
           logger.log('[Auth] Signup successful:', currentUser.email);
           showDashboard();
@@ -3028,13 +3035,13 @@ My best post:
           await clerkInstance.setActive({ session: completeSignUp.createdSessionId });
           
           const user = clerkInstance.user;
-          currentUser = {
+          setCurrentUser({
             email: user.emailAddresses[0]?.emailAddress || window.pendingEmail,
             name: user.firstName || window.pendingEmail?.split('@')[0],
             clerk_id: user.id,
             image_url: user.imageUrl,
             isFirstTimeUser: true
-          };
+          });
           
           logger.log('[Auth] Email verified! User signed in:', currentUser.email);
           
@@ -3094,7 +3101,7 @@ My best post:
         logger.error('[Auth] Logout error:', err);
       }
       
-      currentUser = null;
+      setCurrentUser(null);
       posts = [];
       currentPost = null;
       document.getElementById('dashboard-page').classList.add('hidden');
@@ -3237,7 +3244,7 @@ My best post:
           body: JSON.stringify({
             content: currentPost.content,
             user_email: currentUser?.email || '',
-            image_url: currentPost.image_url || null
+            image_url: currentPost.imageUrl || null  // Note: API expects snake_case
           })
         });
         
@@ -4797,6 +4804,9 @@ My best post:
         
         if (response.ok) {
           const result = await response.json();
+          if (!result.image_url) {
+            throw new Error('No image URL returned from server');
+          }
           // Check if it's already a full URL (Supabase Storage) or relative path
           if (result.image_url.startsWith('http://') || result.image_url.startsWith('https://')) {
             currentPost.imageUrl = result.image_url;  // Already a permanent URL
@@ -4823,22 +4833,30 @@ My best post:
           const error = await response.json();
           imageContainer.innerHTML = `
             <div class="mt-4 p-4 glass-card rounded-lg text-center">
-              <p class="text-red-400 mb-3">Failed to generate image: ${error.detail || 'Unknown error'}</p>
+              <p id="deferred-image-error-text" class="text-red-400 mb-3"></p>
               <button onclick="generateDeferredImage()" class="px-4 py-2 bg-violet-600 text-white rounded-lg">
                 Retry
               </button>
             </div>
           `;
+          const msgEl = document.getElementById('deferred-image-error-text');
+          if (msgEl) {
+            msgEl.textContent = `Failed to generate image: ${error.detail || 'Unknown error'}`;
+          }
         }
       } catch (error) {
         imageContainer.innerHTML = `
           <div class="mt-4 p-4 glass-card rounded-lg text-center">
-            <p class="text-red-400 mb-3">Error: ${error.message}</p>
+            <p id="deferred-image-catch-error-text" class="text-red-400 mb-3"></p>
             <button onclick="generateDeferredImage()" class="px-4 py-2 bg-violet-600 text-white rounded-lg">
               Retry
             </button>
           </div>
         `;
+        const msgEl = document.getElementById('deferred-image-catch-error-text');
+        if (msgEl) {
+          msgEl.textContent = `Error: ${error.message}`;
+        }
       }
     }
 
