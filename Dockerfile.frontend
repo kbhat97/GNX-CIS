@@ -1,36 +1,32 @@
-FROM node:20-slim AS builder
+# Simple nginx-based frontend for serving static HTML
+# Pin to specific nginx version for deterministic builds
+FROM nginx:1.27-alpine
 
-WORKDIR /app
+# Copy static HTML files
+COPY dashboard/app.html /usr/share/nginx/html/
+COPY dashboard/index.html /usr/share/nginx/html/
+COPY dashboard/pricing.html /usr/share/nginx/html/
+COPY dashboard/robots.txt /usr/share/nginx/html/
+COPY dashboard/sitemap.xml /usr/share/nginx/html/
+COPY dashboard/gnx-logo.jpg /usr/share/nginx/html/
 
-# Copy package files
-COPY dashboard/package*.json ./
-
-# Install dependencies
-RUN npm ci --only=production=false
-
-# Copy source code
-COPY dashboard/ ./
-
-# Build the application with Vite
-RUN npm run build
-
-# Production stage - use nginx for optimal static file serving
-FROM nginx:alpine
-
-# Copy built assets from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy pre-built assets from dashboard/dist/
+# IMPORTANT: Assets must be built BEFORE docker build (npm install && npm run build)
+# The COPY command will fail if dashboard/dist/ doesn't exist on the build host
+RUN mkdir -p /usr/share/nginx/html/dist/
+COPY dashboard/dist/ /usr/share/nginx/html/dist/
 
 # Copy nginx configuration
 RUN echo 'server { \
     listen 8080; \
     server_name _; \
     root /usr/share/nginx/html; \
-    index index.html; \
+    index app.html index.html; \
     location / { \
-    try_files $uri $uri/ /index.html; \
+    try_files $uri $uri/ /app.html; \
     } \
     # Cache static assets \
-    location ~* \\.(?:css|js|jpg|jpeg|gif|png|svg|ico|woff|woff2|ttf|eot)$ { \
+    location ~* \.(?:css|js|jpg|jpeg|gif|png|svg|ico|woff|woff2|ttf|eot)$ { \
     expires 1y; \
     add_header Cache-Control "public, immutable"; \
     } \
@@ -50,4 +46,3 @@ EXPOSE 8080
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
-
