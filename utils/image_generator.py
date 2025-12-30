@@ -28,6 +28,28 @@ try:
 except ImportError:
     NANO_BANANA_AVAILABLE = False
 
+
+def _upload_or_fallback(local_path: str, style: str) -> str:
+    """
+    Upload image to Supabase if available, otherwise return local path.
+    
+    Args:
+        local_path: Local file system path to the image
+        style: Style category for organizing uploads
+        
+    Returns:
+        Public URL if upload succeeds, otherwise local absolute path
+    """
+    if SUPABASE_STORAGE_AVAILABLE:
+        try:
+            public_url = upload_image_to_supabase(local_path, style)
+            if public_url:
+                return public_url
+        except Exception as e:
+            print(f"[WARN] Supabase upload failed, using local path: {e}")
+    
+    return os.path.abspath(local_path)
+
 IMAGE_HOOK_LIMIT = 250  # Increased for complete sentences
 
 # ═══════════════════════════════════════════════════════════════════
@@ -339,14 +361,7 @@ async def generate_ai_image(hook_text: str, topic: str, style: str = "profession
                     output_path = os.path.join(OUTPUT_DIR, filename)
                     image.save(output_path)
                     print(f"[OK] Nano Banana AI image generated: {filename}")
-                    
-                    # Upload to Supabase Storage for persistent URL
-                    if SUPABASE_STORAGE_AVAILABLE:
-                        public_url = upload_image_to_supabase(output_path, style_key)
-                        if public_url:
-                            return public_url
-                    
-                    return os.path.abspath(output_path)
+                    return _upload_or_fallback(output_path, style_key)
                 except AttributeError:
                     # Fallback: try raw data approach
                     image_data = part.inline_data.data
@@ -358,14 +373,7 @@ async def generate_ai_image(hook_text: str, topic: str, style: str = "profession
                     with open(output_path, 'wb') as f:
                         f.write(image_data)
                     print(f"[OK] Nano Banana AI image generated (raw): {filename}")
-                    
-                    # Upload to Supabase Storage for persistent URL
-                    if SUPABASE_STORAGE_AVAILABLE:
-                        public_url = upload_image_to_supabase(output_path, style_key)
-                        if public_url:
-                            return public_url
-                    
-                    return os.path.abspath(output_path)
+                    return _upload_or_fallback(output_path, style_key)
         
         print("No image data in Nano Banana response")
         return None
@@ -528,13 +536,7 @@ def create_branded_image(text: str, author_name: str, subtitle: str = "SAP Progr
         output_path = os.path.join(OUTPUT_DIR, filename)
         img.save(output_path, format='PNG')
         
-        # Upload to Supabase Storage for persistent URL
-        if SUPABASE_STORAGE_AVAILABLE:
-            public_url = upload_image_to_supabase(output_path, "branded")
-            if public_url:
-                return public_url
-        
-        return os.path.abspath(output_path)
+        return _upload_or_fallback(output_path, "branded")
 
     except Exception as e:
         print(f"Image generation error: {e}")

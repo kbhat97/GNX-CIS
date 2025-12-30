@@ -26,6 +26,72 @@ from utils.sanitizer import sanitize_topic, sanitize_feedback
 from utils.content_filter import is_safe_for_generation
 from utils.image_generator import create_branded_image, generate_ai_image
 
+# URL validation for image security
+from urllib.parse import urlparse
+
+# Trusted domains for external image URLs
+TRUSTED_IMAGE_DOMAINS = [
+    "ijwmgwirhorksepabgpj.supabase.co",  # Your Supabase project
+    # Add other trusted CDN domains as needed
+]
+
+
+def is_trusted_url(url: str) -> bool:
+    """Validate that URL is from a trusted domain."""
+    try:
+        parsed = urlparse(url)
+        return parsed.netloc in TRUSTED_IMAGE_DOMAINS
+    except Exception:
+        return False
+
+
+def resolve_image_url(image_path: str) -> str:
+    """
+    Convert image path to URL with security validation.
+    
+    Args:
+        image_path: Either a full URL or local file path
+        
+    Returns:
+        Safe URL to serve to clients
+        
+    Raises:
+        ValueError: If URL is from an untrusted domain
+    """
+    if image_path.startswith('http://') or image_path.startswith('https://'):
+        if not is_trusted_url(image_path):
+            # Log the untrusted URL for monitoring but don't expose to client
+            print(f"[SECURITY] Untrusted image URL domain detected: {urlparse(image_path).netloc}")
+            raise ValueError(f"Untrusted image URL domain")
+        return image_path
+    else:
+        # Local path - convert to static URL
+        filename = os.path.basename(image_path)
+        return f"/static/outputs/{filename}"
+
+
+def safe_resolve_image_url(image_path: str) -> str:
+    """
+    Safely resolve image URL with fallback to local path.
+    
+    For external URLs from untrusted domains, falls back to constructing
+    a local static path. Note: This may result in a 404 if the file doesn't
+    exist locally, but this is safe from a security perspective - it prevents
+    serving content from untrusted external sources.
+    
+    Args:
+        image_path: Either a full URL or local file path
+        
+    Returns:
+        Safe URL - either the validated external URL or a local static path
+    """
+    try:
+        return resolve_image_url(image_path)
+    except ValueError as url_err:
+        print(f"[SECURITY] {url_err} - falling back to local path")
+        filename = os.path.basename(image_path)
+        return f"/static/outputs/{filename}"
+
 # Initialize FastAPI app
 app = FastAPI(
     title="GNX Content Intelligence API",
@@ -198,13 +264,8 @@ async def generate_post(request: GenerateRequest):
                     )
                 
                 if image_path:
-                    # Check if it's already a full URL (Supabase Storage)
-                    if image_path.startswith('http://') or image_path.startswith('https://'):
-                        image_url = image_path  # Already a permanent URL
-                    else:
-                        # Convert local path to URL path for serving (fallback)
-                        filename = os.path.basename(image_path)
-                        image_url = f"/static/outputs/{filename}"
+                    # Use secure URL resolver with domain validation
+                    image_url = safe_resolve_image_url(image_path)
             except Exception as img_err:
                 print(f"Image generation warning: {img_err}")
         else:
@@ -305,13 +366,9 @@ async def generate_image_for_post(request: GenerateImageRequest):
             )
         
         if image_path:
-            # Check if it's already a full URL (Supabase Storage)
-            if image_path.startswith('http://') or image_path.startswith('https://'):
-                return {"image_url": image_path, "success": True}
-            else:
-                # Convert local path to URL path for serving (fallback)
-                filename = os.path.basename(image_path)
-                return {"image_url": f"/static/outputs/{filename}", "success": True}
+            # Use secure URL resolver with domain validation
+            image_url = safe_resolve_image_url(image_path)
+            return {"image_url": image_url, "success": True}
         else:
             raise HTTPException(status_code=500, detail="Image generation failed")
             
