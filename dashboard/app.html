@@ -2134,8 +2134,10 @@ My best post:
     // CLERK AUTHENTICATION - PRODUCTION AUTH
     // ═══════════════════════════════════════════════════════════════════
     let clerkInstance = null;
+    // Priority: 1) RUNTIME_CONFIG, 2) Pre-set window key, 3) Production fallback
     const CLERK_PUBLISHABLE_KEY = RUNTIME_CONFIG.CLERK_PUBLISHABLE_KEY || 
-      'pk_test_bmV3LWFhcmR2YXJrLTMzLmNsZXJrLmFjY291bnRzLmRldiQ';
+      window.__clerk_publishable_key ||
+      'pk_live_Y2xlcmsuY2lzLmdueGF1dG9tYXRpb24uY29tJA';
     
     async function initializeClerk() {
       try {
@@ -4087,19 +4089,22 @@ My best post:
         const plan = data.plan || 'free';
         const postsUsed = data.posts_this_month || 0;
         const postLimit = data.post_limit || 5;
+        const isAdmin = data.is_admin || plan === 'admin';
         
         // Plan descriptions
         const planDescriptions = {
           'free': '5 posts per month, basic features',
           'pro': '30 posts per month, image generation, all styles',
-          'business': '200 posts per month, LinkedIn publishing, priority support'
+          'business': '200 posts per month, LinkedIn publishing, priority support',
+          'admin': 'Unlimited posts, full access, admin privileges'
         };
         
         // Plan colors
         const planColors = {
           'free': 'bg-gray-500/20 text-gray-400',
           'pro': 'bg-cyan-500/20 text-cyan-400',
-          'business': 'bg-violet-500/20 text-violet-400'
+          'business': 'bg-violet-500/20 text-violet-400',
+          'admin': 'bg-purple-500/20 text-purple-400 border border-purple-500/50'
         };
         
         // Update settings section elements
@@ -4114,22 +4119,31 @@ My best post:
           settingsDesc.textContent = planDescriptions[plan] || planDescriptions.free;
         }
         
-        // Update usage counts
+        // Update usage counts - handle unlimited for admin
         const usedEl = document.getElementById('settings-posts-used');
         const limitEl = document.getElementById('settings-posts-limit');
         if (usedEl) usedEl.textContent = postsUsed;
-        if (limitEl) limitEl.textContent = postLimit;
+        if (limitEl) {
+          limitEl.textContent = isAdmin ? '∞' : postLimit;
+        }
         
-        // Update progress bar
+        // Update progress bar - admin gets full green bar
         const progressBar = document.getElementById('settings-usage-bar');
         if (progressBar) {
-          const percent = Math.min((postsUsed / postLimit) * 100, 100);
-          progressBar.style.width = `${percent}%`;
-          
-          // Change color if near limit
-          if (percent >= 90) {
-            progressBar.classList.remove('from-violet-500', 'to-fuchsia-500');
-            progressBar.classList.add('from-red-500', 'to-orange-500');
+          if (isAdmin) {
+            // Admin: show a nice gradient without "limit" concept
+            progressBar.style.width = '100%';
+            progressBar.classList.remove('from-red-500', 'to-orange-500');
+            progressBar.classList.add('from-purple-500', 'to-violet-500');
+          } else {
+            const percent = Math.min((postsUsed / postLimit) * 100, 100);
+            progressBar.style.width = `${percent}%`;
+            
+            // Change color if near limit
+            if (percent >= 90) {
+              progressBar.classList.remove('from-violet-500', 'to-fuchsia-500');
+              progressBar.classList.add('from-red-500', 'to-orange-500');
+            }
           }
         }
         
@@ -4138,12 +4152,12 @@ My best post:
         const premiumActive = document.getElementById('settings-premium-active');
         const upgradeToBusinessDiv = document.getElementById('settings-upgrade-to-business');
         
-        if (plan !== 'free') {
+        if (isAdmin || plan !== 'free') {
           if (upgradeOptions) upgradeOptions.classList.add('hidden');
           if (premiumActive) premiumActive.classList.remove('hidden');
           
-          // Hide "Upgrade to Business" for Business users
-          if (plan === 'business' && upgradeToBusinessDiv) {
+          // Hide "Upgrade to Business" for Business and Admin users
+          if ((plan === 'business' || isAdmin) && upgradeToBusinessDiv) {
             upgradeToBusinessDiv.classList.add('hidden');
           } else if (upgradeToBusinessDiv) {
             upgradeToBusinessDiv.classList.remove('hidden');
