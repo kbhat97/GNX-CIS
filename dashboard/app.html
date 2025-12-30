@@ -2828,7 +2828,7 @@ My best post:
           body: JSON.stringify({
             content: currentPost.content,
             user_email: currentUser?.email || '',
-            image_url: currentPost.image_url || null
+            image_url: currentPost.imageUrl || currentPost.image_url || null
           })
         });
         

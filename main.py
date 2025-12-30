@@ -745,8 +745,8 @@ POST_LIMITS = {
 }
 
 # Admin emails for unlimited access and LinkedIn publishing
-# In production, this should come from database or Secret Manager
-ADMIN_EMAILS = os.getenv("ADMIN_EMAILS", "kunalsbhatt@gmail.com").split(",")
+# CRITICAL: No default - admin access must be explicitly configured via ADMIN_EMAILS env var
+ADMIN_EMAILS = [e.strip() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
 
 class CheckoutRequest(BaseModel):
     plan: str  # "pro" or "business"
@@ -2449,10 +2449,7 @@ async def publish_post(
 # ============================================
 # POST EDITING ENDPOINTS
 # ============================================
-
-# Admin emails for LinkedIn publishing (server-side only - DO NOT expose to client)
-# In production, this should come from database or Secret Manager
-ADMIN_EMAILS = os.getenv("ADMIN_EMAILS", "kunalsbhatt@gmail.com").split(",")
+# NOTE: ADMIN_EMAILS is defined earlier in the file near POST_LIMITS
 
 class LinkedInPublishRequest(BaseModel):
     content: str
