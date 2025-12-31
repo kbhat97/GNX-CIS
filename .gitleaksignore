@@ -11,3 +11,9 @@ aea0eb7b6e2cf6a283ceb5478fab882cf3be3d45:dashboard/app.html:generic-api-key:99
 
 # False positive: Clerk publishable key in dashboard/app.html (production key - line 322)
 4eeaa1174aafe749eedbcccfebe9b76173df0fa1:dashboard/app.html:generic-api-key:322
+
+# False positive: Clerk publishable key (commit 1e2e391 - line 84)
+1e2e3912998b6fee941a7b4bec9103cdcaf94bd7:dashboard/app.html:generic-api-key:84
+
+# False positive: Clerk publishable key (commit 1e2e391 - line 89)
+1e2e3912998b6fee941a7b4bec9103cdcaf94bd7:dashboard/app.html:generic-api-key:89
