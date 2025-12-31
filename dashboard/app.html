@@ -28,217 +28,18 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- Preconnect for Clerk auth (Lighthouse recommended - saves 130-380ms LCP) -->
-  <link rel="preconnect" href="https://clerk.cis.gnxautomation.com" crossorigin>
-  <!-- Preconnect for Sentry error reporting -->
-  <link rel="preconnect" href="https://browser.sentry-cdn.com" crossorigin>
-  <link rel="preconnect" href="https://o4510477822918656.ingest.us.sentry.io" crossorigin>
   
   <!-- DNS Prefetch for API endpoints -->
-  <link rel="dns-prefetch" href="https://cis-api-666167524553.us-central1.run.app">
+  <link rel="dns-prefetch" href="https://api.cis.gnxautomation.com">
   <link rel="dns-prefetch" href="https://ijwmgwirhorksepabgpj.supabase.co">
   
   <!-- Favicon - Inline to prevent 404 -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='65' font-family='Arial' font-size='50' font-weight='bold' fill='white' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
   
-  <!-- ═══════════════════════════════════════════════════════════════════
-       SENTRY ERROR TRACKING - Lightweight base bundle (errors only)
-       Uses defer to avoid render-blocking (was causing 790ms delay)
-       Removed replay/tracing to reduce bundle from 61.7KB to ~15KB
-       ═══════════════════════════════════════════════════════════════════ -->
-  <script
-    defer
-    src="https://browser.sentry-cdn.com/8.44.0/bundle.min.js"
-    integrity="sha384-6n/7hg6zA4gByvRlXnBK6Vwvk2JdYJJi7iCssV5u+/ZeH6LvUii6cjJNOvlT3j1Y"
-    crossorigin="anonymous"
-    onload="initSentry()"
-  ></script>
+  <!-- Tailwind CSS - CDN with defer for non-blocking load -->
+  <script src="https://cdn.tailwindcss.com" defer></script>
   <script>
-    // Sentry initialization - called after deferred script loads
-    function initSentry() {
-      if (!window.Sentry) {
-        console.warn('[Sentry] SDK not available');
-        return;
-      }
-      
-      Sentry.init({
-        dsn: "https://ea2facc11fdca5c6cd2abe7cf65b6b9a@o4510477822918656.ingest.us.sentry.io/4510477840613376",
-        environment: window.location.hostname === 'localhost' ? 'development' : 'production',
-        // Only send 10% of errors in production to avoid quota issues
-        sampleRate: window.location.hostname === 'localhost' ? 1.0 : 0.1,
-        // Ignore common non-critical errors
-        ignoreErrors: [
-          'ResizeObserver loop',
-          'Non-Error promise rejection',
-          'Network request failed',
-          /Loading chunk .* failed/,
-        ],
-        // Add context to errors - use anonymized ID instead of raw email (PII)
-        beforeSend(event) {
-          if (window.currentUser?.email) {
-            // Use a simple hash of email for user identification without exposing PII
-            const emailHash = window.currentUser.email.split('').reduce((hash, char) => {
-              return ((hash << 5) - hash) + char.charCodeAt(0);
-            }, 0).toString(16);
-            event.user = { 
-              id: emailHash,
-              // Only include email in development for easier debugging
-              ...(window.location.hostname === 'localhost' ? { email: window.currentUser.email } : {})
-            };
-          }
-          return event;
-        }
-      });
-      
-      window.__SENTRY_INITIALIZED = true;
-      console.log('[Sentry] Error tracking initialized (lightweight bundle)');
-    }
-    
-    // Fallback: If Sentry loads before this script runs (unlikely with defer)
-    if (window.Sentry && !window.__SENTRY_INITIALIZED) {
-      initSentry();
-      window.__SENTRY_INITIALIZED = true;
-    }
-  </script>
-  
-  <!-- ═══════════════════════════════════════════════════════════════════
-       GLOBAL ERROR BOUNDARY - Prevents blank screens on JS errors
-       Shows user-friendly message and allows recovery
-       ═══════════════════════════════════════════════════════════════════ -->
-  <script>
-    // Track if critical error has occurred
-    window.__APP_HAS_CRITICAL_ERROR = false;
-    window.__APP_ERROR_COUNT = 0;
-    
-    // Show error UI to user
-    function showErrorUI(error, source) {
-      window.__APP_HAS_CRITICAL_ERROR = true;
-      window.__APP_ERROR_COUNT++;
-      
-      // Only show UI for first error (avoid spamming)
-      if (window.__APP_ERROR_COUNT > 1) return;
-      
-      // Create error overlay
-      const overlay = document.createElement('div');
-      overlay.id = 'error-overlay';
-      overlay.style.cssText = `
-        position: fixed;
-        inset: 0;
-        background: rgba(10, 10, 26, 0.95);
-        z-index: 99999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      `;
-      
-      const isAuthError = String(error).toLowerCase().includes('clerk') || 
-                          String(error).toLowerCase().includes('auth') ||
-                          String(source || '').includes('clerk');
-      
-      const isNetworkError = String(error).toLowerCase().includes('failed to fetch') ||
-                             String(error).toLowerCase().includes('network');
-      
-      let title = '⚠️ Something Went Wrong';
-      let message = 'An unexpected error occurred. Please try refreshing the page.';
-      let suggestion = '';
-      
-      if (isAuthError) {
-        title = '🔐 Authentication Error';
-        message = 'There was a problem with the login system.';
-        suggestion = 'This is often caused by an ad blocker. Please disable it for this site and refresh.';
-      } else if (isNetworkError) {
-        title = '🌐 Connection Error';
-        message = 'Unable to connect to our servers.';
-        suggestion = 'Please check your internet connection or try disabling your ad blocker.';
-      }
-      
-      // XSS Prevention: Use static HTML shell and assign dynamic content via textContent
-      // This prevents any HTML/script injection from error messages (Sentry best practice)
-      overlay.innerHTML = `
-        <div style="max-width: 450px; text-align: center; font-family: system-ui, sans-serif;">
-          <h1 id="error-title" style="font-size: 28px; color: white; margin-bottom: 16px;"></h1>
-          <p id="error-message" style="color: #9ca3af; margin-bottom: 12px; line-height: 1.6;"></p>
-          <p id="error-suggestion" style="color: #facc15; font-size: 14px; margin-bottom: 20px; padding: 12px; background: rgba(250, 204, 21, 0.1); border-radius: 8px; display: none;"></p>
-          <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-            <button onclick="location.reload()" style="padding: 12px 24px; background: linear-gradient(to right, #0ea5e9, #3b82f6); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-              🔄 Refresh Page
-            </button>
-            <button onclick="document.getElementById('error-overlay').remove(); window.__APP_ERROR_COUNT = 0;" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer;">
-              ✖️ Dismiss
-            </button>
-          </div>
-          <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">
-            Error details logged for our team to investigate.
-          </p>
-        </div>
-      `;
-      
-      // Safely assign dynamic content via textContent (XSS-safe)
-      overlay.querySelector('#error-title').textContent = title;
-      overlay.querySelector('#error-message').textContent = message;
-      if (suggestion) {
-        const suggestionEl = overlay.querySelector('#error-suggestion');
-        suggestionEl.textContent = suggestion;
-        suggestionEl.style.display = 'block';
-      }
-      
-      document.body.appendChild(overlay);
-    }
-    
-    // Global error handler
-    window.onerror = function(message, source, lineno, colno, error) {
-      console.error('[GlobalError]', message, 'at', source, lineno);
-      
-      // Report to Sentry
-      if (window.Sentry && error) {
-        Sentry.captureException(error, {
-          extra: { source, lineno, colno }
-        });
-      }
-      
-      // Determine if this is a critical error that should show UI
-      const isCritical = 
-        String(message).includes('undefined is not') ||
-        String(message).includes('is not a function') ||
-        String(message).includes('Cannot read property') ||
-        String(message).includes('SyntaxError') ||
-        String(source || '').includes('clerk') ||
-        String(source || '').includes('supabase');
-      
-      if (isCritical) {
-        showErrorUI(message, source);
-      }
-      
-      return false; // Don't suppress the error in console
-    };
-    
-    // Unhandled promise rejection handler
-    window.onunhandledrejection = function(event) {
-      const error = event.reason;
-      console.error('[UnhandledRejection]', error);
-      
-      // Report to Sentry
-      if (window.Sentry) {
-        Sentry.captureException(error || new Error('Unhandled rejection'));
-      }
-      
-      // Check if this is a critical auth/network error
-      const errorMsg = String(error?.message || error || '');
-      if (errorMsg.includes('Failed to fetch') || 
-          errorMsg.includes('Clerk') || 
-          errorMsg.includes('Authentication')) {
-        showErrorUI(errorMsg, 'promise');
-      }
-    };
-    
-    console.log('[ErrorBoundary] Global error handling initialized');
-  </script>
-  
-  <!-- Tailwind CSS - Async loading with fallback detection -->
-  <script>
-    // Store Tailwind config - will be applied in onload handler
-    window.tailwindConfig = {
+    tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
@@ -246,45 +47,11 @@
           },
         }
       }
-    };
-    
-    // Track Tailwind loading state
-    window.__TAILWIND_LOADED = false;
+    }
   </script>
-  <script 
-    async 
-    src="https://cdn.tailwindcss.com" 
-    onload="window.__TAILWIND_LOADED=true; if(window.tailwind){tailwind.config=window.tailwindConfig;} console.log('[Tailwind] Loaded successfully');"
-    onerror="window.__TAILWIND_LOAD_ERROR=true; console.error('[Tailwind] CDN blocked - likely ad blocker');"
-  ></script>
   
-  <!-- Tailwind CDN Fallback Warning (shown if blocked) -->
-  <script>
-    // Check if Tailwind loaded after a delay
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        if (!window.__TAILWIND_LOADED && !window.tailwind) {
-          console.warn('[Tailwind] CSS not loaded - showing fallback warning');
-          
-          // Create ad blocker warning banner
-          var banner = document.createElement('div');
-          banner.id = 'cdn-blocked-banner';
-          banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(to right,#f59e0b,#ef4444);padding:12px 20px;text-align:center;font-family:system-ui,sans-serif;';
-          banner.innerHTML = '<span style="color:white;font-weight:600;">⚠️ Ad blocker detected - styles may be broken. </span>' +
-            '<a href="javascript:void(0)" onclick="location.reload()" style="color:white;text-decoration:underline;margin-left:8px;">Refresh</a>' +
-            '<span style="color:white;margin-left:8px;">or disable your ad blocker for this site.</span>' +
-            '<button onclick="this.parentElement.remove()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:white;font-size:20px;cursor:pointer;">×</button>';
-          
-          document.body.insertBefore(banner, document.body.firstChild);
-          
-          // Report to Sentry
-          if (window.Sentry) {
-            Sentry.captureMessage('Tailwind CDN blocked - likely ad blocker', 'warning');
-          }
-        }
-      }, 3000); // Check after 3 seconds
-    });
-  </script>
+  <!-- Custom CSS enhancement (optional, may not load in production) -->
+  <link href="/dist/output.css" rel="stylesheet" onerror="console.log('Using CDN Tailwind - local CSS not available')">
   
   <!-- Console Log Filter: Suppress known CDN/SDK warnings in production -->
   <script>
@@ -299,39 +66,7 @@
       };
     })();
   </script>
-  <!-- Supabase SDK - Lazy-load with error handling -->
-  <script>
-    // Track Supabase loading state
-    window.__SUPABASE_READY = false;
-    window.__SUPABASE_LOAD_ERROR = null;
-    
-    window.addEventListener('DOMContentLoaded', function() {
-      var supabaseScript = document.createElement('script');
-      // Pin to specific version to prevent breaking changes
-      supabaseScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.2/dist/umd/supabase.min.js';
-      supabaseScript.async = true;
-      
-      supabaseScript.onload = function() {
-        window.__SUPABASE_READY = true;
-        console.log('[Supabase] SDK loaded successfully');
-        window.dispatchEvent(new CustomEvent('supabase-ready'));
-      };
-      
-      supabaseScript.onerror = function(e) {
-        window.__SUPABASE_LOAD_ERROR = 'Failed to load Supabase SDK';
-        console.error('[Supabase] Failed to load SDK:', e);
-        
-        // Report to Sentry
-        if (window.Sentry) {
-          Sentry.captureMessage('Supabase SDK failed to load', 'error');
-        }
-        
-        window.dispatchEvent(new CustomEvent('supabase-error'));
-      };
-      
-      document.head.appendChild(supabaseScript);
-    });
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   
   <!-- 
     TODO PRODUCTION: Replace Clerk test keys with production keys
@@ -349,133 +84,18 @@
     window.__clerk_publishable_key = 'pk_live_Y2xlcmsuY2lzLmdueGF1dG9tYXRpb24uY29tJA';
   </script>
   
-  <!-- Clerk.js SDK - Deferred loading with ready state tracking -->
-  <script>
-    // Track Clerk loading state globally
-    window.__CLERK_READY = false;
-    window.__CLERK_LOAD_ERROR = null;
-    
-    // Lazy-load Clerk after initial paint to reduce Total Blocking Time
-    window.addEventListener('DOMContentLoaded', function() {
-      var clerkScript = document.createElement('script');
-      clerkScript.src = 'https://unpkg.com/@clerk/clerk-js@5.35.0/dist/clerk.browser.js';
-      clerkScript.setAttribute('data-clerk-publishable-key', 'pk_live_Y2xlcmsuY2lzLmdueGF1dG9tYXRpb24uY29tJA');
-      clerkScript.crossOrigin = 'anonymous';
-      clerkScript.async = true;
-      
-      // Track successful load
-      clerkScript.onload = function() {
-        console.log('[Clerk] Script loaded successfully');
-        // Clerk takes a moment to initialize after script loads
-        var checkClerk = setInterval(function() {
-          if (window.Clerk) {
-            clearInterval(checkClerk);
-            window.__CLERK_READY = true;
-            window.dispatchEvent(new CustomEvent('clerk-ready'));
-            console.log('[Clerk] Ready for authentication');
-            
-            // Enable auth buttons
-            var authButtons = document.querySelectorAll('[data-requires-clerk]');
-            authButtons.forEach(function(btn) {
-              btn.disabled = false;
-              btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            });
-            
-            // Hide loading indicator if shown
-            var loadingIndicator = document.getElementById('clerk-loading-indicator');
-            if (loadingIndicator) loadingIndicator.classList.add('hidden');
-          }
-        }, 100);
-        
-        // Timeout after 10 seconds
-        setTimeout(function() {
-          if (!window.__CLERK_READY) {
-            clearInterval(checkClerk);
-            window.__CLERK_LOAD_ERROR = 'Clerk initialization timeout';
-            console.error('[Clerk] Failed to initialize within 10 seconds');
-            window.dispatchEvent(new CustomEvent('clerk-error', { detail: 'timeout' }));
-          }
-        }, 10000);
-      };
-      
-      // Track load failure
-      clerkScript.onerror = function(e) {
-        console.error('[Clerk] Failed to load script:', e);
-        window.__CLERK_LOAD_ERROR = 'Failed to load authentication';
-        window.dispatchEvent(new CustomEvent('clerk-error', { detail: 'load_failed' }));
-        
-        // Show user-friendly message
-        var loadingIndicator = document.getElementById('clerk-loading-indicator');
-        if (loadingIndicator) {
-          loadingIndicator.innerHTML = '<span class="text-yellow-400">⚠️ Auth loading slowly. <a href="javascript:location.reload()" class="underline">Refresh</a> or disable ad blocker.</span>';
-        }
-      };
-      
-      document.head.appendChild(clerkScript);
-    });
+  <!-- Clerk.js SDK for Production Authentication -->
+  <script 
+    data-clerk-publishable-key="pk_live_Y2xlcmsuY2lzLmdueGF1dG9tYXRpb24uY29tJA"
+    src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
+    crossorigin="anonymous"
+    async>
   </script>
   
   <!-- Fonts - Using preload to prevent render blocking -->
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
   <style>
-    /* ═══════════════════════════════════════════════════════════════════
-       CRITICAL CSS - Inline styles for above-the-fold content
-       Prevents FOUC (Flash of Unstyled Content) while Tailwind loads async
-       ═══════════════════════════════════════════════════════════════════ */
-    
-    /* CLS PREVENTION - Reserve space for dynamic content */
-    #login-page > section:first-child {
-      min-height: 100vh;
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-      text-align: center;
-    }
-    
-    /* Main content containers - stable dimensions */
-    .max-w-4xl.mx-auto,
-    .max-w-5xl.mx-auto,
-    .max-w-3xl.mx-auto {
-      contain: layout style;
-      width: 100%;
-      max-width: 56rem;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    
-    /* Critical Tailwind utilities for hero (fallback while Tailwind loads) */
-    .flex { display: flex; }
-    .flex-col { flex-direction: column; }
-    .items-center { align-items: center; }
-    .justify-center { justify-content: center; }
-    .text-center { text-align: center; }
-    .text-white { color: white; }
-    .font-bold { font-weight: 700; }
-    .font-black { font-weight: 900; }
-    .mb-6 { margin-bottom: 1.5rem; }
-    .mb-4 { margin-bottom: 1rem; }
-    .mb-8 { margin-bottom: 2rem; }
-    .gap-2 { gap: 0.5rem; }
-    .rounded-xl { border-radius: 0.75rem; }
-    .rounded-lg { border-radius: 0.5rem; }
-    .px-8 { padding-left: 2rem; padding-right: 2rem; }
-    .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
-    .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
-    .text-5xl { font-size: 3rem; line-height: 1; }
-    .inline-flex { display: inline-flex; }
-    .hidden { display: none !important; }
-    
-    /* Hero text - prevent font-swap CLS */
-    h1, h2, h3 {
-      font-display: swap;
-      line-height: 1.2;
-    }
-    
     /* ═══════════════════════════════════════════════════════════════════
        ANIMATIONS
        ═══════════════════════════════════════════════════════════════════ */
@@ -535,7 +155,7 @@
       font-family: 'Inter', system-ui, sans-serif;
       background-size: cover;
       background-attachment: fixed;
-      /* Removed animation to fix CLS - static gradient looks better anyway */
+      animation: gradient-animation 30s ease infinite;
       min-height: 100vh;
     }
 
@@ -552,7 +172,7 @@
       background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      /* Animation removed to fix CLS - static gradient still looks great */
+      animation: text-gradient-animation 4s linear infinite;
     }
 
     .glass-card {
@@ -698,7 +318,7 @@
   </style>
 </head>
 <body class="antialiased">
-  <main id="main-content">
+
   <!-- ═══════════════════════════════════════════════════════════════════
        LANDING PAGE - Full Marketing + Login
        ═══════════════════════════════════════════════════════════════════ -->
@@ -710,11 +330,7 @@
     <section class="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center">
       <div class="max-w-4xl mx-auto">
         <div class="flex items-center justify-center gap-2 mb-6">
-          <svg width="40" height="40" viewBox="0 0 100 100" class="w-10 h-10 rounded-lg" aria-label="GNX Logo">
-            <defs><linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
-            <rect width="100" height="100" rx="20" fill="url(#logo-grad)"/>
-            <text x="50" y="65" font-family="Arial" font-size="50" font-weight="bold" fill="white" text-anchor="middle">G</text>
-          </svg>
+          <img src="/gnx-logo.jpg" alt="GNX Logo" class="w-10 h-10 rounded-lg object-cover" onerror="this.onerror=null; this.src='./gnx-logo.jpg';">
           <span class="text-lg font-bold text-cyan-400">GNX Content Intelligence System</span>
         </div>
         
@@ -1044,18 +660,7 @@
       <div class="max-w-md mx-auto">
         <div class="glass-card rounded-2xl p-6 md:p-8 shadow-2xl">
           <h2 class="text-3xl font-bold text-center text-white mb-2">Get Started Free</h2>
-          <p class="text-center text-gray-400 mb-6">No credit card required</p>
-          
-          <!-- Clerk Loading Indicator -->
-          <div id="clerk-loading-indicator" class="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
-            <span class="text-blue-400 text-sm flex items-center justify-center gap-2">
-              <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Loading secure login...
-            </span>
-          </div>
+          <p class="text-center text-gray-400 mb-8">No credit card required</p>
           
           <form id="login-form" onsubmit="handleLogin(event)">
             <div class="space-y-6">
@@ -1088,7 +693,7 @@
               </button>
             </div>
 
-            <button type="submit" id="login-btn" data-requires-clerk class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            <button type="submit" id="login-btn" class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
               <span id="login-btn-text">Sign In</span>
               <svg id="login-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1119,7 +724,7 @@
               Error creating account.
             </div>
 
-            <button type="submit" id="signup-btn" data-requires-clerk class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            <button type="submit" id="signup-btn" class="w-full mt-8 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
               <span id="signup-btn-text">Start Free - No Credit Card</span>
               <svg id="signup-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1200,7 +805,7 @@
       <!-- Header -->
       <div class="text-center mb-10">
         <div class="flex items-center justify-center gap-3 mb-4">
-          <img src="/gnx-logo.jpg" alt="GNX Logo" width="40" height="40" class="w-10 h-10 rounded-lg object-cover" onerror="this.onerror=null; this.src='./gnx-logo.jpg';">
+          <img src="/gnx-logo.jpg" alt="GNX Logo" class="w-10 h-10 rounded-lg object-cover" onerror="this.onerror=null; this.src='./gnx-logo.jpg';">
           <span class="text-lg font-semibold text-cyan-400">GNX CIS</span>
         </div>
         <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">Let's Personalize Your Experience</h1>
@@ -2125,10 +1730,11 @@ My best post:
       console.info('%c🔧 GNX CIS DEBUG MODE', 'color: #fbbf24; font-weight: bold');
     }
     
-    // API Configuration - defaults to localhost for dev, Cloud Run API for production
+    // API Configuration - defaults to localhost for dev, custom domain for production
+    // Using custom domain prevents ad blockers from blocking API requests
     const API_BASE = RUNTIME_CONFIG.API_BASE || 
                      (window.location.hostname === 'localhost' ? 'http://localhost:8000' : 
-                      'https://cis-api-666167524553.us-central1.run.app');
+                      'https://api.cis.gnxautomation.com');
     
     // ═══════════════════════════════════════════════════════════════════
     // CLERK AUTHENTICATION - PRODUCTION AUTH
@@ -2160,12 +1766,12 @@ My best post:
           const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
           
           if (clerkInstance.user && !isLocalhost) {
-            setCurrentUser({
+            currentUser = {
               email: clerkInstance.user.emailAddresses[0]?.emailAddress,
               name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
               clerk_id: clerkInstance.user.id,
               image_url: clerkInstance.user.imageUrl
-            });
+            };
             logger.log('[Auth] User already signed in (production auto-login):', currentUser.email);
             showDashboard();
           } else if (isLocalhost && clerkInstance.user) {
@@ -2184,12 +1790,12 @@ My best post:
     // Continue to dashboard for existing session (localhost)
     function continueToExistingSession() {
       if (clerkInstance && clerkInstance.user) {
-        setCurrentUser({
+        currentUser = {
           email: clerkInstance.user.emailAddresses[0]?.emailAddress,
           name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
           clerk_id: clerkInstance.user.id,
           image_url: clerkInstance.user.imageUrl
-        });
+        };
         logger.log('[Auth] Continuing with existing session:', currentUser.email);
         showDashboard();
       }
@@ -2201,12 +1807,6 @@ My best post:
     let currentPost = null;
     let selectedPostIndex = null;
     let improvingPost = null;  // Track post being improved (for hybrid history pattern)
-    
-    // Helper to set currentUser and keep window.currentUser in sync for Sentry
-    function setCurrentUser(user) {
-      currentUser = user;
-      window.currentUser = user;  // Keep synced for Sentry beforeSend()
-    }
     
     // Admin Persona Configuration
     // NOTE: Admin status is determined by server response (user.role = 'admin')
@@ -2556,26 +2156,14 @@ My best post:
     let supabaseClient = null;
     let supabaseEnabled = false;
 
-    // Initialize Supabase client after the SDK has actually loaded
-    function initSupabaseClient() {
-      try {
-        if (!window.supabase) {
-          throw new Error('Supabase SDK not loaded');
-        }
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        supabaseEnabled = true;
-        logger.log('[OK] Supabase connected');
-      } catch (error) {
-        logger.warn('[WARN] Supabase not available:', error);
-        supabaseEnabled = false;
-      }
-    }
-
-    // Hook into the lazy-loaded SDK lifecycle
-    window.addEventListener('supabase-ready', initSupabaseClient);
-    // In case the SDK loaded before this script ran
-    if (window.__SUPABASE_READY && window.supabase) {
-      initSupabaseClient();
+    // Initialize Supabase client
+    try {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      supabaseEnabled = true;
+      logger.log('[OK] Supabase connected');
+    } catch (error) {
+      logger.warn('[WARN] Supabase not available:', error);
+      supabaseEnabled = false;
     }
 
     // Save post to Supabase
@@ -2665,21 +2253,15 @@ My best post:
 
         // Transform to dashboard format
         const transformedPosts = loadedPosts.map(p => {
-          // Normalize image URL:
-          // 1) Fix legacy localhost port.
-          // 2) Absolute http(s) URLs (Supabase/CDN) are used as-is.
-          // 3) Everything else is treated as a relative path from API_BASE.
+          // Fix image URL: prepend API_BASE if it's a relative path
+          // Also fix old URLs that have wrong port (8080 instead of 8000)
           let imageUrl = p.image_url;
           if (imageUrl) {
-            if (imageUrl.includes('localhost:8080')) {
-              imageUrl = imageUrl.replace('localhost:8080', 'localhost:8000');
-            }
-
-            if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-              if (!imageUrl.startsWith('/')) {
-                imageUrl = '/' + imageUrl;
-              }
+            if (imageUrl.startsWith('/')) {
               imageUrl = API_BASE + imageUrl;
+            } else if (imageUrl.includes('localhost:8080')) {
+              // Fix old URLs with wrong port
+              imageUrl = imageUrl.replace('localhost:8080', 'localhost:8000');
             }
           }
           
@@ -2758,12 +2340,12 @@ My best post:
           
           // Get user data
           const user = clerkInstance.user;
-          setCurrentUser({
+          currentUser = {
             email: user.emailAddresses[0]?.emailAddress || email,
             name: user.firstName || email.split('@')[0],
             clerk_id: user.id,
             image_url: user.imageUrl
-          });
+          };
           
           logger.log('[Auth] Login successful:', currentUser.email);
           showDashboard();
@@ -2936,13 +2518,13 @@ My best post:
           await clerkInstance.setActive({ session: signUpAttempt.createdSessionId });
           
           const user = clerkInstance.user;
-          setCurrentUser({
+          currentUser = {
             email: user.emailAddresses[0]?.emailAddress || email,
             name: user.firstName || firstName || email.split('@')[0],
             clerk_id: user.id,
             image_url: user.imageUrl,
             isFirstTimeUser: true
-          });
+          };
           
           logger.log('[Auth] Signup successful:', currentUser.email);
           showDashboard();
@@ -3037,13 +2619,13 @@ My best post:
           await clerkInstance.setActive({ session: completeSignUp.createdSessionId });
           
           const user = clerkInstance.user;
-          setCurrentUser({
+          currentUser = {
             email: user.emailAddresses[0]?.emailAddress || window.pendingEmail,
             name: user.firstName || window.pendingEmail?.split('@')[0],
             clerk_id: user.id,
             image_url: user.imageUrl,
             isFirstTimeUser: true
-          });
+          };
           
           logger.log('[Auth] Email verified! User signed in:', currentUser.email);
           
@@ -3103,7 +2685,7 @@ My best post:
         logger.error('[Auth] Logout error:', err);
       }
       
-      setCurrentUser(null);
+      currentUser = null;
       posts = [];
       currentPost = null;
       document.getElementById('dashboard-page').classList.add('hidden');
@@ -3246,7 +2828,7 @@ My best post:
           body: JSON.stringify({
             content: currentPost.content,
             user_email: currentUser?.email || '',
-            image_url: currentPost.imageUrl || null  // Note: API expects snake_case
+            image_url: currentPost.imageUrl || currentPost.image_url || null
           })
         });
         
@@ -4127,7 +3709,7 @@ My best post:
           limitEl.textContent = isAdmin ? '∞' : postLimit;
         }
         
-        // Update progress bar - admin gets full green bar
+        // Update progress bar - admin gets full purple bar
         const progressBar = document.getElementById('settings-usage-bar');
         if (progressBar) {
           if (isAdmin) {
@@ -4204,14 +3786,7 @@ My best post:
         }
       } catch (error) {
         logger.error('[SYNC] Error:', error);
-        // Detect ad blocker
-        const isBlocked = error.name === 'TypeError' && error.message.includes('Failed to fetch');
-        if (isBlocked) {
-          showNotification('🛡️ Sync blocked by ad blocker. Please disable it and refresh.', 'error');
-          showBlockedWarning();
-        } else {
-          showNotification('Sync failed: ' + error.message, 'error');
-        }
+        showNotification('Sync failed: ' + error.message, 'error');
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -4322,152 +3897,40 @@ My best post:
         const response = await fetch(`${API_BASE}/health`);
         if (response.ok) {
           statusEl.textContent = 'Online';
-          statusEl.classList.remove('text-red-400', 'text-yellow-400');
+          statusEl.classList.remove('text-red-400');
           statusEl.classList.add('text-green-400');
           barEl.style.width = '100%';
           barEl.className = 'bg-gradient-to-r from-green-500 to-emerald-500 h-2.5 rounded-full transition-all duration-500';
           
           // Update icon
           if (iconEl) {
-            iconEl.classList.remove('bg-gray-500/20', 'bg-red-500/20', 'bg-yellow-500/20');
+            iconEl.classList.remove('bg-gray-500/20', 'bg-red-500/20');
             iconEl.classList.add('bg-green-500/20');
             const svg = iconEl.querySelector('svg');
             if (svg) {
-              svg.classList.remove('text-gray-400', 'text-red-400', 'text-yellow-400');
+              svg.classList.remove('text-gray-400', 'text-red-400');
               svg.classList.add('text-green-400');
             }
           }
-          
-          // Hide any blocked warning
-          const blockedWarning = document.getElementById('api-blocked-warning');
-          if (blockedWarning) blockedWarning.classList.add('hidden');
         } else {
           throw new Error('API unavailable');
         }
       } catch (e) {
-        // Detect the cause of the error with layered checks
-        const isFetchError = e.name === 'TypeError' && e.message.includes('Failed to fetch');
-        const isOffline = !navigator.onLine;
+        statusEl.textContent = 'Offline';
+        statusEl.classList.remove('text-green-400');
+        statusEl.classList.add('text-red-400');
+        barEl.style.width = '0%';
         
-        // Determine error type
-        let errorType = 'offline'; // default
-        if (isFetchError && !isOffline) {
-          // Online but fetch failed - likely ad blocker or CORS
-          errorType = 'blocked';
-        } else if (isOffline) {
-          // Browser reports offline
-          errorType = 'offline';
-        }
-        
-        if (errorType === 'blocked') {
-          // Likely ad blocker (online but fetch failed)
-          statusEl.textContent = 'Blocked';
-          statusEl.classList.remove('text-green-400', 'text-red-400');
-          statusEl.classList.add('text-yellow-400');
-          barEl.style.width = '50%';
-          barEl.className = 'bg-gradient-to-r from-yellow-500 to-orange-500 h-2.5 rounded-full transition-all duration-500';
-          
-          // Update icon
-          if (iconEl) {
-            iconEl.classList.remove('bg-gray-500/20', 'bg-green-500/20', 'bg-red-500/20');
-            iconEl.classList.add('bg-yellow-500/20');
-            const svg = iconEl.querySelector('svg');
-            if (svg) {
-              svg.classList.remove('text-gray-400', 'text-green-400', 'text-red-400');
-              svg.classList.add('text-yellow-400');
-            }
-          }
-          
-          // Show ad blocker warning
-          showBlockedWarning();
-          logger.warn('[API] Request blocked by browser extension (ad blocker)');
-        } else {
-          // Genuine network error or API offline
-          statusEl.textContent = isOffline ? 'No Internet' : 'Offline';
-          statusEl.classList.remove('text-green-400', 'text-yellow-400');
-          statusEl.classList.add('text-red-400');
-          barEl.style.width = '0%';
-          
-          // Update icon
-          if (iconEl) {
-            iconEl.classList.remove('bg-gray-500/20', 'bg-green-500/20', 'bg-yellow-500/20');
-            iconEl.classList.add('bg-red-500/20');
-            const svg = iconEl.querySelector('svg');
-            if (svg) {
-              svg.classList.remove('text-gray-400', 'text-green-400', 'text-yellow-400');
-              svg.classList.add('text-red-400');
-            }
-          }
-          
-          // Show appropriate warning
-          if (isOffline) {
-            showNetworkWarning();
+        // Update icon
+        if (iconEl) {
+          iconEl.classList.remove('bg-gray-500/20', 'bg-green-500/20');
+          iconEl.classList.add('bg-red-500/20');
+          const svg = iconEl.querySelector('svg');
+          if (svg) {
+            svg.classList.remove('text-gray-400', 'text-green-400');
+            svg.classList.add('text-red-400');
           }
         }
-      }
-    }
-    
-    // Show warning about ad blocker blocking API requests
-    function showBlockedWarning() {
-      let warning = document.getElementById('api-blocked-warning');
-      if (!warning) {
-        warning = document.createElement('div');
-        warning.id = 'api-blocked-warning';
-        warning.className = 'fixed bottom-4 right-4 max-w-md p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl backdrop-blur-sm z-50 animate-fade-in-up';
-        warning.innerHTML = `
-          <div class="flex items-start gap-3">
-            <div class="text-2xl">🛡️</div>
-            <div class="flex-1">
-              <h4 class="font-semibold text-yellow-400 mb-1">Ad Blocker Detected</h4>
-              <p class="text-sm text-gray-300 mb-2">
-                Your browser extension is blocking API requests. The API is online but your browser is preventing connections.
-              </p>
-              <p class="text-xs text-gray-400 mb-3">
-                <strong>To fix:</strong> Disable ad blockers (uBlock Origin, Brave Shields, Privacy Badger) or whitelist this site.
-              </p>
-              <button onclick="this.closest('#api-blocked-warning').remove()" class="text-xs text-yellow-400 hover:text-yellow-300 underline">
-                Dismiss
-              </button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(warning);
-      }
-    }
-    
-    // Show warning about network connectivity issues
-    function showNetworkWarning() {
-      let warning = document.getElementById('api-network-warning');
-      if (!warning) {
-        warning = document.createElement('div');
-        warning.id = 'api-network-warning';
-        warning.className = 'fixed bottom-4 right-4 max-w-md p-4 bg-red-500/10 border border-red-500/30 rounded-xl backdrop-blur-sm z-50 animate-fade-in-up';
-        warning.innerHTML = `
-          <div class="flex items-start gap-3">
-            <div class="text-2xl">🌐</div>
-            <div class="flex-1">
-              <h4 class="font-semibold text-red-400 mb-1">No Internet Connection</h4>
-              <p class="text-sm text-gray-300 mb-2">
-                Please check your internet connection and try again.
-              </p>
-              <button onclick="location.reload()" class="text-xs text-red-400 hover:text-red-300 underline mr-3">
-                Retry
-              </button>
-              <button onclick="this.closest('#api-network-warning').remove()" class="text-xs text-gray-400 hover:text-gray-300 underline">
-                Dismiss
-              </button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(warning);
-        
-        // Auto-remove when back online
-        window.addEventListener('online', function onOnline() {
-          const w = document.getElementById('api-network-warning');
-          if (w) w.remove();
-          window.removeEventListener('online', onOnline);
-          checkApiStatus(); // Re-check API status
-        }, { once: true });
       }
     }
 
@@ -4576,12 +4039,7 @@ My best post:
             
             // Use API-generated branded image if available
             if (data.image_url) {
-              // Check if it's already a full URL (Supabase Storage) or relative path
-              if (data.image_url.startsWith('http://') || data.image_url.startsWith('https://')) {
-                data.imageUrl = data.image_url;  // Already a permanent URL (Supabase)
-              } else {
-                data.imageUrl = API_BASE + data.image_url;  // Relative path needs API_BASE
-              }
+              data.imageUrl = API_BASE + data.image_url;
             } else {
               data.imageUrl = postImages[posts.length % postImages.length];
             }
@@ -4818,15 +4276,7 @@ My best post:
         
         if (response.ok) {
           const result = await response.json();
-          if (!result.image_url) {
-            throw new Error('No image URL returned from server');
-          }
-          // Check if it's already a full URL (Supabase Storage) or relative path
-          if (result.image_url.startsWith('http://') || result.image_url.startsWith('https://')) {
-            currentPost.imageUrl = result.image_url;  // Already a permanent URL
-          } else {
-            currentPost.imageUrl = API_BASE + result.image_url;  // Relative path
-          }
+          currentPost.imageUrl = API_BASE + result.image_url;
           currentPost.imageDeferred = false;
           
           imageContainer.innerHTML = `
@@ -4847,30 +4297,22 @@ My best post:
           const error = await response.json();
           imageContainer.innerHTML = `
             <div class="mt-4 p-4 glass-card rounded-lg text-center">
-              <p id="deferred-image-error-text" class="text-red-400 mb-3"></p>
+              <p class="text-red-400 mb-3">Failed to generate image: ${error.detail || 'Unknown error'}</p>
               <button onclick="generateDeferredImage()" class="px-4 py-2 bg-violet-600 text-white rounded-lg">
                 Retry
               </button>
             </div>
           `;
-          const msgEl = document.getElementById('deferred-image-error-text');
-          if (msgEl) {
-            msgEl.textContent = `Failed to generate image: ${error.detail || 'Unknown error'}`;
-          }
         }
       } catch (error) {
         imageContainer.innerHTML = `
           <div class="mt-4 p-4 glass-card rounded-lg text-center">
-            <p id="deferred-image-catch-error-text" class="text-red-400 mb-3"></p>
+            <p class="text-red-400 mb-3">Error: ${error.message}</p>
             <button onclick="generateDeferredImage()" class="px-4 py-2 bg-violet-600 text-white rounded-lg">
               Retry
             </button>
           </div>
         `;
-        const msgEl = document.getElementById('deferred-image-catch-error-text');
-        if (msgEl) {
-          msgEl.textContent = `Error: ${error.message}`;
-        }
       }
     }
 
@@ -5380,12 +4822,6 @@ My best post:
     async function viewPostHistory(postId) {
       if (!postId) return;
       
-      // Guard: Supabase must be available (lazy-load may fail due to ad blocker or network)
-      if (!supabaseEnabled || !supabaseClient) {
-        alert('History feature is unavailable - database connection not available.');
-        return;
-      }
-      
       try {
         // Fetch history from Supabase RPC
         const { data: history, error } = await supabaseClient.rpc('get_post_history', { 
@@ -5803,6 +5239,5 @@ My best post:
     initializeClerk();
   </script>
 
-  </main>
 </body>
 </html>

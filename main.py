@@ -83,8 +83,8 @@ CLERK_JWKS_URL = os.getenv(
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://cis-api-666167524553.us-central1.run.app")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://cis-frontend-666167524553.us-central1.run.app")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.cis.gnxautomation.com")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://cis.gnxautomation.com")
 
 ALLOWED_ORIGINS = [
     origin.strip() for origin in 
@@ -94,11 +94,12 @@ ALLOWED_ORIGINS = [
     "http://localhost:8501",
     "http://localhost:3000",
     "http://localhost:8080",
-    # Production Cloud Run URLs
+    # Production Cloud Run URLs (fallback)
     "https://cis-frontend-666167524553.us-central1.run.app",
     "https://gnx-cis-666167524553.us-central1.run.app",
-    # Production custom domain
+    # Production custom domains
     "https://cis.gnxautomation.com",
+    "https://api.cis.gnxautomation.com",
     "https://gnxautomation.com",
 ]
 
@@ -744,8 +745,8 @@ POST_LIMITS = {
 }
 
 # Admin emails for unlimited access and LinkedIn publishing
-# In production, this should come from database or Secret Manager
-ADMIN_EMAILS = os.getenv("ADMIN_EMAILS", "kunalsbhatt@gmail.com").split(",")
+# CRITICAL: No default - admin access must be explicitly configured via ADMIN_EMAILS env var
+ADMIN_EMAILS = [e.strip() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
 
 class CheckoutRequest(BaseModel):
     plan: str  # "pro" or "business"
