@@ -1319,12 +1319,30 @@ My best post:
                   </div>
                 </div>
 
-                <!-- Image Generation Toggle -->
-                <div class="mt-4">
-                  <label for="generate-image-toggle" class="flex items-center gap-2 cursor-pointer" style="white-space: nowrap;">
-                    <input type="checkbox" id="generate-image-toggle" class="rounded border-gray-600 bg-gray-800 text-violet-500 focus:ring-violet-500 cursor-pointer" style="width: 16px; height: 16px; flex-shrink: 0;">
+                <!-- Image Generation Toggle (Premium Feature) -->
+                <div class="mt-4" id="image-toggle-container">
+                  <label for="generate-image-toggle" class="flex items-center gap-2 cursor-pointer" style="white-space: nowrap;" id="image-toggle-label">
+                    <input type="checkbox" id="generate-image-toggle" class="rounded border-gray-600 bg-gray-800 text-violet-500 focus:ring-violet-500 cursor-pointer" style="width: 16px; height: 16px; flex-shrink: 0;" disabled>
                     <span class="text-sm text-gray-300">Generate AI Image</span>
+                    <span id="image-upgrade-badge" class="ml-2 px-2 py-0.5 text-xs rounded-full bg-gradient-to-r from-cyan-500/30 to-violet-500/30 text-cyan-300 border border-cyan-500/30">
+                      ⭐ Pro
+                    </span>
                   </label>
+                  <p id="image-upgrade-hint" class="text-xs text-gray-500 mt-1 ml-6">
+                    <a href="#" onclick="showSection('settings'); return false;" class="text-cyan-400 hover:text-cyan-300 underline">Upgrade to Pro</a> to generate AI images with your posts
+                  </p>
+                  
+                  <!-- Admin-only: Image Generator Selection -->
+                  <div id="admin-image-generator-section" class="hidden mt-3 ml-6 p-3 glass-card rounded-lg border border-purple-500/30">
+                    <label class="block text-xs text-purple-400 mb-2">Admin: Image Generator</label>
+                    <select id="image-generator-select" class="w-full text-sm">
+                      <option value="gemini">Gemini Nano-Banana (Dynamic)</option>
+                      <option value="branded">Branded Template (Fast)</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">
+                      Gemini Nano-Banana creates unique visuals. Branded uses your GNX template.
+                    </p>
+                  </div>
                 </div>
 
                 <button type="submit" id="generate-btn" class="w-full mt-6 py-3 px-4 font-semibold text-white rounded-lg gradient-button flex items-center justify-center">
@@ -2024,6 +2042,9 @@ My best post:
         // Update subscription display to show Admin tier
         updateAdminSubscriptionDisplay();
         
+        // Enable image generation toggle for admin
+        updateImageToggleForTier('admin');
+        
         // Fetch admin persona status for settings page
         fetchAdminPersonaStatus();
         
@@ -2048,7 +2069,7 @@ My best post:
       const planBadgeEl = document.getElementById('current-plan-badge');
       if (planBadgeEl) {
         planBadgeEl.className = 'px-3 py-1 rounded-full text-sm font-semibold bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-purple-300 border border-purple-500/50';
-        planBadgeEl.textContent = '👑 Admin';
+        planBadgeEl.textContent = 'Admin';
       }
       
       // Update settings page subscription section
@@ -3924,7 +3945,54 @@ My best post:
         planNameEl.textContent = tierInfo.name;
       }
       
+      // Update image generation toggle based on tier
+      updateImageToggleForTier(tier);
+      
       logger.log('[TIER] Display updated:', tierInfo.name);
+    }
+    
+    // Update image generation toggle based on user's subscription tier
+    function updateImageToggleForTier(tier) {
+      const imageToggle = document.getElementById('generate-image-toggle');
+      const upgradeBadge = document.getElementById('image-upgrade-badge');
+      const upgradeHint = document.getElementById('image-upgrade-hint');
+      const adminImageSection = document.getElementById('admin-image-generator-section');
+      
+      if (!imageToggle) return;
+      
+      const isPremiumUser = tier === 'pro' || tier === 'business' || tier === 'admin' || isAdminUser();
+      const isAdmin = tier === 'admin' || isAdminUser();
+      
+      if (isPremiumUser) {
+        // Enable toggle for premium users
+        imageToggle.disabled = false;
+        imageToggle.classList.remove('opacity-50', 'cursor-not-allowed');
+        imageToggle.classList.add('cursor-pointer');
+        if (upgradeBadge) upgradeBadge.classList.add('hidden');
+        if (upgradeHint) upgradeHint.classList.add('hidden');
+        
+        // Show admin image generator selector only for admin users
+        if (adminImageSection) {
+          if (isAdmin) {
+            adminImageSection.classList.remove('hidden');
+            logger.log('[IMAGE TOGGLE] Admin mode - showing generator selector');
+          } else {
+            adminImageSection.classList.add('hidden');
+          }
+        }
+        
+        logger.log('[IMAGE TOGGLE] Enabled for tier:', tier);
+      } else {
+        // Disable toggle for free users
+        imageToggle.disabled = true;
+        imageToggle.checked = false;
+        imageToggle.classList.add('opacity-50', 'cursor-not-allowed');
+        imageToggle.classList.remove('cursor-pointer');
+        if (upgradeBadge) upgradeBadge.classList.remove('hidden');
+        if (upgradeHint) upgradeHint.classList.remove('hidden');
+        if (adminImageSection) adminImageSection.classList.add('hidden');
+        logger.log('[IMAGE TOGGLE] Disabled for tier:', tier);
+      }
     }
 
 
@@ -4393,7 +4461,9 @@ My best post:
           persona: personaInput || null,
           persona_id: activePersonaId,  // Admin persona injection
           generate_image: generateImage,  // Pass the toggle value
-          user_email: currentUser?.email || null  // User identification
+          user_email: currentUser?.email || null,  // User identification
+          // Admin-only: Image generator type selection
+          image_generator_type: isAdminUser() ? (document.getElementById('image-generator-select')?.value || 'gemini') : 'gemini'
         };
         
         // If improving existing post, add post_id and version (hybrid history pattern)

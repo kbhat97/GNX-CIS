@@ -1809,6 +1809,8 @@ class ApiGenerateRequest(BaseModel):
     # For improving existing posts (hybrid history pattern)
     post_id: Optional[str] = None  # If provided, UPDATE existing post instead of INSERT new
     expected_version: Optional[int] = None  # For optimistic locking
+    # Admin-only: Image generator type selection
+    image_generator_type: Optional[str] = "gemini"  # "gemini" (AI) or "branded" (template)
 
 @app.post("/api/generate")
 async def api_generate(request: ApiGenerateRequest):
@@ -1909,33 +1911,46 @@ async def api_generate(request: ApiGenerateRequest):
                     suggestions = content_result.get("suggestions", [])
                     logger.warning("[WARN] ViralityAgent not available - using self-score")
                 
-                # Generate image if requested (using Nano Banana AI)
+                # Generate image if requested
                 image_url = None
                 if request.generate_image:
                     try:
-                        # Import and use AI image generator (Nano Banana)
-                        from utils.image_generator import generate_ai_image
+                        # Import image generators
+                        from utils.image_generator import generate_ai_image, create_branded_image
                         
                         # Extract clean hook for image
                         hook = content.split('\n')[0].replace('**', '')[:100]
                         
-                        # Try AI image generation first
-                        image_path = await generate_ai_image(
-                            hook_text=hook,
-                            topic=request.topic,
-                            style=request.style,
-                            full_content=content
-                        )
+                        # Check which generator to use (admin can choose, default is gemini)
+                        generator_type = getattr(request, 'image_generator_type', 'gemini') or 'gemini'
+                        logger.info(f"[IMAGE] Using generator type: {generator_type}")
                         
-                        if image_path:
-                            image_url = f"/static/outputs/{os.path.basename(image_path)}"
-                            logger.info(f"[OK] AI image generated: {image_url}")
+                        if generator_type == 'branded':
+                            # Use branded template (fast, no AI)
+                            logger.info("[IMAGE] Using branded template generator")
+                            image_path = create_branded_image(content, "Kunal Bhat, PMP")
+                            if image_path:
+                                image_url = f"/static/outputs/{os.path.basename(image_path)}"
+                                logger.info(f"[OK] Branded image generated: {image_url}")
                         else:
-                            # Fallback to branded image if AI fails
-                            logger.warning("AI image generation failed, using branded fallback")
-                            fallback_path = create_branded_image(content, "Kunal Bhat, PMP")
-                            if fallback_path:
-                                image_url = f"/static/outputs/{os.path.basename(fallback_path)}"
+                            # Use Gemini AI (gemini or default)
+                            logger.info("[IMAGE] Using Gemini AI generator (Nano Banana)")
+                            image_path = await generate_ai_image(
+                                hook_text=hook,
+                                topic=request.topic,
+                                style=request.style,
+                                full_content=content
+                            )
+                            
+                            if image_path:
+                                image_url = f"/static/outputs/{os.path.basename(image_path)}"
+                                logger.info(f"[OK] AI image generated: {image_url}")
+                            else:
+                                # Fallback to branded image if AI fails
+                                logger.warning("AI image generation failed, using branded fallback")
+                                fallback_path = create_branded_image(content, "Kunal Bhat, PMP")
+                                if fallback_path:
+                                    image_url = f"/static/outputs/{os.path.basename(fallback_path)}"
                     except Exception as img_err:
                         logger.error(f"Image generation failed: {img_err}")
                         # Try branded fallback
@@ -2065,16 +2080,19 @@ class ImageGenerateRequest(BaseModel):
     topic: Optional[str] = None
     style: Optional[str] = "professional"
     post_id: Optional[str] = None
+    # Image generator type selection
+    image_generator_type: Optional[str] = "gemini"  # "gemini" (AI) or "branded" (template)
 
 
 @app.post("/api/generate-image")
 async def api_generate_image(request: ImageGenerateRequest):
     """Generate an AI image for existing post content (deferred generation)"""
-    logger.info(f"[IMAGE] /api/generate-image request: style={request.style}")
+    generator_type = getattr(request, 'image_generator_type', 'gemini') or 'gemini'
+    logger.info(f"[IMAGE] /api/generate-image request: style={request.style}, generator={generator_type}")
     
     try:
-        # Import the AI image generator
-        from utils.image_generator import generate_ai_image
+        # Import image generators
+        from utils.image_generator import generate_ai_image, create_branded_image
         
         # Extract a hook/headline from the content (first line or first 100 chars)
         content_lines = request.content.strip().split('\n')
@@ -2086,13 +2104,21 @@ async def api_generate_image(request: ImageGenerateRequest):
         if len(hook_clean) > 80:
             hook_clean = hook_clean[:80] + "..."
         
-        # Generate the AI image (async function - must await)
-        image_path = await generate_ai_image(
-            hook_text=hook_clean,
-            topic=request.topic or "LinkedIn content",
-            style=request.style or "professional",
-            full_content=request.content
-        )
+        image_path = None
+        
+        if generator_type == 'branded':
+            # Use branded template (fast, no AI)
+            logger.info("[IMAGE] Using branded template generator")
+            image_path = create_branded_image(request.content, "Kunal Bhat, PMP")
+        else:
+            # Use Gemini AI (default)
+            logger.info("[IMAGE] Using Gemini AI generator (Nano Banana)")
+            image_path = await generate_ai_image(
+                hook_text=hook_clean,
+                topic=request.topic or "LinkedIn content",
+                style=request.style or "professional",
+                full_content=request.content
+            )
         
         if image_path and os.path.exists(image_path):
             # Return the image URL - images are stored in static/outputs/
@@ -2110,11 +2136,12 @@ async def api_generate_image(request: ImageGenerateRequest):
             
             return {
                 "success": True,
-                "image_url": image_url
+                "image_url": image_url,
+                "generator_type": generator_type
             }
         else:
             # Fallback to branded image if AI fails
-            from utils.image_generator import create_branded_image
+            logger.warning("Primary generator failed, using branded fallback")
             fallback_path = create_branded_image(request.content, "GNX CIS")
             if fallback_path:
                 image_url = f"/static/outputs/{os.path.basename(fallback_path)}"
