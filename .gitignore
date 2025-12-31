@@ -12,8 +12,8 @@ docs/
 # Extra files not for git
 extra_ignore/
 
-# Personas data (may contain user info)
-personas/
+# Personas JSON data files are excluded via personas/*.json below
+# Code files (persona_loader.py, schema.py, __init__.py) are tracked
 
 # ========================================
 # PYTHON
