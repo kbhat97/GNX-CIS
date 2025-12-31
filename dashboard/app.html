@@ -3468,6 +3468,13 @@ My best post:
     // Load and display user subscription tier from Supabase
     async function loadUserSubscriptionTier() {
       try {
+        // Admin users get unlimited access - check first before Supabase
+        if (isAdminUser()) {
+          logger.log('[TIER] Admin user detected - showing admin tier');
+          updatePlanDisplay('admin');
+          return;
+        }
+        
         if (!supabaseEnabled || !currentUser) {
           logger.warn('[TIER] Supabase not available, showing default tier');
           updatePlanDisplay('free');
@@ -3524,7 +3531,8 @@ My best post:
       const tierMap = {
         'free': { name: 'Free', class: 'bg-gray-600/30 text-gray-300', emoji: '🆓' },
         'pro': { name: 'Pro', class: 'bg-gradient-to-r from-cyan-500/30 to-violet-500/30 text-cyan-300 border border-cyan-500/50', emoji: '⭐' },
-        'business': { name: 'Business', class: 'bg-gradient-to-r from-violet-500/30 to-fuchsia-500/30 text-violet-300 border border-violet-500/50', emoji: '💼' }
+        'business': { name: 'Business', class: 'bg-gradient-to-r from-violet-500/30 to-fuchsia-500/30 text-violet-300 border border-violet-500/50', emoji: '💼' },
+        'admin': { name: 'Admin', class: 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-purple-300 border border-purple-500/50', emoji: '👑' }
       };
       
       const tierInfo = tierMap[tier] || tierMap['free'];
