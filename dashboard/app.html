@@ -1874,18 +1874,10 @@ My best post:
               // Listen for successful sign-in
               clerkInstance.addListener(({ user }) => {
                 if (user) {
-                  currentUser = {
-                    email: user.emailAddresses[0]?.emailAddress,
-                    name: user.firstName || user.emailAddresses[0]?.emailAddress.split('@')[0],
-                    clerk_id: user.id,
-                    image_url: user.imageUrl
-                  };
+                  logger.log('[Auth] User signed in via Clerk component:', user.emailAddresses[0]?.emailAddress);
                   
-                  logger.log('[Auth] User signed in via Clerk component:', currentUser.email);
-                  
-                  // Hide login page and show dashboard (with onboarding check)
-                  document.getElementById('login-page').classList.add('hidden');
-                  showDashboard();
+                  // Reload page to trigger auto-login flow which will check onboarding
+                  window.location.reload();
                 }
               });
               
