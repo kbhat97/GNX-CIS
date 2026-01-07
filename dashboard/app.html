@@ -1906,6 +1906,7 @@ My best post:
             }
           }
           
+          
           // Check if user is already signed in from previous session
           if (clerkInstance.user) {
             currentUser = {
@@ -1916,8 +1917,8 @@ My best post:
             };
             logger.log('[Auth] User already signed in (auto-login):', currentUser.email);
             
-            // Clear any stale flags
-            sessionStorage.removeItem('clerk_processing');
+            // Clear the sign-in flag now that we've processed the auto-login
+            sessionStorage.removeItem('clerk_just_signed_in');
             
             // Hide landing page
             const loginPage = document.getElementById('login-page');
@@ -2877,6 +2878,124 @@ My best post:
     } catch (error) {
       logger.warn('[WARN] Supabase not available:', error);
       supabaseEnabled = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // SYNC CLERK USER TO SUPABASE
+    // Called immediately after login to ensure user exists in database
+    // ═══════════════════════════════════════════════════════════════════
+    async function syncUserToSupabase() {
+      if (!supabaseEnabled || !currentUser) {
+        logger.warn('[Sync] Cannot sync: Supabase disabled or no user');
+        return null;
+      }
+      
+      try {
+        const userEmail = currentUser.email;
+        const clerkId = currentUser.clerk_id || `clerk_${Date.now()}`;
+        const fullName = currentUser.name || userEmail.split('@')[0];
+        
+        logger.log('[Sync] Syncing user to Supabase:', userEmail);
+        
+        // Check if user exists by email
+        let { data: existingUser, error: selectError } = await supabaseClient
+          .from('users')
+          .select('id, clerk_id, onboarding_completed')
+          .eq('email', userEmail)
+          .single();
+        
+        if (selectError && selectError.code !== 'PGRST116') {
+          // PGRST116 = no rows returned, which is expected for new users
+          logger.warn('[Sync] Error checking existing user:', selectError);
+        }
+        
+        let userId;
+        let isNewUser = false;
+        
+        if (!existingUser) {
+          // NEW USER: Create in Supabase
+          logger.log('[Sync] Creating new user in Supabase:', userEmail);
+          
+          const { data: newUser, error: createError } = await supabaseClient
+            .from('users')
+            .insert({
+              email: userEmail,
+              full_name: fullName,
+              clerk_id: clerkId,
+              profile_image_url: currentUser.image_url || null,
+              onboarding_completed: false,
+              is_admin: isAdminUser(),
+              subscription_plan: 'free',
+              subscription_status: 'active',
+              posts_this_month: 0,
+              posts_reset_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+          
+          if (createError) {
+            logger.error('[Sync] Failed to create user:', createError);
+            return null;
+          }
+          
+          userId = newUser.id;
+          isNewUser = true;
+          logger.log('[Sync] ✅ New user created:', userId);
+          
+          // Also create user_profile for new user
+          const { error: profileError } = await supabaseClient
+            .from('user_profiles')
+            .insert({
+              user_id: userId,
+              subscription_tier: 'free',
+              subscription_plan: 'free',
+              subscription_status: 'active',
+              posts_this_month: 0,
+              posts_reset_at: new Date().toISOString()
+            });
+          
+          if (profileError) {
+            logger.warn('[Sync] Failed to create user_profile:', profileError);
+          } else {
+            logger.log('[Sync] ✅ User profile created');
+          }
+          
+        } else {
+          // EXISTING USER: Update last login info
+          userId = existingUser.id;
+          
+          // Update clerk_id if it was a temporary one
+          if (existingUser.clerk_id && existingUser.clerk_id.startsWith('dashboard_')) {
+            const { error: updateError } = await supabaseClient
+              .from('users')
+              .update({
+                clerk_id: clerkId,
+                full_name: fullName,
+                profile_image_url: currentUser.image_url || null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', userId);
+            
+            if (updateError) {
+              logger.warn('[Sync] Failed to update user:', updateError);
+            } else {
+              logger.log('[Sync] ✅ User updated with real Clerk ID');
+            }
+          }
+          
+          logger.log('[Sync] ✅ Existing user found:', userId);
+        }
+        
+        // Store the Supabase user ID for future use
+        currentUser.supabase_id = userId;
+        currentUser.isNewUser = isNewUser;
+        
+        return { userId, isNewUser };
+        
+      } catch (error) {
+        logger.error('[Sync] User sync error:', error);
+        return null;
+      }
     }
 
     // Save post to Supabase
@@ -4333,7 +4452,110 @@ My best post:
       await handlePendingCheckout();
     }
 
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // ONBOARDING FLOW
+    // ═══════════════════════════════════════════════════════════════════
+    
+    async function checkOnboardingStatus() {
+      // Check if user has completed onboarding or can skip it
+      if (!currentUser) return false;
+      
+      try {
+        // 1. ADMIN USERS: Always skip onboarding - they already have persona
+        if (isAdminUser()) {
+          logger.log('[Onboarding] Admin user detected - skipping onboarding');
+          return true;
+        }
+        
+        // 2. Check Supabase for onboarding status
+        if (!supabaseEnabled) {
+          // Fallback to localStorage if Supabase unavailable
+          const onboardingComplete = localStorage.getItem(`onboarding_complete_${currentUser.email}`);
+          return onboardingComplete === 'true';
+        }
+        
+        // Get user from Supabase - check onboarding_completed directly on users table
+        const { data: user } = await supabaseClient
+          .from('users')
+          .select('id, onboarding_completed')
+          .eq('email', currentUser.email)
+          .single();
+        
+        if (!user) {
+          logger.log('[Onboarding] New user - needs onboarding');
+          return false;
+        }
+        
+        // Check if user has completed onboarding (from users table)
+        if (user.onboarding_completed === true) {
+          logger.log('[Onboarding] User completed onboarding (users table)');
+          return true;
+        }
+        
+        // Also check if they have questionnaire data
+        const { data: questionnaire } = await supabaseClient
+          .from('onboarding_questionnaire')
+          .select('id, completed_at')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (questionnaire && questionnaire.completed_at) {
+          logger.log('[Onboarding] User has questionnaire data - skipping onboarding');
+          // Update users table to mark onboarding complete
+          await supabaseClient
+            .from('users')
+            .update({ onboarding_completed: true })
+            .eq('id', user.id);
+          return true;
+        }
+        
+        // Check if user has profile data (writing_tone, target_audience, etc.)
+        const { data: profile } = await supabaseClient
+          .from('user_profiles')
+          .select('writing_tone, target_audience, brand_voice_summary')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile && (profile.writing_tone || profile.target_audience || profile.brand_voice_summary)) {
+          logger.log('[Onboarding] User has profile data - skipping onboarding');
+          return true;
+        }
+        
+        logger.log('[Onboarding] User needs onboarding');
+        return false;
+        
+      } catch (error) {
+        logger.warn('[Onboarding] Error checking status:', error);
+        // Fallback to localStorage
+        const onboardingComplete = localStorage.getItem(`onboarding_complete_${currentUser.email}`);
+        return onboardingComplete === 'true';
+      }
+    }
+    
+    function showOnboarding() {
+      logger.log('[Onboarding] Showing onboarding page');
+      
+      // Hide login and dashboard
+      document.getElementById('login-page').classList.add('hidden');
+      document.getElementById('dashboard-page').classList.add('hidden');
+      
+      // Show onboarding page
+      const onboardingPage = document.getElementById('onboarding-page');
+      if (onboardingPage) {
+        onboardingPage.classList.remove('hidden');
+      } else {
+        // If onboarding page doesn't exist, skip to dashboard
+        logger.warn('[Onboarding] Onboarding page not found, skipping to dashboard');
+        localStorage.setItem(`onboarding_complete_${currentUser.email}`, 'true');
+        showDashboardAfterOnboarding();
+      }
+    }
+
     async function showDashboard() {
+      // FIRST: Sync user to Supabase (creates user if doesn't exist)
+      await syncUserToSupabase();
+      
       // Check if user needs onboarding first
       const onboardingComplete = await checkOnboardingStatus();
       

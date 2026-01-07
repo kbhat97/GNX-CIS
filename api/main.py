@@ -486,6 +486,61 @@ async def admin_post(
         )
 
 
+@app.get("/api/admin/persona-status")
+async def admin_persona_status(user_email: Optional[str] = None):
+    """
+    Get admin persona status for settings display.
+    Returns persona details if admin persona is loaded.
+    """
+    try:
+        from personas.persona_loader import safe_load_persona, PersonaContextBuilder, ADMIN_EMAILS
+        
+        # Check if user is admin
+        is_admin = user_email and user_email.lower() in [e.lower() for e in ADMIN_EMAILS]
+        
+        # Try to load the admin persona (persona_admin_kunal matches the filename)
+        persona_data = safe_load_persona("persona_admin_kunal")
+        
+        # Check if it's an error
+        if hasattr(persona_data, 'ok') and not persona_data.ok:
+            return {
+                "persona_exists": False,
+                "error": persona_data.message,
+                "is_admin": is_admin,
+                "current_user_email": user_email
+            }
+        
+        # Build context from persona
+        builder = PersonaContextBuilder(persona_data)
+        
+        # Extract identity info
+        identity = persona_data.get("identity", {})
+        
+        return {
+            "persona_exists": True,
+            "persona_id": persona_data.get("id", persona_data.get("persona_id", "admin_kunal")),
+            "version": persona_data.get("version", "unknown"),
+            "display_name": builder.get_display_name(),
+            "role": identity.get("title", "Unknown"),
+            "identity": {
+                "name": identity.get("name", "Unknown"),
+                "title": identity.get("title", "Unknown")
+            },
+            "admin_emails": ADMIN_EMAILS,
+            "current_user_email": user_email,
+            "is_admin": is_admin,
+            "hashtags": builder.hashtag_list()
+        }
+        
+    except Exception as e:
+        return {
+            "persona_exists": False,
+            "error": str(e),
+            "current_user_email": user_email
+        }
+
+
+
 # ═══════════════════════════════════════════════════════════════════
 # Run with: uvicorn api.main:app --reload --port 8080
 # ═══════════════════════════════════════════════════════════════════
