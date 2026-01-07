@@ -1871,13 +1871,30 @@ My best post:
               
               logger.log('[Auth] Clerk SignIn component mounted');
               
-              // Listen for successful sign-in
-              clerkInstance.addListener(({ user }) => {
-                if (user) {
+              // Listen for successful sign-in (only triggers on NEW sign-ins, not existing sessions)
+              clerkInstance.addListener(async ({ user }) => {
+                if (user && !sessionStorage.getItem('clerk_processing')) {
                   logger.log('[Auth] User signed in via Clerk component:', user.emailAddresses[0]?.emailAddress);
                   
-                  // Reload page to trigger auto-login flow which will check onboarding
-                  window.location.reload();
+                  // Set flag to prevent duplicate processing
+                  sessionStorage.setItem('clerk_processing', 'true');
+                  
+                  // Set current user immediately
+                  currentUser = {
+                    email: user.emailAddresses[0]?.emailAddress,
+                    name: user.firstName || user.emailAddresses[0]?.emailAddress.split('@')[0],
+                    clerk_id: user.id,
+                    image_url: user.imageUrl
+                  };
+                  
+                  // Sync to Supabase immediately
+                  await syncUserToSupabase();
+                  
+                  // Clear processing flag
+                  sessionStorage.removeItem('clerk_processing');
+                  
+                  // Show dashboard (which will check onboarding)
+                  await showDashboard();
                 }
               });
               
@@ -1890,22 +1907,25 @@ My best post:
           }
           
           // Check if user is already signed in from previous session
-          // Skip auto-login on localhost for development testing
-          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-          
-          if (clerkInstance.user && !isLocalhost) {
+          if (clerkInstance.user) {
             currentUser = {
               email: clerkInstance.user.emailAddresses[0]?.emailAddress,
               name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
               clerk_id: clerkInstance.user.id,
               image_url: clerkInstance.user.imageUrl
             };
-            logger.log('[Auth] User already signed in (production auto-login):', currentUser.email);
+            logger.log('[Auth] User already signed in (auto-login):', currentUser.email);
+            
+            // Clear any stale flags
+            sessionStorage.removeItem('clerk_processing');
+            
+            // Hide landing page
+            const loginPage = document.getElementById('login-page');
+            if (loginPage) {
+              loginPage.classList.add('hidden');
+            }
+            
             showDashboard();
-          } else if (isLocalhost && clerkInstance.user) {
-            // On localhost, show "Continue to Dashboard" option instead of auto-login
-            logger.log('[Auth] Localhost - showing continue option for:', clerkInstance.user.emailAddresses[0]?.emailAddress);
-            document.getElementById('already-signed-in')?.classList.remove('hidden');
           }
         } else {
           logger.error('[Auth] Clerk failed to load after timeout');
