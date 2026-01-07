@@ -1908,6 +1908,12 @@ My best post:
             // Clear the sign-in flag now that we've processed the auto-login
             sessionStorage.removeItem('clerk_just_signed_in');
             
+            // Hide landing page
+            const loginPage = document.getElementById('login-page');
+            if (loginPage) {
+              loginPage.classList.add('hidden');
+            }
+            
             showDashboard();
           } else if (isLocalhost && clerkInstance.user) {
             // On localhost, show "Continue to Dashboard" option instead of auto-login
