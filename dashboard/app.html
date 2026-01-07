@@ -1871,10 +1871,13 @@ My best post:
               
               logger.log('[Auth] Clerk SignIn component mounted');
               
-              // Listen for successful sign-in
+              // Listen for successful sign-in (only triggers on NEW sign-ins, not existing sessions)
               clerkInstance.addListener(({ user }) => {
-                if (user) {
+                if (user && !sessionStorage.getItem('clerk_just_signed_in')) {
                   logger.log('[Auth] User signed in via Clerk component:', user.emailAddresses[0]?.emailAddress);
+                  
+                  // Set flag to prevent reload loop
+                  sessionStorage.setItem('clerk_just_signed_in', 'true');
                   
                   // Reload page to trigger auto-login flow which will check onboarding
                   window.location.reload();
@@ -1901,6 +1904,10 @@ My best post:
               image_url: clerkInstance.user.imageUrl
             };
             logger.log('[Auth] User already signed in (production auto-login):', currentUser.email);
+            
+            // Clear the sign-in flag now that we've processed the auto-login
+            sessionStorage.removeItem('clerk_just_signed_in');
+            
             showDashboard();
           } else if (isLocalhost && clerkInstance.user) {
             // On localhost, show "Continue to Dashboard" option instead of auto-login
