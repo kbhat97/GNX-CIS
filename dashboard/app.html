@@ -1874,6 +1874,477 @@ My best post:
       }
     }
     
+    // ═══════════════════════════════════════════════════════════════════
+    // AUTHENTICATION HANDLERS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    // Handle login form submission
+    async function handleLogin(event) {
+      event.preventDefault();
+      
+      const emailInput = document.getElementById('login-email');
+      const passwordInput = document.getElementById('login-password');
+      const errorEl = document.getElementById('login-error');
+      const btnText = document.getElementById('login-btn-text');
+      const spinner = document.getElementById('login-spinner');
+      const loginBtn = document.getElementById('login-btn');
+      
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      
+      // Show loading
+      btnText.textContent = 'Signing in...';
+      spinner.classList.remove('hidden');
+      loginBtn.disabled = true;
+      errorEl.classList.add('hidden');
+      
+      try {
+        if (!clerkInstance) {
+          throw new Error('Authentication service not loaded');
+        }
+        
+        // Attempt sign in
+        const signInAttempt = await clerkInstance.client.signIn.create({
+          identifier: email,
+          password: password
+        });
+        
+        logger.log('[Auth] Sign in attempt status:', signInAttempt.status);
+        
+        // Check if sign-in is complete
+        if (signInAttempt.status === 'complete') {
+          // Success - set current user and go to dashboard
+          await clerkInstance.setActive({ session: signInAttempt.createdSessionId });
+          
+          currentUser = {
+            email: clerkInstance.user.emailAddresses[0]?.emailAddress,
+            name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
+            clerk_id: clerkInstance.user.id,
+            image_url: clerkInstance.user.imageUrl
+          };
+          
+          logger.log('[Auth] Login successful:', currentUser.email);
+          
+          // Hide login page and show dashboard (with onboarding check)
+          document.getElementById('login-page').classList.add('hidden');
+          await showDashboard(); // This includes onboarding check!
+          
+        } else if (signInAttempt.status === 'needs_first_factor') {
+          // Email verification required
+          logger.log('[Auth] Email verification required');
+          
+          // Prepare email code
+          await signInAttempt.prepareFirstFactor({
+            strategy: 'email_code',
+            emailAddressId: signInAttempt.supportedFirstFactors.find(f => f.strategy === 'email_code')?.emailAddressId
+          });
+          
+          // Show verification form
+          document.getElementById('login-form').classList.add('hidden');
+          document.getElementById('verify-form').classList.remove('hidden');
+          document.getElementById('verify-email-display').textContent = email;
+          
+          // Store email for verification
+          window._pendingVerificationEmail = email;
+          window._pendingVerificationType = 'signin';
+          
+        } else {
+          throw new Error('Unexpected sign-in status: ' + signInAttempt.status);
+        }
+        
+      } catch (error) {
+        logger.error('[Auth] Login error:', error);
+        
+        let errorMessage = 'Invalid email or password.';
+        if (error.errors && error.errors.length > 0) {
+          errorMessage = error.errors[0].message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        errorEl.textContent = errorMessage;
+        errorEl.classList.remove('hidden');
+        errorEl.classList.add('shake-error');
+        
+      } finally {
+        btnText.textContent = 'Sign In';
+        spinner.classList.add('hidden');
+        loginBtn.disabled = false;
+      }
+    }
+    
+    // Handle signup form submission
+    async function handleSignup(event) {
+      event.preventDefault();
+      
+      const firstNameInput = document.getElementById('signup-firstname');
+      const emailInput = document.getElementById('signup-email');
+      const passwordInput = document.getElementById('signup-password');
+      const errorEl = document.getElementById('signup-error');
+      const btnText = document.getElementById('signup-btn-text');
+      const spinner = document.getElementById('signup-spinner');
+      const signupBtn = document.getElementById('signup-btn');
+      
+      const firstName = firstNameInput.value.trim();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      
+      // Show loading
+      btnText.textContent = 'Creating account...';
+      spinner.classList.remove('hidden');
+      signupBtn.disabled = true;
+      errorEl.classList.add('hidden');
+      
+      try {
+        if (!clerkInstance) {
+          throw new Error('Authentication service not loaded');
+        }
+        
+        // Create sign up
+        const signUpAttempt = await clerkInstance.client.signUp.create({
+          firstName: firstName,
+          emailAddress: email,
+          password: password
+        });
+        
+        logger.log('[Auth] Sign up attempt status:', signUpAttempt.status);
+        
+        // Prepare email verification
+        await signUpAttempt.prepareEmailAddressVerification({ strategy: 'email_code' });
+        
+        // Show verification form
+        document.getElementById('signup-form').classList.add('hidden');
+        document.getElementById('verify-form').classList.remove('hidden');
+        document.getElementById('verify-email-display').textContent = email;
+        
+        // Store email for verification
+        window._pendingVerificationEmail = email;
+        window._pendingVerificationType = 'signup';
+        
+        logger.log('[Auth] Verification email sent to:', email);
+        
+      } catch (error) {
+        logger.error('[Auth] Signup error:', error);
+        
+        let errorMessage = 'Error creating account.';
+        if (error.errors && error.errors.length > 0) {
+          errorMessage = error.errors[0].message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        errorEl.textContent = errorMessage;
+        errorEl.classList.remove('hidden');
+        errorEl.classList.add('shake-error');
+        
+        btnText.textContent = 'Start Free - No Credit Card';
+        spinner.classList.add('hidden');
+        signupBtn.disabled = false;
+      }
+    }
+    
+    // Handle email verification code submission
+    async function handleVerifyCode(event) {
+      event.preventDefault();
+      
+      const codeInput = document.getElementById('verify-code');
+      const errorEl = document.getElementById('verify-error');
+      const btnText = document.getElementById('verify-btn-text');
+      const spinner = document.getElementById('verify-spinner');
+      const verifyBtn = document.getElementById('verify-btn');
+      
+      const code = codeInput.value.trim();
+      
+      // Show loading
+      btnText.textContent = 'Verifying...';
+      spinner.classList.remove('hidden');
+      verifyBtn.disabled = true;
+      errorEl.classList.add('hidden');
+      
+      try {
+        if (!clerkInstance) {
+          throw new Error('Authentication service not loaded');
+        }
+        
+        const verificationType = window._pendingVerificationType || 'signup';
+        
+        if (verificationType === 'signup') {
+          // Complete signup verification
+          const result = await clerkInstance.client.signUp.attemptEmailAddressVerification({
+            code: code
+          });
+          
+          if (result.status === 'complete') {
+            await clerkInstance.setActive({ session: result.createdSessionId });
+            
+            currentUser = {
+              email: clerkInstance.user.emailAddresses[0]?.emailAddress,
+              name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
+              clerk_id: clerkInstance.user.id,
+              image_url: clerkInstance.user.imageUrl
+            };
+            
+            logger.log('[Auth] Signup complete:', currentUser.email);
+            
+            // Hide login page and show dashboard (with onboarding check)
+            document.getElementById('login-page').classList.add('hidden');
+            await showDashboard(); // This includes onboarding check!
+          } else {
+            throw new Error('Verification incomplete');
+          }
+          
+        } else if (verificationType === 'signin') {
+          // Complete signin verification
+          const result = await clerkInstance.client.signIn.attemptFirstFactor({
+            strategy: 'email_code',
+            code: code
+          });
+          
+          if (result.status === 'complete') {
+            await clerkInstance.setActive({ session: result.createdSessionId });
+            
+            currentUser = {
+              email: clerkInstance.user.emailAddresses[0]?.emailAddress,
+              name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
+              clerk_id: clerkInstance.user.id,
+              image_url: clerkInstance.user.imageUrl
+            };
+            
+            logger.log('[Auth] Sign in complete:', currentUser.email);
+            
+            // Hide login page and show dashboard (with onboarding check)
+            document.getElementById('login-page').classList.add('hidden');
+            await showDashboard(); // This includes onboarding check!
+          } else {
+            throw new Error('Verification incomplete');
+          }
+        }
+        
+      } catch (error) {
+        logger.error('[Auth] Verification error:', error);
+        
+        let errorMessage = 'Invalid verification code.';
+        if (error.errors && error.errors.length > 0) {
+          errorMessage = error.errors[0].message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        errorEl.textContent = errorMessage;
+        errorEl.classList.remove('hidden');
+        errorEl.classList.add('shake-error');
+        
+        btnText.textContent = 'Verify & Continue';
+        spinner.classList.add('hidden');
+        verifyBtn.disabled = false;
+      }
+    }
+    
+    // Resend verification code
+    async function resendVerificationCode() {
+      try {
+        const verificationType = window._pendingVerificationType || 'signup';
+        
+        if (verificationType === 'signup') {
+          await clerkInstance.client.signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+        } else {
+          const signIn = clerkInstance.client.signIn;
+          await signIn.prepareFirstFactor({
+            strategy: 'email_code',
+            emailAddressId: signIn.supportedFirstFactors.find(f => f.strategy === 'email_code')?.emailAddressId
+          });
+        }
+        
+        logger.log('[Auth] Verification code resent');
+        alert('Verification code resent! Check your email.');
+        
+      } catch (error) {
+        logger.error('[Auth] Resend error:', error);
+        alert('Failed to resend code. Please try again.');
+      }
+    }
+    
+    // Toggle between login and signup forms
+    function toggleAuthForm() {
+      const loginForm = document.getElementById('login-form');
+      const signupForm = document.getElementById('signup-form');
+      const toggleBtn = document.getElementById('auth-toggle-btn');
+      
+      if (loginForm.classList.contains('hidden')) {
+        // Show login form
+        loginForm.classList.remove('hidden');
+        signupForm.classList.add('hidden');
+        toggleBtn.innerHTML = 'Don\'t have an account? <span class="font-semibold">Sign up</span>';
+      } else {
+        // Show signup form
+        loginForm.classList.add('hidden');
+        signupForm.classList.remove('hidden');
+        toggleBtn.innerHTML = 'Already have an account? <span class="font-semibold">Sign in</span>';
+      }
+    }
+    
+    // Forgot password flow
+    async function forgotPassword(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById('login-email').value.trim();
+      
+      if (!email) {
+        alert('Please enter your email address first.');
+        return;
+      }
+      
+      try {
+        if (!clerkInstance) {
+          throw new Error('Authentication service not loaded');
+        }
+        
+        // Create password reset
+        await clerkInstance.client.signIn.create({
+          identifier: email
+        });
+        
+        await clerkInstance.client.signIn.prepareFirstFactor({
+          strategy: 'reset_password_email_code'
+        });
+        
+        // Show reset form
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('reset-password-form').classList.remove('hidden');
+        document.getElementById('reset-email-display').textContent = email;
+        
+        window._pendingResetEmail = email;
+        
+        logger.log('[Auth] Password reset email sent to:', email);
+        
+      } catch (error) {
+        logger.error('[Auth] Forgot password error:', error);
+        alert('Failed to send reset email. Please check your email address.');
+      }
+    }
+    
+    // Handle password reset
+    async function handleResetPassword(event) {
+      event.preventDefault();
+      
+      const codeInput = document.getElementById('reset-code');
+      const newPasswordInput = document.getElementById('reset-new-password');
+      const confirmPasswordInput = document.getElementById('reset-confirm-password');
+      const errorEl = document.getElementById('reset-error');
+      const successEl = document.getElementById('reset-success');
+      const btnText = document.getElementById('reset-btn-text');
+      const spinner = document.getElementById('reset-spinner');
+      const resetBtn = document.getElementById('reset-btn');
+      
+      const code = codeInput.value.trim();
+      const newPassword = newPasswordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+      
+      // Validate passwords match
+      if (newPassword !== confirmPassword) {
+        errorEl.textContent = 'Passwords do not match.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      
+      // Show loading
+      btnText.textContent = 'Resetting...';
+      spinner.classList.remove('hidden');
+      resetBtn.disabled = true;
+      errorEl.classList.add('hidden');
+      successEl.classList.add('hidden');
+      
+      try {
+        if (!clerkInstance) {
+          throw new Error('Authentication service not loaded');
+        }
+        
+        // Reset password
+        const result = await clerkInstance.client.signIn.attemptFirstFactor({
+          strategy: 'reset_password_email_code',
+          code: code,
+          password: newPassword
+        });
+        
+        if (result.status === 'complete') {
+          successEl.classList.remove('hidden');
+          errorEl.classList.add('hidden');
+          
+          logger.log('[Auth] Password reset successful');
+          
+          // Auto-redirect to login after 2 seconds
+          setTimeout(() => {
+            backToLogin();
+          }, 2000);
+        } else {
+          throw new Error('Password reset incomplete');
+        }
+        
+      } catch (error) {
+        logger.error('[Auth] Password reset error:', error);
+        
+        let errorMessage = 'Error resetting password.';
+        if (error.errors && error.errors.length > 0) {
+          errorMessage = error.errors[0].message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        errorEl.textContent = errorMessage;
+        errorEl.classList.remove('hidden');
+        
+      } finally {
+        btnText.textContent = 'Reset Password';
+        spinner.classList.add('hidden');
+        resetBtn.disabled = false;
+      }
+    }
+    
+    // Back to login from reset form
+    function backToLogin() {
+      document.getElementById('reset-password-form').classList.add('hidden');
+      document.getElementById('verify-form').classList.add('hidden');
+      document.getElementById('signup-form').classList.add('hidden');
+      document.getElementById('login-form').classList.remove('hidden');
+      
+      // Clear form inputs
+      document.getElementById('reset-code').value = '';
+      document.getElementById('reset-new-password').value = '';
+      document.getElementById('reset-confirm-password').value = '';
+      document.getElementById('verify-code').value = '';
+    }
+    
+    // Handle logout
+    async function handleLogout() {
+      try {
+        if (clerkInstance) {
+          await clerkInstance.signOut();
+          logger.log('[Auth] User signed out');
+        }
+        
+        // Reset state
+        currentUser = null;
+        posts = [];
+        currentPost = null;
+        
+        // Show login page
+        document.getElementById('dashboard-page').classList.add('hidden');
+        document.getElementById('onboarding-page').classList.add('hidden');
+        document.getElementById('login-page').classList.remove('hidden');
+        
+        // Reset forms
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
+        document.getElementById('login-error').classList.add('hidden');
+        
+      } catch (error) {
+        logger.error('[Auth] Logout error:', error);
+        // Force logout anyway
+        currentUser = null;
+        window.location.reload();
+      }
+    }
+    
     // State
     let currentUser = null;
     let posts = [];
