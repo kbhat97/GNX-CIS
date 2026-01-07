@@ -665,7 +665,11 @@
           <h2 class="text-3xl font-bold text-center text-white mb-2">Get Started Free</h2>
           <p class="text-center text-gray-400 mb-8">No credit card required</p>
           
-          <form id="login-form" onsubmit="handleLogin(event)">
+          <!-- Clerk SignIn Component Container -->
+          <div id="clerk-signin-container"></div>
+          
+          <!-- Fallback: Custom login form (hidden by default, shown if Clerk fails) -->
+          <form id="login-form" onsubmit="handleLogin(event)" class="hidden">
             <div class="space-y-6">
               <div>
                 <label class="block text-sm text-gray-400 mb-2">Email Address</label>
@@ -1833,6 +1837,65 @@ My best post:
           });
           clerkInstance = window.Clerk;
           logger.log('[Auth] Clerk initialized successfully');
+          
+          // Mount Clerk SignIn component if container exists
+          const signInContainer = document.getElementById('clerk-signin-container');
+          if (signInContainer) {
+            try {
+              clerkInstance.mountSignIn(signInContainer, {
+                appearance: {
+                  elements: {
+                    rootBox: 'w-full',
+                    card: 'bg-transparent shadow-none border-none',
+                    headerTitle: 'hidden',
+                    headerSubtitle: 'hidden',
+                    socialButtonsBlockButton: 'bg-white/10 border-white/20 text-white hover:bg-white/20',
+                    formButtonPrimary: 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700',
+                    formFieldInput: 'bg-white/10 border-white/20 text-white placeholder:text-gray-400',
+                    formFieldLabel: 'text-gray-300',
+                    footerActionLink: 'text-violet-400 hover:text-violet-300',
+                    identityPreviewText: 'text-white',
+                    formResendCodeLink: 'text-violet-400 hover:text-violet-300',
+                    otpCodeFieldInput: 'bg-white/10 border-white/20 text-white'
+                  },
+                  layout: {
+                    socialButtonsPlacement: 'bottom',
+                    socialButtonsVariant: 'iconButton'
+                  }
+                },
+                routing: 'hash',
+                signUpUrl: '#sign-up',
+                afterSignInUrl: '#',
+                afterSignUpUrl: '#'
+              });
+              
+              logger.log('[Auth] Clerk SignIn component mounted');
+              
+              // Listen for successful sign-in
+              clerkInstance.addListener(({ user }) => {
+                if (user) {
+                  currentUser = {
+                    email: user.emailAddresses[0]?.emailAddress,
+                    name: user.firstName || user.emailAddresses[0]?.emailAddress.split('@')[0],
+                    clerk_id: user.id,
+                    image_url: user.imageUrl
+                  };
+                  
+                  logger.log('[Auth] User signed in via Clerk component:', currentUser.email);
+                  
+                  // Hide login page and show dashboard (with onboarding check)
+                  document.getElementById('login-page').classList.add('hidden');
+                  showDashboard();
+                }
+              });
+              
+            } catch (mountError) {
+              logger.error('[Auth] Failed to mount Clerk component:', mountError);
+              // Show fallback custom form
+              document.getElementById('clerk-signin-container').classList.add('hidden');
+              document.getElementById('login-form').classList.remove('hidden');
+            }
+          }
           
           // Check if user is already signed in from previous session
           // Skip auto-login on localhost for development testing
