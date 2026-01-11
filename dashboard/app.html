@@ -822,12 +822,14 @@
             </button>
           </form>
 
-          <!-- Auth Toggle Button -->
+          <!-- Auth Toggle Button - COMMENTED OUT: Clerk widget handles login/signup
+               Keep as reference in case we need to restore custom form toggle
           <div id="auth-toggle-container" class="mt-6 text-center">
             <button type="button" id="auth-toggle-btn" onclick="toggleAuthForm()" class="text-sm text-violet-400 hover:text-violet-300 transition-colors">
               Don't have an account? <span class="font-semibold">Sign up</span>
             </button>
           </div>
+          -->
         </div>
         
         <!-- Trust badges -->
@@ -1874,27 +1876,25 @@ My best post:
               // Listen for successful sign-in (only triggers on NEW sign-ins, not existing sessions)
               clerkInstance.addListener(async ({ user }) => {
                 if (user && !sessionStorage.getItem('clerk_processing')) {
-                  logger.log('[Auth] User signed in via Clerk component:', user.emailAddresses[0]?.emailAddress);
-                  
-                  // Set flag to prevent duplicate processing
                   sessionStorage.setItem('clerk_processing', 'true');
-                  
-                  // Set current user immediately
-                  currentUser = {
-                    email: user.emailAddresses[0]?.emailAddress,
-                    name: user.firstName || user.emailAddresses[0]?.emailAddress.split('@')[0],
-                    clerk_id: user.id,
-                    image_url: user.imageUrl
-                  };
-                  
-                  // Sync to Supabase immediately
-                  await syncUserToSupabase();
-                  
-                  // Clear processing flag
-                  sessionStorage.removeItem('clerk_processing');
-                  
-                  // Show dashboard (which will check onboarding)
-                  await showDashboard();
+                  try {
+                    const email = user.emailAddresses?.[0]?.emailAddress;
+                    logger.log('[Auth] User signed in via Clerk component:', email);
+
+                    currentUser = {
+                      email,
+                      name: user.firstName || email?.split('@')?.[0] || 'User',
+                      clerk_id: user.id,
+                      image_url: user.imageUrl
+                    };
+
+                    await syncUserToSupabase();
+                    await showDashboard();
+                  } catch (err) {
+                    logger.error('[Auth] Clerk sign-in processing error:', err);
+                  } finally {
+                    sessionStorage.removeItem('clerk_processing');
+                  }
                 }
               });
               
@@ -1909,9 +1909,10 @@ My best post:
           
           // Check if user is already signed in from previous session
           if (clerkInstance.user) {
+            const email = clerkInstance.user.emailAddresses?.[0]?.emailAddress;
             currentUser = {
-              email: clerkInstance.user.emailAddresses[0]?.emailAddress,
-              name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
+              email,
+              name: clerkInstance.user.firstName || email?.split('@')?.[0] || 'User',
               clerk_id: clerkInstance.user.id,
               image_url: clerkInstance.user.imageUrl
             };
@@ -1926,7 +1927,8 @@ My best post:
               loginPage.classList.add('hidden');
             }
             
-            showDashboard();
+            logger.log('[Auth] Auto-login detected - about to show dashboard');
+            await showDashboard();
           }
         } else {
           logger.error('[Auth] Clerk failed to load after timeout');
@@ -2438,24 +2440,38 @@ My best post:
                         window.location.hostname === '127.0.0.1';
     
     function isAdminUser() {
+      // Enhanced logging for B3 debugging
+      logger.log('[ADMIN CHECK] isAdminUser() called');
+      logger.log('[ADMIN CHECK] currentUser:', currentUser);
+      logger.log('[ADMIN CHECK] currentUser.email:', currentUser?.email);
+      logger.log('[ADMIN CHECK] currentUser.role:', currentUser?.role);
+      
       // E2E test hook - ONLY available in development mode
       if (IS_DEV_MODE) {
         const testRole = localStorage.getItem('gnx_test_role');
-        if (testRole) return testRole === 'admin';
+        if (testRole) {
+          logger.log('[ADMIN CHECK] DEV MODE - testRole:', testRole);
+          return testRole === 'admin';
+        }
       }
       
       // Primary: explicit role on user object (from server)
       if (currentUser && currentUser.role) {
-        return currentUser.role.toLowerCase() === 'admin';
+        const isAdmin = currentUser.role.toLowerCase() === 'admin';
+        logger.log('[ADMIN CHECK] Role check result:', isAdmin);
+        return isAdmin;
       }
       
       // Fallback for legacy users without role: check server-verified email
       // This should match ADMIN_EMAILS on the server, but ultimate authority is server
       if (currentUser && currentUser.email) {
-        // Only the exact admin email, and only as fallback
-        return currentUser.email.toLowerCase() === 'kunalsbhatt@gmail.com';
+        const emailLower = currentUser.email.toLowerCase();
+        const isAdminEmail = emailLower === 'kunalsbhatt@gmail.com';
+        logger.log('[ADMIN CHECK] Email fallback - email:', emailLower, '| isAdmin:', isAdminEmail);
+        return isAdminEmail;
       }
       
+      logger.log('[ADMIN CHECK] No currentUser or email - returning false');
       return false;
     }
     
@@ -2675,10 +2691,12 @@ My best post:
       if (contentEl) contentEl.classList.add('hidden');
       
       try {
-        // Pass user email as query param (no JWT needed, matches /api/generate pattern)
-        const email = currentUser?.email || '';
-        const response = await fetch(`${API_BASE}/api/admin/persona-status?user_email=${encodeURIComponent(email)}`, {
-          headers: { 'Content-Type': 'application/json' }
+        // SECURE: Use Authorization header (required by updated endpoint)
+        const response = await fetch(`${API_BASE}/api/admin/persona-status`, {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+          }
         });
         
         if (!response.ok) {
@@ -3205,7 +3223,7 @@ My best post:
             document.getElementById('signup-form').classList.add('hidden');
             document.getElementById('verify-form').classList.remove('hidden');
             document.getElementById('reset-password-form').classList.add('hidden');
-            document.getElementById('auth-toggle-container').classList.add('hidden');
+            document.getElementById('auth-toggle-container')?.classList.add('hidden');
             document.getElementById('verify-email-display').textContent = email;
             
             logger.log('[Auth] Email verification required for:', email);
@@ -3526,7 +3544,7 @@ My best post:
           document.getElementById('signup-form').classList.add('hidden');
           document.getElementById('login-form').classList.add('hidden');
           document.getElementById('verify-form').classList.remove('hidden');
-          document.getElementById('auth-toggle-container').classList.add('hidden');
+          document.getElementById('auth-toggle-container')?.classList.add('hidden');
           document.getElementById('verify-email-display').textContent = email;
           
           // Update title
@@ -4205,91 +4223,8 @@ My best post:
     
     // NOTE: updateAdminSettingsUI removed - now handled by updateAdminLinkedInUI()
 
-    // ═══════════════════════════════════════════════════════════════════
-    // ONBOARDING
-    // ═══════════════════════════════════════════════════════════════════
-    
-    async function checkOnboardingStatus() {
-      // ADMIN BYPASS: Check admin status FIRST before any database checks
-      logger.log('[Onboarding] === CHECKING ONBOARDING STATUS ===');
-      logger.log('[Onboarding] currentUser:', currentUser);
-      logger.log('[Onboarding] currentUser.email:', currentUser?.email);
-      
-      // This ensures admin users always skip onboarding even if Supabase fails
-      const userEmail = (currentUser?.email || '').toLowerCase().trim();
-      const adminEmails = ['kunalsbhatt@gmail.com'];
-      
-      logger.log('[Onboarding] Checking email:', userEmail, 'against admins:', adminEmails);
-      
-      if (adminEmails.includes(userEmail)) {
-        logger.log('[Onboarding] ✓ Admin email MATCHED - bypassing onboarding');
-        return true; // Skip onboarding for admins
-      } else {
-        logger.log('[Onboarding] Email not in admin list');
-      }
-      
-      // Secondary check via isAdminUser function
-      const adminCheck = isAdminUser();
-      logger.log('[Onboarding] isAdminUser() returned:', adminCheck);
-      if (adminCheck) {
-        logger.log('[Onboarding] ✓ Admin role detected - bypassing onboarding');
-        return true;
-      }
-      
-      // Check if Supabase is available
-      if (!supabaseEnabled || !currentUser) {
-        logger.log('[Onboarding] No Supabase or no user - skipping check');
-        return true; // Skip check if no Supabase
-      }
-      
-      logger.log('[Onboarding] Proceeding with Supabase check...');
-      
-      try {
-        // Get user ID from users table
-        const { data: user, error: userError } = await supabaseClient
-          .from('users')
-          .select('id, onboarding_completed')
-          .eq('email', currentUser.email)
-          .single();
-        
-        if (userError || !user) {
-          logger.log('[Onboarding] User not found, will show onboarding');
-          return false;
-        }
-        
-        // Check onboarding_completed flag
-        if (user.onboarding_completed) {
-          logger.log('[Onboarding] Already completed');
-          return true;
-        }
-        
-        // Also check user_profiles table
-        const { data: profile } = await supabaseClient
-          .from('user_profiles')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (profile) {
-          logger.log('[Onboarding] Profile exists, marking as completed');
-          // Update users table to mark as completed
-          await supabaseClient.from('users').update({ onboarding_completed: true }).eq('id', user.id);
-          return true;
-        }
-        
-        return false;
-      } catch (e) {
-        logger.error('[Onboarding] Status check error:', e);
-        return true; // Default to skipping onboarding on error
-      }
-    }
-    
-    function showOnboarding() {
-      document.getElementById('login-page').classList.add('hidden');
-      document.getElementById('dashboard-page').classList.add('hidden');
-      document.getElementById('onboarding-page').classList.remove('hidden');
-      logger.log('[Onboarding] Showing onboarding page');
-    }
+    // NOTE: checkOnboardingStatus and showOnboarding are defined below in "ONBOARDING FLOW" section
+    // (The earlier duplicate here was removed to avoid unpredictable overwrites)
     
     async function handleOnboardingSubmit() {
       const form = document.getElementById('onboarding-form');
@@ -4390,14 +4325,21 @@ My best post:
               }
             }
             
-            // Mark onboarding as completed
-            await supabaseClient
+            // Mark onboarding as completed - WITH error handling
+            const { error: onboardingError } = await supabaseClient
               .from('users')
               .update({ 
                 onboarding_completed: true,
                 onboarding_path: pastedContent ? 'content_analysis' : 'questionnaire'
               })
               .eq('id', user.id);
+            
+            if (onboardingError) {
+              logger.error('[Onboarding] Failed to mark onboarding complete in Supabase:', onboardingError);
+              // Continue anyway - localStorage backup will help
+            } else {
+              logger.log('[Onboarding] ✅ onboarding_completed=true saved to Supabase for user:', user.id);
+            }
             
             logger.log('[Onboarding] Profile saved successfully. AI agents will use this data.');
           }
@@ -4407,6 +4349,10 @@ My best post:
         localStorage.setItem('onboarding_profile', JSON.stringify({
           industry, audience, style, topics, goal, pastedContent
         }));
+        
+        // CRITICAL: Also set the completion flag that checkOnboardingStatus checks
+        localStorage.setItem(`onboarding_complete_${currentUser.email}`, 'true');
+        logger.log('[Onboarding] Completion flag saved to localStorage for:', currentUser.email);
         
         // Hide onboarding, show dashboard
         document.getElementById('onboarding-page').classList.add('hidden');
@@ -4462,6 +4408,15 @@ My best post:
       if (!currentUser) return false;
       
       try {
+        logger.log('[Onboarding] checkOnboardingStatus called for:', currentUser?.email);
+        
+        // 0. FASTEST CHECK: localStorage (set immediately after onboarding completion)
+        const localStorageFlag = localStorage.getItem(`onboarding_complete_${currentUser.email}`);
+        if (localStorageFlag === 'true') {
+          logger.log('[Onboarding] ✅ Found completion flag in localStorage - skipping onboarding');
+          return true;
+        }
+        
         // 1. ADMIN USERS: Always skip onboarding - they already have persona
         if (isAdminUser()) {
           logger.log('[Onboarding] Admin user detected - skipping onboarding');
@@ -4470,9 +4425,8 @@ My best post:
         
         // 2. Check Supabase for onboarding status
         if (!supabaseEnabled) {
-          // Fallback to localStorage if Supabase unavailable
-          const onboardingComplete = localStorage.getItem(`onboarding_complete_${currentUser.email}`);
-          return onboardingComplete === 'true';
+          logger.log('[Onboarding] Supabase not enabled, localStorage was already checked above');
+          return false;
         }
         
         // Get user from Supabase - check onboarding_completed directly on users table
@@ -5342,6 +5296,10 @@ My best post:
           updateMetrics();
           updateRecentPosts();
           updateHistoryGrid();
+          
+          // H1 Fix: Also update subscription UI so Settings page shows updated post count
+          updateSubscriptionUI().catch(e => logger.warn('[H1] updateSubscriptionUI failed:', e));
+          logger.log('[H1] ✅ All dashboard metrics updated after post generation');
         } else {
           document.getElementById('agent-progress').classList.add('hidden');
           const error = await response.json();

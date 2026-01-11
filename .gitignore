@@ -2,9 +2,12 @@
 # CRITICAL - NEVER COMMIT THESE
 # ========================================
 
-# All markdown files EXCEPT README.md (prevents doc leaks)
+# All markdown files EXCEPT README.md and feedback files (prevents doc leaks)
 *.md
 !README.md
+!feedback_user.md
+!feedback_Admin.md
+!MCP_RESEARCH_REPORT.md
 
 # Internal documentation and strategy files
 docs/
@@ -145,6 +148,9 @@ personas/*.json
 !personas/__init__.py
 !personas/persona_loader.py
 !personas/schema.py
+
+# H2 Fix: Keep admin persona for deployment (required for admin functionality)
+!personas/persona_admin_kunal.json
 
 # Secret rotation scripts
 scripts/secret_rotation.sh
