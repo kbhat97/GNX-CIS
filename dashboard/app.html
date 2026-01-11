@@ -1878,12 +1878,22 @@ My best post:
                 if (user && !sessionStorage.getItem('clerk_processing')) {
                   sessionStorage.setItem('clerk_processing', 'true');
                   try {
-                    const email = user.emailAddresses?.[0]?.emailAddress;
+                    // Try primaryEmailAddress first (Clerk recommended), fall back to emailAddresses array
+                    const email = 
+                      user.primaryEmailAddress?.emailAddress ?? 
+                      user.emailAddresses?.[0]?.emailAddress;
+                    
+                    // Bail early if no email - downstream code requires it
+                    if (!email) {
+                      logger.error('[Auth] Clerk user has no email address');
+                      throw new Error('Clerk user has no email address');
+                    }
+                    
                     logger.log('[Auth] User signed in via Clerk component:', email);
 
                     currentUser = {
                       email,
-                      name: user.firstName || email?.split('@')?.[0] || 'User',
+                      name: user.firstName || email.split('@')[0] || 'User',
                       clerk_id: user.id,
                       image_url: user.imageUrl
                     };
@@ -1909,26 +1919,38 @@ My best post:
           
           // Check if user is already signed in from previous session
           if (clerkInstance.user) {
-            const email = clerkInstance.user.emailAddresses?.[0]?.emailAddress;
-            currentUser = {
-              email,
-              name: clerkInstance.user.firstName || email?.split('@')?.[0] || 'User',
-              clerk_id: clerkInstance.user.id,
-              image_url: clerkInstance.user.imageUrl
-            };
-            logger.log('[Auth] User already signed in (auto-login):', currentUser.email);
+            // Try primaryEmailAddress first (Clerk recommended), fall back to emailAddresses array
+            const email = 
+              clerkInstance.user.primaryEmailAddress?.emailAddress ?? 
+              clerkInstance.user.emailAddresses?.[0]?.emailAddress;
             
-            // Clear the sign-in flag now that we've processed the auto-login
-            sessionStorage.removeItem('clerk_just_signed_in');
-            
-            // Hide landing page
-            const loginPage = document.getElementById('login-page');
-            if (loginPage) {
-              loginPage.classList.add('hidden');
+            // Bail early if no email - force signOut and show error
+            if (!email) {
+              logger.error('[Auth] Auto-login user has no email address - forcing sign out');
+              showNotification('Account error: No email address found. Please sign in again.', 'error');
+              await clerkInstance.signOut();
+              return; // Exit - user will see login page
+            } else {
+              currentUser = {
+                email,
+                name: clerkInstance.user.firstName || email.split('@')[0] || 'User',
+                clerk_id: clerkInstance.user.id,
+                image_url: clerkInstance.user.imageUrl
+              };
+              logger.log('[Auth] User already signed in (auto-login):', currentUser.email);
+              
+              // Clear the sign-in flag now that we've processed the auto-login
+              sessionStorage.removeItem('clerk_just_signed_in');
+              
+              // Hide landing page
+              const loginPage = document.getElementById('login-page');
+              if (loginPage) {
+                loginPage.classList.add('hidden');
+              }
+              
+              logger.log('[Auth] Auto-login detected - about to show dashboard');
+              await showDashboard();
             }
-            
-            logger.log('[Auth] Auto-login detected - about to show dashboard');
-            await showDashboard();
           }
         } else {
           logger.error('[Auth] Clerk failed to load after timeout');
@@ -2462,16 +2484,10 @@ My best post:
         return isAdmin;
       }
       
-      // Fallback for legacy users without role: check server-verified email
-      // This should match ADMIN_EMAILS on the server, but ultimate authority is server
-      if (currentUser && currentUser.email) {
-        const emailLower = currentUser.email.toLowerCase();
-        const isAdminEmail = emailLower === 'kunalsbhatt@gmail.com';
-        logger.log('[ADMIN CHECK] Email fallback - email:', emailLower, '| isAdmin:', isAdminEmail);
-        return isAdminEmail;
-      }
-      
-      logger.log('[ADMIN CHECK] No currentUser or email - returning false');
+      // SECURITY: No client-side email allowlist fallback
+      // If role is missing, treat as non-admin until confirmed by server response
+      // (e.g., via /api/user/subscription which returns is_admin: true for admin emails)
+      logger.log('[ADMIN CHECK] No role on user object - treating as non-admin until server confirms');
       return false;
     }
     
@@ -2691,11 +2707,16 @@ My best post:
       if (contentEl) contentEl.classList.add('hidden');
       
       try {
-        // SECURE: Use Authorization header (required by updated endpoint)
+        // SECURE: Get token first and validate before request
+        const token = await clerkInstance?.session?.getToken?.();
+        if (!token) {
+          throw new Error('No Clerk session token available');
+        }
+        
         const response = await fetch(`${API_BASE}/api/admin/persona-status`, {
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
@@ -3415,7 +3436,7 @@ My best post:
       document.getElementById('signup-form').classList.add('hidden');
       document.getElementById('verify-form').classList.add('hidden');
       document.getElementById('reset-password-form').classList.add('hidden');
-      document.getElementById('auth-toggle-container').classList.remove('hidden');
+      document.getElementById('auth-toggle-container')?.classList.remove('hidden');
       
       // Clear reset form
       document.getElementById('reset-code').value = '';
@@ -4849,6 +4870,21 @@ My best post:
         const postLimit = data.post_limit || 5;
         const isAdmin = data.is_admin || plan === 'admin';
         
+        // IMPORTANT: Set currentUser.role from server response (authoritative)
+        // This enables isAdminUser() to work without hardcoded email fallback
+        if (currentUser) {
+          const nextRole = isAdmin ? 'admin' : 'user';
+          const prevRole = currentUser.role;
+          currentUser.role = nextRole;
+          
+          if (prevRole !== nextRole) {
+            logger.log('[SUBSCRIPTION] Server role changed:', prevRole, '->', nextRole);
+            // Re-apply role-gated UI now that role is authoritative
+            updatePersonaUI();
+            updateAdminLinkedInUI();
+          }
+        }
+        
         // Plan descriptions
         const planDescriptions = {
           'free': '5 posts per month, basic features',
@@ -4973,7 +5009,7 @@ My best post:
 
     // Update plan badge in header
     function updatePlanBadge(plan) {
-      const badge = document.getElementById('user-plan-badge');
+      const badge = document.getElementById('current-plan-badge');
       if (badge) {
         if (plan && plan !== 'free') {
           badge.textContent = plan.toUpperCase();
@@ -6368,11 +6404,14 @@ My best post:
       // All authentication must go through Clerk
       
       // Wire up persona toggle change listener
+      // NOTE: This only updates UI display, NOT the role itself
+      // SECURITY: currentUser.role is set ONLY by server response in updateSubscriptionUI()
       const personaToggle = document.getElementById('persona-toggle');
       if (personaToggle) {
         personaToggle.addEventListener('change', () => {
           if (currentUser) {
-            currentUser.role = personaToggle.checked ? 'admin' : 'user';
+            // SECURITY: Do NOT set currentUser.role here - that's server-controlled
+            // This toggle only affects which persona UI panel is shown
             updatePersonaUI();
             updateAdminLinkedInUI();
           }
