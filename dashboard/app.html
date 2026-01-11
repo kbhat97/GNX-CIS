@@ -1876,27 +1876,25 @@ My best post:
               // Listen for successful sign-in (only triggers on NEW sign-ins, not existing sessions)
               clerkInstance.addListener(async ({ user }) => {
                 if (user && !sessionStorage.getItem('clerk_processing')) {
-                  logger.log('[Auth] User signed in via Clerk component:', user.emailAddresses[0]?.emailAddress);
-                  
-                  // Set flag to prevent duplicate processing
                   sessionStorage.setItem('clerk_processing', 'true');
-                  
-                  // Set current user immediately
-                  currentUser = {
-                    email: user.emailAddresses[0]?.emailAddress,
-                    name: user.firstName || user.emailAddresses[0]?.emailAddress.split('@')[0],
-                    clerk_id: user.id,
-                    image_url: user.imageUrl
-                  };
-                  
-                  // Sync to Supabase immediately
-                  await syncUserToSupabase();
-                  
-                  // Clear processing flag
-                  sessionStorage.removeItem('clerk_processing');
-                  
-                  // Show dashboard (which will check onboarding)
-                  await showDashboard();
+                  try {
+                    const email = user.emailAddresses?.[0]?.emailAddress;
+                    logger.log('[Auth] User signed in via Clerk component:', email);
+
+                    currentUser = {
+                      email,
+                      name: user.firstName || email?.split('@')?.[0] || 'User',
+                      clerk_id: user.id,
+                      image_url: user.imageUrl
+                    };
+
+                    await syncUserToSupabase();
+                    await showDashboard();
+                  } catch (err) {
+                    logger.error('[Auth] Clerk sign-in processing error:', err);
+                  } finally {
+                    sessionStorage.removeItem('clerk_processing');
+                  }
                 }
               });
               
@@ -1911,9 +1909,10 @@ My best post:
           
           // Check if user is already signed in from previous session
           if (clerkInstance.user) {
+            const email = clerkInstance.user.emailAddresses?.[0]?.emailAddress;
             currentUser = {
-              email: clerkInstance.user.emailAddresses[0]?.emailAddress,
-              name: clerkInstance.user.firstName || clerkInstance.user.emailAddresses[0]?.emailAddress.split('@')[0],
+              email,
+              name: clerkInstance.user.firstName || email?.split('@')?.[0] || 'User',
               clerk_id: clerkInstance.user.id,
               image_url: clerkInstance.user.imageUrl
             };
@@ -2692,10 +2691,12 @@ My best post:
       if (contentEl) contentEl.classList.add('hidden');
       
       try {
-        // Pass user email as query param (no JWT needed, matches /api/generate pattern)
-        const email = currentUser?.email || '';
-        const response = await fetch(`${API_BASE}/api/admin/persona-status?user_email=${encodeURIComponent(email)}`, {
-          headers: { 'Content-Type': 'application/json' }
+        // SECURE: Use Authorization header (required by updated endpoint)
+        const response = await fetch(`${API_BASE}/api/admin/persona-status`, {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+          }
         });
         
         if (!response.ok) {
@@ -3222,7 +3223,7 @@ My best post:
             document.getElementById('signup-form').classList.add('hidden');
             document.getElementById('verify-form').classList.remove('hidden');
             document.getElementById('reset-password-form').classList.add('hidden');
-            document.getElementById('auth-toggle-container').classList.add('hidden');
+            document.getElementById('auth-toggle-container')?.classList.add('hidden');
             document.getElementById('verify-email-display').textContent = email;
             
             logger.log('[Auth] Email verification required for:', email);
@@ -3543,7 +3544,7 @@ My best post:
           document.getElementById('signup-form').classList.add('hidden');
           document.getElementById('login-form').classList.add('hidden');
           document.getElementById('verify-form').classList.remove('hidden');
-          document.getElementById('auth-toggle-container').classList.add('hidden');
+          document.getElementById('auth-toggle-container')?.classList.add('hidden');
           document.getElementById('verify-email-display').textContent = email;
           
           // Update title
@@ -4222,91 +4223,8 @@ My best post:
     
     // NOTE: updateAdminSettingsUI removed - now handled by updateAdminLinkedInUI()
 
-    // ═══════════════════════════════════════════════════════════════════
-    // ONBOARDING
-    // ═══════════════════════════════════════════════════════════════════
-    
-    async function checkOnboardingStatus() {
-      // ADMIN BYPASS: Check admin status FIRST before any database checks
-      logger.log('[Onboarding] === CHECKING ONBOARDING STATUS ===');
-      logger.log('[Onboarding] currentUser:', currentUser);
-      logger.log('[Onboarding] currentUser.email:', currentUser?.email);
-      
-      // This ensures admin users always skip onboarding even if Supabase fails
-      const userEmail = (currentUser?.email || '').toLowerCase().trim();
-      const adminEmails = ['kunalsbhatt@gmail.com'];
-      
-      logger.log('[Onboarding] Checking email:', userEmail, 'against admins:', adminEmails);
-      
-      if (adminEmails.includes(userEmail)) {
-        logger.log('[Onboarding] ✓ Admin email MATCHED - bypassing onboarding');
-        return true; // Skip onboarding for admins
-      } else {
-        logger.log('[Onboarding] Email not in admin list');
-      }
-      
-      // Secondary check via isAdminUser function
-      const adminCheck = isAdminUser();
-      logger.log('[Onboarding] isAdminUser() returned:', adminCheck);
-      if (adminCheck) {
-        logger.log('[Onboarding] ✓ Admin role detected - bypassing onboarding');
-        return true;
-      }
-      
-      // Check if Supabase is available
-      if (!supabaseEnabled || !currentUser) {
-        logger.log('[Onboarding] No Supabase or no user - skipping check');
-        return true; // Skip check if no Supabase
-      }
-      
-      logger.log('[Onboarding] Proceeding with Supabase check...');
-      
-      try {
-        // Get user ID from users table
-        const { data: user, error: userError } = await supabaseClient
-          .from('users')
-          .select('id, onboarding_completed')
-          .eq('email', currentUser.email)
-          .single();
-        
-        if (userError || !user) {
-          logger.log('[Onboarding] User not found, will show onboarding');
-          return false;
-        }
-        
-        // Check onboarding_completed flag
-        if (user.onboarding_completed) {
-          logger.log('[Onboarding] Already completed');
-          return true;
-        }
-        
-        // Also check user_profiles table
-        const { data: profile } = await supabaseClient
-          .from('user_profiles')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (profile) {
-          logger.log('[Onboarding] Profile exists, marking as completed');
-          // Update users table to mark as completed
-          await supabaseClient.from('users').update({ onboarding_completed: true }).eq('id', user.id);
-          return true;
-        }
-        
-        return false;
-      } catch (e) {
-        logger.error('[Onboarding] Status check error:', e);
-        return true; // Default to skipping onboarding on error
-      }
-    }
-    
-    function showOnboarding() {
-      document.getElementById('login-page').classList.add('hidden');
-      document.getElementById('dashboard-page').classList.add('hidden');
-      document.getElementById('onboarding-page').classList.remove('hidden');
-      logger.log('[Onboarding] Showing onboarding page');
-    }
+    // NOTE: checkOnboardingStatus and showOnboarding are defined below in "ONBOARDING FLOW" section
+    // (The earlier duplicate here was removed to avoid unpredictable overwrites)
     
     async function handleOnboardingSubmit() {
       const form = document.getElementById('onboarding-form');

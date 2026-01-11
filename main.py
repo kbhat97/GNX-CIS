@@ -516,23 +516,31 @@ async def api_info():
 # ============================================
 
 @app.get("/api/admin/persona-status")
-async def get_admin_persona_status(user_email: Optional[str] = None):
+async def get_admin_persona_status(db_user: Dict = Depends(get_db_user)):
     """
     Check if admin persona exists and return associated user/email info.
-    HTML Dashboard version - no JWT required, uses email param for admin verification.
+    SECURE: Requires authentication via get_db_user dependency.
     """
     try:
         # Import persona utilities
         from personas.persona_loader import (
             safe_load_persona, 
             PersonaError, 
-            PersonaContextBuilder,
-            ADMIN_EMAILS as PERSONA_ADMIN_EMAILS
+            PersonaContextBuilder
         )
         
-        # Get user email from query param
-        email = (user_email or "").lower().strip()
+        # Get authenticated user email
+        email = (db_user.get("email") or db_user.get("user_email") or "").lower().strip()
         is_admin = email in [e.lower() for e in ADMIN_EMAILS]
+        
+        # Only admins can access this endpoint
+        if not is_admin:
+            return {
+                "persona_exists": False,
+                "error": "Admin access required",
+                "current_user_is_admin": False,
+                "timestamp": datetime.utcnow().isoformat()
+            }
         
         # Try to load the admin persona
         persona_id = "persona_admin_kunal"
@@ -540,13 +548,12 @@ async def get_admin_persona_status(user_email: Optional[str] = None):
         
         if isinstance(persona_result, PersonaError):
             # Persona doesn't exist or failed to load
+            logger.error(f"[PERSONA] Failed to load {persona_id}: {persona_result.message}")
             return {
                 "persona_exists": False,
                 "persona_id": persona_id,
-                "error": persona_result.message if is_admin else "Persona not found",
-                "current_user_is_admin": is_admin,
-                "current_user_email": email,
-                "admin_emails_configured": len(ADMIN_EMAILS) if is_admin else None,
+                "error": "Persona configuration not found",  # Sanitized message
+                "current_user_is_admin": True,
                 "timestamp": datetime.utcnow().isoformat()
             }
         
@@ -560,38 +567,25 @@ async def get_admin_persona_status(user_email: Optional[str] = None):
         display_name = persona_result.get("display_name", "Unknown")
         version = persona_result.get("version", "1.0.0")
         
-        # Return detailed info for admins, limited for others
-        if is_admin:
-            return {
-                "persona_exists": True,
-                "persona_id": persona_id,
-                "display_name": display_name,
-                "version": version,
-                "identity": {
-                    "name": identity.get("name", ""),
-                    "title": identity.get("title", ""),
-                    "summary": identity.get("summary", "")[:200] + "..." if len(identity.get("summary", "")) > 200 else identity.get("summary", "")
-                },
-                "associated_user_id": persona_user_id,
-                "role": persona_role,
-                "admin_emails": ADMIN_EMAILS,
-                "current_user_email": email,
-                "current_user_is_admin": True,
-                "audience_summary": context_builder.audience_summary(),
-                "hashtags": context_builder.hashtag_list()[:5],
-                "timestamp": datetime.utcnow().isoformat()
-            }
-        else:
-            # Non-admin users get limited info
-            return {
-                "persona_exists": True,
-                "persona_id": persona_id,
-                "display_name": display_name,
-                "current_user_is_admin": False,
-                "current_user_email": email,
-                "message": "Full persona details are only visible to admin users.",
-                "timestamp": datetime.utcnow().isoformat()
-            }
+        # Return detailed info for authenticated admins only
+        # NOTE: admin_emails list NOT exposed (security fix)
+        return {
+            "persona_exists": True,
+            "persona_id": persona_id,
+            "display_name": display_name,
+            "version": version,
+            "identity": {
+                "name": identity.get("name", ""),
+                "title": identity.get("title", ""),
+                "summary": identity.get("summary", "")[:200] + "..." if len(identity.get("summary", "")) > 200 else identity.get("summary", "")
+            },
+            "associated_user_id": persona_user_id,
+            "role": persona_role,
+            "current_user_is_admin": True,
+            "audience_summary": context_builder.audience_summary(),
+            "hashtags": context_builder.hashtag_list()[:5],
+            "timestamp": datetime.utcnow().isoformat()
+        }
             
     except ImportError as e:
         logger.error(f"Failed to import persona modules: {e}")
@@ -601,10 +595,11 @@ async def get_admin_persona_status(user_email: Optional[str] = None):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error(f"Admin persona status error: {e}")
+        # Log the actual error for debugging, but don't expose to client
+        logger.error(f"[PERSONA] Admin persona status error: {e}")
         return {
             "persona_exists": False,
-            "error": str(e) if (user_email or "").lower() in [e.lower() for e in ADMIN_EMAILS] else "Error checking persona",
+            "error": "Failed to load persona configuration",  # Sanitized message
             "timestamp": datetime.utcnow().isoformat()
         }
 
