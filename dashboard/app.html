@@ -668,6 +668,9 @@
           <!-- Clerk SignIn Component Container -->
           <div id="clerk-signin-container"></div>
           
+          <!-- Clerk SignUp Component Container (hidden by default, shown via hash routing) -->
+          <div id="clerk-signup-container" class="hidden" aria-hidden="true"></div>
+          
           <!-- Fallback: Custom login form (hidden by default, shown if Clerk fails) -->
           <form id="login-form" onsubmit="handleLogin(event)" class="hidden">
             <div class="space-y-6">
@@ -1824,6 +1827,120 @@ My best post:
       window.__clerk_publishable_key ||
       'pk_live_Y2xlcmsuY2lzLmdueGF1dG9tYXRpb24uY29tJA';
     
+    // Shared Clerk appearance config for consistent styling
+    const clerkAppearance = {
+      elements: {
+        rootBox: 'w-full',
+        card: 'bg-transparent shadow-none border-none',
+        headerTitle: 'hidden',
+        headerSubtitle: 'hidden',
+        socialButtonsBlockButton: 'bg-white/10 border-white/20 text-white hover:bg-white/20',
+        formButtonPrimary: 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700',
+        formFieldInput: 'bg-white/10 border-white/20 text-white placeholder:text-gray-400',
+        formFieldLabel: 'text-gray-300',
+        footerActionLink: 'text-violet-400 hover:text-violet-300',
+        identityPreviewText: 'text-white',
+        formResendCodeLink: 'text-violet-400 hover:text-violet-300',
+        otpCodeFieldInput: 'bg-white/10 border-white/20 text-white'
+      },
+      layout: {
+        socialButtonsPlacement: 'bottom',
+        socialButtonsVariant: 'iconButton'
+      }
+    };
+    
+    // Track which Clerk component is currently mounted
+    let currentClerkComponent = null;
+    
+    // Switch between SignIn and SignUp based on hash
+    function handleClerkHashRouting() {
+      if (!clerkInstance) return;
+
+      const hash = window.location.hash || '';
+      // Match #sign-up, #/sign-up, #/sign-up/verify-email, etc. (case-insensitive)
+      const isSignUpHash = /^#\/?sign-up\b/i.test(hash);
+      // Match #sign-in, #/sign-in, or empty/root hash (default to sign-in)
+      const isSignInHash = /^#\/?sign-in\b/i.test(hash) || hash === '' || hash === '#';
+
+      // Only react to auth hashes; ignore unrelated in-page anchor hashes (e.g., #signup-section)
+      // If nothing mounted yet, default to SignIn.
+      if (!isSignUpHash && !isSignInHash && currentClerkComponent) return;
+
+      const signInContainer = document.getElementById('clerk-signin-container');
+      const signUpContainer = document.getElementById('clerk-signup-container');
+      
+      if (!signInContainer || !signUpContainer) return;
+      
+      // Determine which component to show
+      const showSignUp = isSignUpHash;
+      
+      try {
+        if (showSignUp && currentClerkComponent !== 'signup') {
+          // Switch to SignUp
+          logger.log('[Auth] Switching to SignUp component');
+          
+          // Unmount SignIn if mounted
+          if (currentClerkComponent === 'signin') {
+            clerkInstance.unmountSignIn(signInContainer);
+          }
+          
+          // Hide SignIn, show SignUp containers with ARIA state
+          signInContainer.classList.add('hidden');
+          signInContainer.setAttribute('aria-hidden', 'true');
+          signUpContainer.classList.remove('hidden');
+          signUpContainer.setAttribute('aria-hidden', 'false');
+          
+          // Mount SignUp
+          clerkInstance.mountSignUp(signUpContainer, {
+            appearance: clerkAppearance,
+            routing: 'hash',
+            signInUrl: '#sign-in',
+            afterSignInUrl: '#',
+            afterSignUpUrl: '#'
+          });
+          
+          currentClerkComponent = 'signup';
+          logger.log('[Auth] Clerk SignUp component mounted');
+          
+        } else if (!showSignUp && currentClerkComponent !== 'signin') {
+          // Switch to SignIn
+          logger.log('[Auth] Switching to SignIn component');
+          
+          // Unmount SignUp if mounted
+          if (currentClerkComponent === 'signup') {
+            clerkInstance.unmountSignUp(signUpContainer);
+          }
+          
+          // Hide SignUp, show SignIn containers with ARIA state
+          signUpContainer.classList.add('hidden');
+          signUpContainer.setAttribute('aria-hidden', 'true');
+          signInContainer.classList.remove('hidden');
+          signInContainer.setAttribute('aria-hidden', 'false');
+          
+          // Mount SignIn
+          clerkInstance.mountSignIn(signInContainer, {
+            appearance: clerkAppearance,
+            routing: 'hash',
+            signUpUrl: '#sign-up',
+            afterSignInUrl: '#',
+            afterSignUpUrl: '#'
+          });
+          
+          currentClerkComponent = 'signin';
+          logger.log('[Auth] Clerk SignIn component mounted');
+        }
+      } catch (err) {
+        logger.error('[Auth] Error switching Clerk components:', err);
+        // Safe fallback: avoid leaving a blank auth area
+        signInContainer.classList.add('hidden');
+        signUpContainer.classList.add('hidden');
+        signInContainer.setAttribute('aria-hidden', 'true');
+        signUpContainer.setAttribute('aria-hidden', 'true');
+        document.getElementById('login-form')?.classList.remove('hidden');
+        currentClerkComponent = null;
+      }
+    }
+    
     async function initializeClerk() {
       try {
         // Wait for Clerk script to load
@@ -1840,40 +1957,25 @@ My best post:
           clerkInstance = window.Clerk;
           logger.log('[Auth] Clerk initialized successfully');
           
-          // Mount Clerk SignIn component if container exists
+          // Mount initial component based on current hash
           const signInContainer = document.getElementById('clerk-signin-container');
-          if (signInContainer) {
+          const signUpContainer = document.getElementById('clerk-signup-container');
+          
+          if (signInContainer && signUpContainer) {
             try {
-              clerkInstance.mountSignIn(signInContainer, {
-                appearance: {
-                  elements: {
-                    rootBox: 'w-full',
-                    card: 'bg-transparent shadow-none border-none',
-                    headerTitle: 'hidden',
-                    headerSubtitle: 'hidden',
-                    socialButtonsBlockButton: 'bg-white/10 border-white/20 text-white hover:bg-white/20',
-                    formButtonPrimary: 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700',
-                    formFieldInput: 'bg-white/10 border-white/20 text-white placeholder:text-gray-400',
-                    formFieldLabel: 'text-gray-300',
-                    footerActionLink: 'text-violet-400 hover:text-violet-300',
-                    identityPreviewText: 'text-white',
-                    formResendCodeLink: 'text-violet-400 hover:text-violet-300',
-                    otpCodeFieldInput: 'bg-white/10 border-white/20 text-white'
-                  },
-                  layout: {
-                    socialButtonsPlacement: 'bottom',
-                    socialButtonsVariant: 'iconButton'
-                  }
-                },
-                routing: 'hash',
-                signUpUrl: '#sign-up',
-                afterSignInUrl: '#',
-                afterSignUpUrl: '#'
+              // Initial mount based on hash
+              handleClerkHashRouting();
+              
+              // Listen for hash changes to switch between SignIn/SignUp
+              window.addEventListener('hashchange', () => {
+                // Only handle auth-related hashes when on login page
+                const loginPage = document.getElementById('login-page');
+                if (loginPage && !loginPage.classList.contains('hidden')) {
+                  handleClerkHashRouting();
+                }
               });
               
-              logger.log('[Auth] Clerk SignIn component mounted');
-              
-              // Listen for successful sign-in (only triggers on NEW sign-ins, not existing sessions)
+              // Listen for successful auth (works for both sign-in and sign-up)
               clerkInstance.addListener(async ({ user }) => {
                 if (user && !sessionStorage.getItem('clerk_processing')) {
                   sessionStorage.setItem('clerk_processing', 'true');
@@ -1889,7 +1991,7 @@ My best post:
                       throw new Error('Clerk user has no email address');
                     }
                     
-                    logger.log('[Auth] User signed in via Clerk component:', email);
+                    logger.log('[Auth] User authenticated via Clerk:', email);
 
                     currentUser = {
                       email,
@@ -1901,7 +2003,7 @@ My best post:
                     await syncUserToSupabase();
                     await showDashboard();
                   } catch (err) {
-                    logger.error('[Auth] Clerk sign-in processing error:', err);
+                    logger.error('[Auth] Clerk auth processing error:', err);
                   } finally {
                     sessionStorage.removeItem('clerk_processing');
                   }
@@ -1910,8 +2012,12 @@ My best post:
               
             } catch (mountError) {
               logger.error('[Auth] Failed to mount Clerk component:', mountError);
-              // Show fallback custom form
-              document.getElementById('clerk-signin-container').classList.add('hidden');
+              // Show fallback custom form and reset state
+              signInContainer.classList.add('hidden');
+              signUpContainer.classList.add('hidden');
+              signInContainer.setAttribute('aria-hidden', 'true');
+              signUpContainer.setAttribute('aria-hidden', 'true');
+              currentClerkComponent = null;
               document.getElementById('login-form').classList.remove('hidden');
             }
           }
