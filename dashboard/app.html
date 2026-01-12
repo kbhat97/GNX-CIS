@@ -1979,6 +1979,18 @@ My best post:
               clerkInstance.addListener(async ({ user }) => {
                 if (user && !sessionStorage.getItem('clerk_processing')) {
                   sessionStorage.setItem('clerk_processing', 'true');
+                  
+                  // IMMEDIATELY hide login page to prevent stuck state
+                  const loginPage = document.getElementById('login-page');
+                  if (loginPage) {
+                    loginPage.classList.add('hidden');
+                  }
+                  
+                  // Clear any auth-related hash to prevent routing issues
+                  if (window.location.hash.match(/^#\/?sign-(in|up)/i)) {
+                    history.replaceState(null, '', window.location.pathname);
+                  }
+                  
                   try {
                     // Try primaryEmailAddress first (Clerk recommended), fall back to emailAddresses array
                     const email = 
@@ -2004,11 +2016,52 @@ My best post:
                     await showDashboard();
                   } catch (err) {
                     logger.error('[Auth] Clerk auth processing error:', err);
+                    // On error, show login page again so user can retry
+                    if (loginPage) {
+                      loginPage.classList.remove('hidden');
+                    }
+                    showNotification('Authentication error. Please try again.', 'error');
                   } finally {
                     sessionStorage.removeItem('clerk_processing');
                   }
                 }
               });
+              
+              // FALLBACK: Check for authenticated user after a delay
+              // This catches cases where the listener doesn't fire (e.g., after OAuth redirect)
+              setTimeout(async () => {
+                if (clerkInstance.user && !currentUser && !sessionStorage.getItem('clerk_processing')) {
+                  logger.log('[Auth] Fallback: Detected authenticated user, processing...');
+                  sessionStorage.setItem('clerk_processing', 'true');
+                  
+                  const loginPage = document.getElementById('login-page');
+                  if (loginPage) loginPage.classList.add('hidden');
+                  
+                  try {
+                    const user = clerkInstance.user;
+                    const email = 
+                      user.primaryEmailAddress?.emailAddress ?? 
+                      user.emailAddresses?.[0]?.emailAddress;
+                    
+                    if (email) {
+                      currentUser = {
+                        email,
+                        name: user.firstName || email.split('@')[0] || 'User',
+                        clerk_id: user.id,
+                        image_url: user.imageUrl
+                      };
+                      
+                      await syncUserToSupabase();
+                      await showDashboard();
+                    }
+                  } catch (err) {
+                    logger.error('[Auth] Fallback auth processing error:', err);
+                    if (loginPage) loginPage.classList.remove('hidden');
+                  } finally {
+                    sessionStorage.removeItem('clerk_processing');
+                  }
+                }
+              }, 2000);
               
             } catch (mountError) {
               logger.error('[Auth] Failed to mount Clerk component:', mountError);
