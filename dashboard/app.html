@@ -3127,12 +3127,12 @@ My best post:
     
     async function syncUserToSupabase() {
       if (!currentUser) {
-        logger.warn('[Sync] Cannot sync: no user');
+        console.error('[Sync] ❌ Cannot sync: no currentUser set');
         return null;
       }
       
       try {
-        logger.log('[Sync] Syncing user to backend:', currentUser.email);
+        console.log('[Sync] Syncing user to backend:', currentUser.email);
         
         // Get Clerk session token - use clerkInstance for consistency across the codebase
         // Fall back to window.Clerk if clerkInstance isn't available yet
