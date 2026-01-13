@@ -381,6 +381,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[
             "clerk_id": payload.get("sub"),
             "email": payload.get("email", ""),
             "full_name": payload.get("name", ""),
+            "profile_image_url": payload.get("picture", "") or payload.get("image_url", ""),
             "raw_token_data": payload,
         }
 
