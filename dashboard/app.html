@@ -3341,8 +3341,21 @@ My best post:
       }
       
       try {
-        // Use the supabase_id from sync if available, otherwise query by email
+        // Prefer server-issued supabase_id, but treat client state as untrusted.
+        // SECURITY NOTE: Supabase RLS policies should enforce user-scoped access.
+        // This client-side userId is a convenience; backend validates ownership.
         let userId = currentUser.supabase_id;
+        
+        // If missing, try a backend sync once before falling back to direct lookup
+        if (!userId) {
+          try {
+            await syncUserToSupabase();
+            userId = currentUser.supabase_id;
+            logger.log('[loadPostsFromSupabase] Synced user, got ID');
+          } catch (syncError) {
+            logger.warn('[loadPostsFromSupabase] Sync retry failed');
+          }
+        }
         
         if (!userId) {
           // Fallback: Get user by email - use maybeSingle() to avoid 406 when user doesn't exist yet
@@ -3355,20 +3368,20 @@ My best post:
           if (userError) {
             // Don't spam console for expected "no rows" case
             if (userError.code !== 'PGRST116') {
-              console.error('[loadPostsFromSupabase] ❌ Error finding user:', userError);
+              logger.error('[loadPostsFromSupabase] Error finding user:', userError.code);
             }
             return [];
           }
           
           if (!user) {
-            console.warn('[loadPostsFromSupabase] ⚠️ User not found in database for email:', currentUser.email);
+            logger.warn('[loadPostsFromSupabase] User not found in database');
             return [];
           }
           
           userId = user.id;
         }
         
-        console.log('[loadPostsFromSupabase] Using user ID:', userId);
+        logger.log('[loadPostsFromSupabase] Loading posts for user');
 
         // Load posts
         const { data: loadedPosts, error } = await supabaseClient
@@ -3378,7 +3391,7 @@ My best post:
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('[loadPostsFromSupabase] ❌ Error loading posts:', error);
+          logger.error('[loadPostsFromSupabase] Error loading posts:', error.code);
           throw error;
         }
         
