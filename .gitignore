@@ -2,12 +2,13 @@
 # CRITICAL - NEVER COMMIT THESE
 # ========================================
 
-# All markdown files EXCEPT README.md and feedback files (prevents doc leaks)
+# All markdown files EXCEPT README.md (prevents doc leaks)
 *.md
 !README.md
-!feedback_user.md
-!feedback_Admin.md
-!MCP_RESEARCH_REPORT.md
+
+# Internal strategy/notes files - NEVER push
+AMIT_CALL_PREP.txt
+REDDIT_COMMENTING_GUIDE.txt
 
 # Internal documentation and strategy files
 docs/
