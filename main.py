@@ -664,6 +664,121 @@ async def verify_auth(current_user: Dict = Depends(get_current_user)):
         }
     }
 
+@app.post("/api/sync-user")
+async def sync_user_to_supabase(current_user: Dict = Depends(get_current_user)):
+    """
+    Sync authenticated Clerk user to Supabase.
+    Uses service_role key to bypass RLS policies.
+    
+    This endpoint should be called from the frontend after Clerk authentication
+    to ensure the user exists in Supabase before any other database operations.
+    """
+    if TEST_MODE:
+        return {
+            "status": "success",
+            "user_id": TEST_STATE["user_id"],
+            "is_new_user": False,
+            "onboarding_completed": TEST_STATE["onboarding_completed"]
+        }
+    
+    if not SUPABASE_READY:
+        raise HTTPException(status_code=503, detail="Database not available")
+    
+    try:
+        clerk_id = current_user["clerk_id"]
+        email = current_user.get("email", "")
+        full_name = current_user.get("full_name", "")
+        
+        logger.info(f"[SYNC] Syncing user to Supabase: {email}")
+        
+        # Check if user exists by clerk_id first, then by email
+        result = supabase.table("users").select("*").eq("clerk_id", clerk_id).execute()
+        
+        if not result.data:
+            # Try by email (user may have been created with temporary clerk_id)
+            # Only match users with temporary or missing clerk_id to prevent wrong account linking
+            # Note: PostgREST uses * as wildcard, not SQL's %
+            result = supabase.table("users").select("*").eq("email", email).or_(
+                "clerk_id.is.null,clerk_id.like.dashboard_*,clerk_id.like.clerk_*"
+            ).execute()
+        
+        if result.data:
+            # EXISTING USER: Update clerk_id if needed and return
+            existing_user = result.data[0]
+            user_id = existing_user["id"]
+            
+            # Update clerk_id if it was temporary (starts with 'dashboard_' or 'clerk_')
+            old_clerk_id = existing_user.get("clerk_id", "")
+            if old_clerk_id != clerk_id and (old_clerk_id.startswith("dashboard_") or old_clerk_id.startswith("clerk_")):
+                supabase.table("users").update({
+                    "clerk_id": clerk_id,
+                    "full_name": full_name or existing_user.get("full_name"),
+                    "updated_at": datetime.utcnow().isoformat()
+                }).eq("id", user_id).execute()
+                logger.info(f"[SYNC] Updated user {user_id} with real Clerk ID")
+            
+            logger.info(f"[SYNC] ✅ Existing user found: {user_id}")
+            return {
+                "status": "success",
+                "user_id": user_id,
+                "is_new_user": False,
+                "onboarding_completed": existing_user.get("onboarding_completed", False)
+            }
+        
+        # NEW USER: Create in Supabase
+        logger.info(f"[SYNC] Creating new user in Supabase: {email}")
+        
+        # Check if user is admin
+        is_admin = email.lower().strip() in [e.lower() for e in ADMIN_EMAILS]
+        
+        new_user_data = {
+            "clerk_id": clerk_id,
+            "email": email,
+            "full_name": full_name or "User",  # Generic fallback instead of exposing email prefix
+            "created_at": datetime.utcnow().isoformat(),
+            "onboarding_completed": False,
+            "is_admin": is_admin,
+            "subscription_plan": "free",
+            "subscription_status": "active",
+            "posts_this_month": 0,
+            "posts_reset_at": datetime.utcnow().isoformat()
+        }
+        
+        insert_result = supabase.table("users").insert(new_user_data).execute()
+        
+        if not insert_result.data:
+            raise Exception("Failed to create user in Supabase")
+        
+        new_user = insert_result.data[0]
+        user_id = new_user["id"]
+        
+        logger.info(f"[SYNC] ✅ New user created: {user_id}")
+        
+        # Also create user_profile for new user
+        try:
+            supabase.table("user_profiles").insert({
+                "user_id": user_id,
+                "subscription_tier": "free"
+                # Note: subscription_plan, subscription_status, posts_this_month, posts_reset_at
+                # are stored in users table to avoid duplication. user_profiles is for
+                # personalization data (writing_tone, target_audience, etc.)
+            }).execute()
+            logger.info(f"[SYNC] ✅ User profile created for: {user_id}")
+        except Exception as profile_error:
+            # Non-fatal - profile can be created later during onboarding
+            logger.warning(f"[SYNC] Failed to create user_profile (non-fatal): {profile_error}")
+        
+        return {
+            "status": "success",
+            "user_id": user_id,
+            "is_new_user": True,
+            "onboarding_completed": False
+        }
+        
+    except Exception as e:
+        logger.error(f"[SYNC] User sync error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"User sync failed: {str(e)}")
+
 # ============================================
 # ONBOARDING ENDPOINTS
 # ============================================

@@ -3094,16 +3094,18 @@ My best post:
     // Initialize Supabase client lazily (called on first use)
     // This fixes the race condition with defer-loaded SDK
     function ensureSupabaseInitialized() {
-      if (supabaseInitAttempted) return supabaseEnabled;
-      supabaseInitAttempted = true;
-      
       try {
+        // Check if SDK is loaded BEFORE marking as attempted
+        // This allows retries if called before SDK finishes loading
         if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
-          console.warn('[Supabase] SDK not loaded yet');
-          supabaseEnabled = false;
+          // SDK not ready yet - do NOT burn the one-time attempt
           return false;
         }
-        
+
+        // SDK is available - now we can mark as attempted
+        if (supabaseInitAttempted) return supabaseEnabled;
+        supabaseInitAttempted = true;
+
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         supabaseEnabled = true;
         console.log('[Supabase] ✅ Client initialized successfully');
@@ -3111,6 +3113,7 @@ My best post:
       } catch (error) {
         console.error('[Supabase] ❌ Failed to initialize:', error);
         supabaseEnabled = false;
+        supabaseInitAttempted = true; // Mark as attempted on error to avoid retry loops
         return false;
       }
     }
@@ -3118,123 +3121,141 @@ My best post:
     // ═══════════════════════════════════════════════════════════════════
     // SYNC CLERK USER TO SUPABASE
     // Called immediately after login to ensure user exists in database
+    // Uses backend API with service_role to bypass RLS policies
     // ═══════════════════════════════════════════════════════════════════
+    const SYNC_TIMEOUT_MS = 10000; // 10 second timeout to prevent login stalling
+    
     async function syncUserToSupabase() {
-      // Ensure Supabase is initialized (lazy init for defer-loaded SDK)
-      ensureSupabaseInitialized();
-      
-      if (!supabaseEnabled || !currentUser) {
-        logger.warn('[Sync] Cannot sync: Supabase disabled or no user');
+      if (!currentUser) {
+        logger.warn('[Sync] Cannot sync: no user');
         return null;
       }
       
       try {
-        const userEmail = currentUser.email;
-        const clerkId = currentUser.clerk_id || `clerk_${Date.now()}`;
-        const fullName = currentUser.name || userEmail.split('@')[0];
+        logger.log('[Sync] Syncing user to backend:', currentUser.email);
         
-        logger.log('[Sync] Syncing user to Supabase:', userEmail);
-        
-        // Check if user exists by email
-        let { data: existingUser, error: selectError } = await supabaseClient
-          .from('users')
-          .select('id, clerk_id, onboarding_completed')
-          .eq('email', userEmail)
-          .single();
-        
-        if (selectError && selectError.code !== 'PGRST116') {
-          // PGRST116 = no rows returned, which is expected for new users
-          logger.warn('[Sync] Error checking existing user:', selectError);
+        // Get Clerk session token - use clerkInstance for consistency across the codebase
+        // Fall back to window.Clerk if clerkInstance isn't available yet
+        let token = null;
+        try {
+          token = await (clerkInstance?.session?.getToken?.() || window.Clerk?.session?.getToken?.());
+        } catch (tokenError) {
+          logger.warn('[Sync] Token acquisition failed:', tokenError?.message ?? String(tokenError));
         }
         
-        let userId;
-        let isNewUser = false;
+        if (!token) {
+          logger.warn('[Sync] No Clerk token available - user may not be fully authenticated');
+          // Fall back to checking if user exists in Supabase directly (read-only)
+          return await checkUserExistsInSupabase();
+        }
         
-        if (!existingUser) {
-          // NEW USER: Create in Supabase
-          logger.log('[Sync] Creating new user in Supabase:', userEmail);
+        // Create AbortController for timeout to prevent login stalling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS);
+        
+        try {
+          // Call backend API to sync user (bypasses RLS with service_role)
+          const response = await fetch(`${API_BASE}/api/sync-user`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          });
           
-          const { data: newUser, error: createError } = await supabaseClient
-            .from('users')
-            .insert({
-              email: userEmail,
-              full_name: fullName,
-              clerk_id: clerkId,
-              profile_image_url: currentUser.image_url || null,
-              onboarding_completed: false,
-              is_admin: isAdminUser(),
-              subscription_plan: 'free',
-              subscription_status: 'active',
-              posts_this_month: 0,
-              posts_reset_at: new Date().toISOString()
-            })
-            .select()
-            .single();
+          if (!response.ok) {
+            const errorText = await response.text();
+            logger.error('[Sync] Backend sync failed:', response.status, errorText);
+            // Fall back to checking if user exists
+            return await checkUserExistsInSupabase();
+          }
           
-          if (createError) {
-            logger.error('[Sync] Failed to create user:', createError);
+          const data = await response.json();
+          
+          if (data.status === 'success') {
+            // Store the Supabase user ID for future use
+            currentUser.supabase_id = data.user_id;
+            currentUser.isNewUser = data.is_new_user;
+            
+            logger.log('[Sync] ✅ User synced successfully:', data.user_id, 
+              data.is_new_user ? '(new user)' : '(existing user)');
+            
+            return { 
+              userId: data.user_id, 
+              isNewUser: data.is_new_user,
+              onboardingCompleted: data.onboarding_completed 
+            };
+          } else {
+            logger.error('[Sync] Unexpected response:', data);
             return null;
           }
           
-          userId = newUser.id;
-          isNewUser = true;
-          logger.log('[Sync] ✅ New user created:', userId);
-          
-          // Also create user_profile for new user
-          const { error: profileError } = await supabaseClient
-            .from('user_profiles')
-            .insert({
-              user_id: userId,
-              subscription_tier: 'free',
-              subscription_plan: 'free',
-              subscription_status: 'active',
-              posts_this_month: 0,
-              posts_reset_at: new Date().toISOString()
-            });
-          
-          if (profileError) {
-            logger.warn('[Sync] Failed to create user_profile:', profileError);
+        } catch (fetchError) {
+          // Check if it was an abort (timeout)
+          if (fetchError.name === 'AbortError') {
+            logger.warn('[Sync] Request timed out after', SYNC_TIMEOUT_MS, 'ms - falling back');
           } else {
-            logger.log('[Sync] ✅ User profile created');
+            // Network/CORS/other failures - fall back to prevent stalling login
+            logger.warn('[Sync] Backend sync request failed - falling back:', fetchError?.message ?? String(fetchError));
           }
-          
-        } else {
-          // EXISTING USER: Update last login info
-          userId = existingUser.id;
-          
-          // Update clerk_id if it was a temporary one
-          if (existingUser.clerk_id && existingUser.clerk_id.startsWith('dashboard_')) {
-            const { error: updateError } = await supabaseClient
-              .from('users')
-              .update({
-                clerk_id: clerkId,
-                full_name: fullName,
-                profile_image_url: currentUser.image_url || null,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', userId);
-            
-            if (updateError) {
-              logger.warn('[Sync] Failed to update user:', updateError);
-            } else {
-              logger.log('[Sync] ✅ User updated with real Clerk ID');
-            }
-          }
-          
-          logger.log('[Sync] ✅ Existing user found:', userId);
+          return await checkUserExistsInSupabase();
+        } finally {
+          clearTimeout(timeoutId);
         }
         
-        // Store the Supabase user ID for future use
-        currentUser.supabase_id = userId;
-        currentUser.isNewUser = isNewUser;
-        
-        return { userId, isNewUser };
-        
       } catch (error) {
-        logger.error('[Sync] User sync error:', error);
+        // Safer error logging - don't assume error.message exists
+        logger.error('[Sync] User sync error:', error?.message ?? String(error));
         return null;
       }
     }
+    
+    // Helper: Check if user exists in Supabase (read-only, no RLS bypass needed for SELECT)
+    async function checkUserExistsInSupabase() {
+      ensureSupabaseInitialized();
+      
+      if (!supabaseEnabled || !currentUser?.email) {
+        return null;
+      }
+      
+      try {
+        // Use maybeSingle() instead of single() to avoid 406 error when no rows
+        const { data: user, error } = await supabaseClient
+          .from('users')
+          .select('id, onboarding_completed')
+          .eq('email', currentUser.email)
+          .maybeSingle();
+        
+        if (error) {
+          // Only log non-404 errors (PGRST116 = no rows found, expected for new users)
+          if (error.code !== 'PGRST116') {
+            logger.warn('[Sync] Error checking user:', error.message);
+          }
+          return null;
+        }
+        
+        if (user) {
+          currentUser.supabase_id = user.id;
+          currentUser.isNewUser = false;
+          logger.log('[Sync] ✅ Found existing user:', user.id);
+          return { 
+            userId: user.id, 
+            isNewUser: false,
+            onboardingCompleted: user.onboarding_completed 
+          };
+        }
+        
+        // User doesn't exist yet - will be created on next action
+        logger.log('[Sync] User not found in Supabase - will be created on first action');
+        return null;
+        
+      } catch (error) {
+        logger.warn('[Sync] Check user error:', error.message);
+        return null;
+      }
+    }
+
 
     // Save post to Supabase
     async function savePostToSupabase(post) {
@@ -3244,34 +3265,29 @@ My best post:
       if (!supabaseEnabled || !currentUser) return null;
       
       try {
-        // Get or create user in database
+        // Get user from database (should already be synced via /api/sync-user)
         const userEmail = currentUser.email;
         
-        // Check if user exists
-        let { data: existingUser } = await supabaseClient
+        // Check if user exists using maybeSingle() to avoid 406
+        let { data: existingUser, error: userError } = await supabaseClient
           .from('users')
           .select('id')
           .eq('email', userEmail)
-          .single();
+          .maybeSingle();
         
-        let userId;
-        if (!existingUser) {
-          // Create new user
-          const { data: newUser, error: createError } = await supabaseClient
-            .from('users')
-            .insert({
-              email: userEmail,
-              full_name: currentUser.name,
-              clerk_id: `dashboard_${Date.now()}` // Temporary clerk_id for dashboard users
-            })
-            .select()
-            .single();
-          
-          if (createError) throw createError;
-          userId = newUser.id;
-        } else {
-          userId = existingUser.id;
+        if (userError || !existingUser) {
+          // User not synced yet - try to sync via backend first
+          logger.warn('[savePost] User not found, attempting sync...');
+          const syncResult = await syncUserToSupabase();
+          if (!syncResult?.userId) {
+            logger.error('[savePost] Failed to sync user, cannot save post');
+            return null;
+          }
+          // Use the synced user ID
+          existingUser = { id: syncResult.userId };
         }
+        
+        const userId = existingUser.id;
 
         // Save post
         const { data, error } = await supabaseClient
@@ -3324,15 +3340,18 @@ My best post:
       }
       
       try {
-        // Get user
+        // Get user - use maybeSingle() to avoid 406 when user doesn't exist yet
         const { data: user, error: userError } = await supabaseClient
           .from('users')
           .select('id')
           .eq('email', currentUser.email)
-          .single();
+          .maybeSingle();
         
         if (userError) {
-          console.error('[loadPostsFromSupabase] ❌ Error finding user:', userError);
+          // Don't spam console for expected "no rows" case
+          if (userError.code !== 'PGRST116') {
+            console.error('[loadPostsFromSupabase] ❌ Error finding user:', userError);
+          }
           return [];
         }
         
@@ -4522,7 +4541,7 @@ My best post:
             .from('users')
             .select('id')
             .eq('email', currentUser.email)
-            .single();
+            .maybeSingle();
           
           if (user) {
             // Parse topics into array
@@ -4695,7 +4714,7 @@ My best post:
           .from('users')
           .select('id, onboarding_completed')
           .eq('email', currentUser.email)
-          .single();
+          .maybeSingle();
         
         if (!user) {
           logger.log('[Onboarding] New user - needs onboarding');
@@ -4713,7 +4732,7 @@ My best post:
           .from('onboarding_questionnaire')
           .select('id, completed_at')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
         
         if (questionnaire && questionnaire.completed_at) {
           logger.log('[Onboarding] User has questionnaire data - skipping onboarding');
@@ -4730,7 +4749,7 @@ My best post:
           .from('user_profiles')
           .select('writing_tone, target_audience, brand_voice_summary')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
         
         if (profile && (profile.writing_tone || profile.target_audience || profile.brand_voice_summary)) {
           logger.log('[Onboarding] User has profile data - skipping onboarding');
@@ -4868,10 +4887,10 @@ My best post:
           .from('users')
           .select('id')
           .eq('email', currentUser.email)
-          .single();
+          .maybeSingle();
         
         if (userError || !user) {
-          logger.warn('[TIER] User not found in database');
+          // Silently default to free - user might not be synced yet
           updatePlanDisplay('free');
           return;
         }
@@ -4881,10 +4900,10 @@ My best post:
           .from('user_profiles')
           .select('subscription_tier')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
         
         if (profileError || !profile) {
-          logger.log('[TIER] No profile found, defaulting to free');
+          // No profile yet - default to free
           updatePlanDisplay('free');
           return;
         }
