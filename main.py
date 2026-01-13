@@ -696,7 +696,11 @@ async def sync_user_to_supabase(current_user: Dict = Depends(get_current_user)):
         
         if not result.data:
             # Try by email (user may have been created with temporary clerk_id)
-            result = supabase.table("users").select("*").eq("email", email).execute()
+            # Only match users with temporary or missing clerk_id to prevent wrong account linking
+            # Note: PostgREST uses * as wildcard, not SQL's %
+            result = supabase.table("users").select("*").eq("email", email).or_(
+                "clerk_id.is.null,clerk_id.like.dashboard_*,clerk_id.like.clerk_*"
+            ).execute()
         
         if result.data:
             # EXISTING USER: Update clerk_id if needed and return
@@ -730,7 +734,7 @@ async def sync_user_to_supabase(current_user: Dict = Depends(get_current_user)):
         new_user_data = {
             "clerk_id": clerk_id,
             "email": email,
-            "full_name": full_name or email.split("@")[0],
+            "full_name": full_name or "User",  # Generic fallback instead of exposing email prefix
             "created_at": datetime.utcnow().isoformat(),
             "onboarding_completed": False,
             "is_admin": is_admin,
@@ -754,11 +758,10 @@ async def sync_user_to_supabase(current_user: Dict = Depends(get_current_user)):
         try:
             supabase.table("user_profiles").insert({
                 "user_id": user_id,
-                "subscription_tier": "free",
-                "subscription_plan": "free",
-                "subscription_status": "active",
-                "posts_this_month": 0,
-                "posts_reset_at": datetime.utcnow().isoformat()
+                "subscription_tier": "free"
+                # Note: subscription_plan, subscription_status, posts_this_month, posts_reset_at
+                # are stored in users table to avoid duplication. user_profiles is for
+                # personalization data (writing_tone, target_audience, etc.)
             }).execute()
             logger.info(f"[SYNC] ✅ User profile created for: {user_id}")
         except Exception as profile_error:
