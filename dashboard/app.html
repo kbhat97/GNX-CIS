@@ -3341,33 +3341,40 @@ My best post:
       }
       
       try {
-        // Get user - use maybeSingle() to avoid 406 when user doesn't exist yet
-        const { data: user, error: userError } = await supabaseClient
-          .from('users')
-          .select('id')
-          .eq('email', currentUser.email)
-          .maybeSingle();
+        // Use the supabase_id from sync if available, otherwise query by email
+        let userId = currentUser.supabase_id;
         
-        if (userError) {
-          // Don't spam console for expected "no rows" case
-          if (userError.code !== 'PGRST116') {
-            console.error('[loadPostsFromSupabase] ❌ Error finding user:', userError);
+        if (!userId) {
+          // Fallback: Get user by email - use maybeSingle() to avoid 406 when user doesn't exist yet
+          const { data: user, error: userError } = await supabaseClient
+            .from('users')
+            .select('id')
+            .eq('email', currentUser.email)
+            .maybeSingle();
+          
+          if (userError) {
+            // Don't spam console for expected "no rows" case
+            if (userError.code !== 'PGRST116') {
+              console.error('[loadPostsFromSupabase] ❌ Error finding user:', userError);
+            }
+            return [];
           }
-          return [];
+          
+          if (!user) {
+            console.warn('[loadPostsFromSupabase] ⚠️ User not found in database for email:', currentUser.email);
+            return [];
+          }
+          
+          userId = user.id;
         }
         
-        if (!user) {
-          console.warn('[loadPostsFromSupabase] ⚠️ User not found in database for email:', currentUser.email);
-          return [];
-        }
-        
-        console.log('[loadPostsFromSupabase] Found user ID:', user.id);
+        console.log('[loadPostsFromSupabase] Using user ID:', userId);
 
         // Load posts
         const { data: loadedPosts, error } = await supabaseClient
           .from('posts')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false });
 
         if (error) {
