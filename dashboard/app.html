@@ -1117,7 +1117,7 @@ My best post:
                   </svg>
                 </div>
               </div>
-              <p class="text-xs text-green-400">This session</p>
+              <p class="text-xs text-green-400">All time</p>
             </div>
             
             <div class="glass-card rounded-xl p-6 animate-fade-in-up" style="animation-delay: 100ms">
@@ -1986,9 +1986,10 @@ My best post:
                     loginPage.classList.add('hidden');
                   }
                   
-                  // Clear any auth-related hash to prevent routing issues
+                  // Clear any auth-related hash to prevent routing issues (keep query params)
                   if (window.location.hash.match(/^#\/?sign-(in|up)/i)) {
-                    history.replaceState(null, '', window.location.pathname);
+                    const nextUrl = `${window.location.pathname}${window.location.search}`;
+                    history.replaceState(null, '', nextUrl);
                   }
                   
                   try {
@@ -2016,6 +2017,10 @@ My best post:
                     await showDashboard();
                   } catch (err) {
                     logger.error('[Auth] Clerk auth processing error:', err);
+                    // Keep app state consistent with UI (login page visible)
+                    currentUser = null;
+                    // Optional: also clear Clerk session so SignIn renders correctly
+                    try { await clerkInstance?.signOut?.(); } catch (e) { logger.warn('[Auth] signOut failed:', e); }
                     // On error, show login page again so user can retry
                     if (loginPage) {
                       loginPage.classList.remove('hidden');
@@ -2037,26 +2042,35 @@ My best post:
                   const loginPage = document.getElementById('login-page');
                   if (loginPage) loginPage.classList.add('hidden');
                   
+                  // Clear any auth-related hash to prevent routing issues (keep query params)
+                  if (window.location.hash.match(/^#\/?sign-(in|up)/i)) {
+                    const nextUrl = `${window.location.pathname}${window.location.search}`;
+                    history.replaceState(null, '', nextUrl);
+                  }
+                  
                   try {
                     const user = clerkInstance.user;
                     const email = 
                       user.primaryEmailAddress?.emailAddress ?? 
                       user.emailAddresses?.[0]?.emailAddress;
                     
-                    if (email) {
-                      currentUser = {
-                        email,
-                        name: user.firstName || email.split('@')[0] || 'User',
-                        clerk_id: user.id,
-                        image_url: user.imageUrl
-                      };
-                      
-                      await syncUserToSupabase();
-                      await showDashboard();
+                    if (!email) {
+                      throw new Error('Clerk user has no email address');
                     }
+                    
+                    currentUser = {
+                      email,
+                      name: user.firstName || email.split('@')[0] || 'User',
+                      clerk_id: user.id,
+                      image_url: user.imageUrl
+                    };
+                    
+                    await syncUserToSupabase();
+                    await showDashboard();
                   } catch (err) {
                     logger.error('[Auth] Fallback auth processing error:', err);
                     if (loginPage) loginPage.classList.remove('hidden');
+                    showNotification('Authentication error. Please try again.', 'error');
                   } finally {
                     sessionStorage.removeItem('clerk_processing');
                   }
@@ -3260,17 +3274,42 @@ My best post:
 
     // Load all posts for current user from Supabase
     async function loadPostsFromSupabase() {
-      if (!supabaseEnabled || !currentUser) return [];
+      // Critical logging for dashboard sync debugging (always visible)
+      console.log('[loadPostsFromSupabase] Starting...', { 
+        supabaseEnabled, 
+        hasCurrentUser: !!currentUser,
+        email: currentUser?.email 
+      });
+      
+      if (!supabaseEnabled) {
+        console.warn('[loadPostsFromSupabase] ⚠️ Supabase not enabled, returning empty');
+        return [];
+      }
+      
+      if (!currentUser) {
+        console.warn('[loadPostsFromSupabase] ⚠️ No currentUser, returning empty');
+        return [];
+      }
       
       try {
         // Get user
-        const { data: user } = await supabaseClient
+        const { data: user, error: userError } = await supabaseClient
           .from('users')
           .select('id')
           .eq('email', currentUser.email)
           .single();
         
-        if (!user) return [];
+        if (userError) {
+          console.error('[loadPostsFromSupabase] ❌ Error finding user:', userError);
+          return [];
+        }
+        
+        if (!user) {
+          console.warn('[loadPostsFromSupabase] ⚠️ User not found in database for email:', currentUser.email);
+          return [];
+        }
+        
+        console.log('[loadPostsFromSupabase] Found user ID:', user.id);
 
         // Load posts
         const { data: loadedPosts, error } = await supabaseClient
@@ -3279,7 +3318,12 @@ My best post:
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('[loadPostsFromSupabase] ❌ Error loading posts:', error);
+          throw error;
+        }
+        
+        console.log('[loadPostsFromSupabase] ✅ Posts loaded:', loadedPosts?.length || 0);
 
         // Transform to dashboard format
         const transformedPosts = loadedPosts.map(p => {
@@ -3313,14 +3357,15 @@ My best post:
         });
 
         // Debug: Show raw scores from Supabase
-        logger.log('[DATA] [Supabase] Raw scores from DB:', loadedPosts.map(p => p.virality_score));
-        logger.log(`[OK] Loaded ${transformedPosts.length} posts from Supabase`);
+        console.log('[loadPostsFromSupabase] Raw scores:', loadedPosts.map(p => p.virality_score));
+        console.log(`[loadPostsFromSupabase] ✅ Returning ${transformedPosts.length} posts`);
         return transformedPosts;
       } catch (error) {
-        logger.error('[X] Failed to load posts from Supabase:', error);
+        console.error('[loadPostsFromSupabase] ❌ Failed to load posts:', error);
         return [];
       }
     }
+
 
     // ═══════════════════════════════════════════════════════════════════
     // AUTH - REAL CLERK AUTHENTICATION
@@ -4713,20 +4758,20 @@ My best post:
       await loadUserSubscriptionTier();
       
       // Load posts from Supabase
-      logger.log('[DATA] Attempting to load posts from Supabase...');
+      console.log('[showDashboard] Loading posts from Supabase...');
       const loadedPosts = await loadPostsFromSupabase();
-      logger.log('[DATA] Loaded posts count:', loadedPosts ? loadedPosts.length : 0);
+      console.log('[showDashboard] Posts loaded:', loadedPosts?.length || 0, 'posts');
       
       if (loadedPosts && loadedPosts.length > 0) {
         posts = loadedPosts;
-        logger.log(`[OK] Restored ${posts.length} posts from Supabase`);
+        console.log(`[showDashboard] ✅ Assigned ${posts.length} posts to global array`);
       } else {
-        logger.warn('[WARN] No posts loaded from Supabase');
+        console.warn('[showDashboard] ⚠️ No posts loaded from Supabase');
         // Initialize empty posts array
         posts = posts || [];
       }
       
-      logger.log('🔄 Updating metrics and UI...');
+      console.log('[showDashboard] Updating UI with', posts.length, 'posts');
       updateMetrics();
       updateRecentPosts();
       updateHistoryGrid();
@@ -5693,20 +5738,25 @@ My best post:
       }
     }
 
-
     function updateMetrics() {
+      console.log('[updateMetrics] Starting with', posts.length, 'posts');
+      console.log('[updateMetrics] Posts array:', posts.slice(0, 3).map(p => ({ topic: p.topic?.substring(0, 30), score: p.virality_score })));
+      
       document.getElementById('metric-posts').textContent = posts.length;
       
       // Filter posts with valid virality scores
       const validPosts = posts.filter(p => p.virality_score && !isNaN(p.virality_score));
+      console.log('[updateMetrics] Valid posts with scores:', validPosts.length);
       
       if (validPosts.length > 0) {
         // Use last 10 posts for average (matches sparkline), posts are newest-first
         const recentPosts = validPosts.slice(0, 10);
         const avgScore = recentPosts.reduce((sum, p) => sum + (p.virality_score || 0), 0) / recentPosts.length;
-        document.getElementById('metric-avg-score').textContent = avgScore.toFixed(0);
-        
         const bestScore = Math.max(...validPosts.map(p => p.virality_score || 0));
+        
+        console.log('[updateMetrics] Calculated: avgScore=', avgScore.toFixed(0), 'bestScore=', bestScore);
+        
+        document.getElementById('metric-avg-score').textContent = avgScore.toFixed(0);
         document.getElementById('metric-best-score').textContent = bestScore;
         
         // Update sparkline
