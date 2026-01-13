@@ -2069,6 +2069,14 @@ My best post:
                     await showDashboard();
                   } catch (err) {
                     logger.error('[Auth] Fallback auth processing error:', err);
+                    // Reset all app state to match UI (login page visible)
+                    currentUser = null;
+                    posts = [];
+                    currentPost = null;
+                    selectedPostIndex = null;
+                    improvingPost = null;
+                    // Attempt to clear Clerk session so SignIn renders correctly
+                    try { await clerkInstance?.signOut?.(); } catch (e) { logger.warn('[Auth] signOut failed:', e); }
                     if (loginPage) loginPage.classList.remove('hidden');
                     showNotification('Authentication error. Please try again.', 'error');
                   } finally {
@@ -3081,15 +3089,30 @@ My best post:
     // Note: Using supabaseClient to avoid conflict with window.supabase from the library
     let supabaseClient = null;
     let supabaseEnabled = false;
+    let supabaseInitAttempted = false;
 
-    // Initialize Supabase client
-    try {
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      supabaseEnabled = true;
-      logger.log('[OK] Supabase connected');
-    } catch (error) {
-      logger.warn('[WARN] Supabase not available:', error);
-      supabaseEnabled = false;
+    // Initialize Supabase client lazily (called on first use)
+    // This fixes the race condition with defer-loaded SDK
+    function ensureSupabaseInitialized() {
+      if (supabaseInitAttempted) return supabaseEnabled;
+      supabaseInitAttempted = true;
+      
+      try {
+        if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+          console.warn('[Supabase] SDK not loaded yet');
+          supabaseEnabled = false;
+          return false;
+        }
+        
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseEnabled = true;
+        console.log('[Supabase] ✅ Client initialized successfully');
+        return true;
+      } catch (error) {
+        console.error('[Supabase] ❌ Failed to initialize:', error);
+        supabaseEnabled = false;
+        return false;
+      }
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -3097,6 +3120,9 @@ My best post:
     // Called immediately after login to ensure user exists in database
     // ═══════════════════════════════════════════════════════════════════
     async function syncUserToSupabase() {
+      // Ensure Supabase is initialized (lazy init for defer-loaded SDK)
+      ensureSupabaseInitialized();
+      
       if (!supabaseEnabled || !currentUser) {
         logger.warn('[Sync] Cannot sync: Supabase disabled or no user');
         return null;
@@ -3212,6 +3238,9 @@ My best post:
 
     // Save post to Supabase
     async function savePostToSupabase(post) {
+      // Ensure Supabase is initialized (lazy init for defer-loaded SDK)
+      ensureSupabaseInitialized();
+      
       if (!supabaseEnabled || !currentUser) return null;
       
       try {
@@ -3274,6 +3303,9 @@ My best post:
 
     // Load all posts for current user from Supabase
     async function loadPostsFromSupabase() {
+      // Ensure Supabase is initialized (lazy init for defer-loaded SDK)
+      ensureSupabaseInitialized();
+      
       // Critical logging for dashboard sync debugging (always visible)
       console.log('[loadPostsFromSupabase] Starting...', { 
         supabaseEnabled, 
@@ -4297,6 +4329,7 @@ My best post:
     }
     
     async function updatePostStatus(postId, status) {
+      ensureSupabaseInitialized();
       if (!supabaseEnabled) return false;
       
       try {
@@ -4631,6 +4664,9 @@ My best post:
     async function checkOnboardingStatus() {
       // Check if user has completed onboarding or can skip it
       if (!currentUser) return false;
+      
+      // Ensure Supabase is initialized (lazy init for defer-loaded SDK)
+      ensureSupabaseInitialized();
       
       try {
         logger.log('[Onboarding] checkOnboardingStatus called for:', currentUser?.email);
@@ -5740,12 +5776,15 @@ My best post:
 
     function updateMetrics() {
       console.log('[updateMetrics] Starting with', posts.length, 'posts');
-      console.log('[updateMetrics] Posts array:', posts.slice(0, 3).map(p => ({ topic: p.topic?.substring(0, 30), score: p.virality_score })));
+      // Gate user-content logging behind DEBUG_MODE
+      if (DEBUG_MODE) {
+        console.log('[updateMetrics] Posts array:', posts.slice(0, 3).map(p => ({ topic: p.topic?.substring(0, 30), score: p.virality_score })));
+      }
       
       document.getElementById('metric-posts').textContent = posts.length;
       
-      // Filter posts with valid virality scores
-      const validPosts = posts.filter(p => p.virality_score && !isNaN(p.virality_score));
+      // Filter posts with valid virality scores (include score=0 as valid)
+      const validPosts = posts.filter(p => p.virality_score != null && !isNaN(p.virality_score));
       console.log('[updateMetrics] Valid posts with scores:', validPosts.length);
       
       if (validPosts.length > 0) {
