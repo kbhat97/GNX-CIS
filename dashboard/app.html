@@ -3139,12 +3139,13 @@ My best post:
         let token = null;
         try {
           token = await (clerkInstance?.session?.getToken?.() || window.Clerk?.session?.getToken?.());
+          console.log('[Sync] Got token:', token ? 'yes' : 'no');
         } catch (tokenError) {
-          logger.warn('[Sync] Token acquisition failed:', tokenError?.message ?? String(tokenError));
+          console.error('[Sync] Token acquisition failed:', tokenError?.message ?? String(tokenError));
         }
         
         if (!token) {
-          logger.warn('[Sync] No Clerk token available - user may not be fully authenticated');
+          console.warn('[Sync] No Clerk token available - falling back to direct Supabase check');
           // Fall back to checking if user exists in Supabase directly (read-only)
           return await checkUserExistsInSupabase();
         }
@@ -3166,7 +3167,7 @@ My best post:
           
           if (!response.ok) {
             const errorText = await response.text();
-            logger.error('[Sync] Backend sync failed:', response.status, errorText);
+            console.error('[Sync] Backend sync failed:', response.status, errorText);
             // Fall back to checking if user exists
             return await checkUserExistsInSupabase();
           }
@@ -3178,7 +3179,7 @@ My best post:
             currentUser.supabase_id = data.user_id;
             currentUser.isNewUser = data.is_new_user;
             
-            logger.log('[Sync] ✅ User synced successfully:', data.user_id, 
+            console.log('[Sync] ✅ User synced successfully:', data.user_id, 
               data.is_new_user ? '(new user)' : '(existing user)');
             
             return { 
@@ -3187,17 +3188,17 @@ My best post:
               onboardingCompleted: data.onboarding_completed 
             };
           } else {
-            logger.error('[Sync] Unexpected response:', data);
+            console.error('[Sync] Unexpected response:', data);
             return null;
           }
           
         } catch (fetchError) {
           // Check if it was an abort (timeout)
           if (fetchError.name === 'AbortError') {
-            logger.warn('[Sync] Request timed out after', SYNC_TIMEOUT_MS, 'ms - falling back');
+            console.warn('[Sync] Request timed out after', SYNC_TIMEOUT_MS, 'ms - falling back');
           } else {
             // Network/CORS/other failures - fall back to prevent stalling login
-            logger.warn('[Sync] Backend sync request failed - falling back:', fetchError?.message ?? String(fetchError));
+            console.error('[Sync] Backend sync request failed:', fetchError?.message ?? String(fetchError));
           }
           return await checkUserExistsInSupabase();
         } finally {
@@ -3206,7 +3207,7 @@ My best post:
         
       } catch (error) {
         // Safer error logging - don't assume error.message exists
-        logger.error('[Sync] User sync error:', error?.message ?? String(error));
+        console.error('[Sync] User sync error:', error?.message ?? String(error));
         return null;
       }
     }
