@@ -381,6 +381,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[
             "clerk_id": payload.get("sub"),
             "email": payload.get("email", ""),
             "full_name": payload.get("name", ""),
+            "profile_image_url": payload.get("picture", "") or payload.get("image_url", ""),
             "raw_token_data": payload,
         }
 
@@ -668,10 +669,12 @@ async def verify_auth(current_user: Dict = Depends(get_current_user)):
 async def sync_user_to_supabase(current_user: Dict = Depends(get_current_user)):
     """
     Sync authenticated Clerk user to Supabase.
-    Uses service_role key to bypass RLS policies.
     
-    This endpoint should be called from the frontend after Clerk authentication
-    to ensure the user exists in Supabase before any other database operations.
+    ROBUST SYNC PATTERN:
+    1. Clerk is the source of truth for user identity
+    2. Always ensure user exists with complete data
+    3. Always update email/name from Clerk (they may change)
+    4. Use service_role to bypass RLS policies
     """
     if TEST_MODE:
         return {
@@ -685,39 +688,46 @@ async def sync_user_to_supabase(current_user: Dict = Depends(get_current_user)):
         raise HTTPException(status_code=503, detail="Database not available")
     
     try:
+        # Extract user data from Clerk JWT - this is the source of truth
         clerk_id = current_user["clerk_id"]
         email = current_user.get("email", "")
         full_name = current_user.get("full_name", "")
+        profile_image = current_user.get("profile_image_url", "")
         
-        logger.info(f"[SYNC] Syncing user to Supabase: {email}")
+        # Validate required fields
+        if not clerk_id:
+            raise HTTPException(status_code=400, detail="Missing clerk_id in token")
+        if not email:
+            raise HTTPException(status_code=400, detail="Missing email in token")
         
-        # Check if user exists by clerk_id first, then by email
+        logger.info(f"[SYNC] Syncing user: {email} (clerk_id: {clerk_id[:20]}...)")
+        
+        # Check if user is admin
+        is_admin = email.lower().strip() in [e.lower() for e in ADMIN_EMAILS]
+        
+        # STEP 1: Look up existing user by clerk_id (primary identifier)
         result = supabase.table("users").select("*").eq("clerk_id", clerk_id).execute()
         
-        if not result.data:
-            # Try by email (user may have been created with temporary clerk_id)
-            # Only match users with temporary or missing clerk_id to prevent wrong account linking
-            # Note: PostgREST uses * as wildcard, not SQL's %
-            result = supabase.table("users").select("*").eq("email", email).or_(
-                "clerk_id.is.null,clerk_id.like.dashboard_*,clerk_id.like.clerk_*"
-            ).execute()
-        
         if result.data:
-            # EXISTING USER: Update clerk_id if needed and return
+            # EXISTING USER - Update with latest Clerk data
             existing_user = result.data[0]
             user_id = existing_user["id"]
             
-            # Update clerk_id if it was temporary (starts with 'dashboard_' or 'clerk_')
-            old_clerk_id = existing_user.get("clerk_id", "")
-            if old_clerk_id != clerk_id and (old_clerk_id.startswith("dashboard_") or old_clerk_id.startswith("clerk_")):
-                supabase.table("users").update({
-                    "clerk_id": clerk_id,
-                    "full_name": full_name or existing_user.get("full_name"),
-                    "updated_at": datetime.utcnow().isoformat()
-                }).eq("id", user_id).execute()
-                logger.info(f"[SYNC] Updated user {user_id} with real Clerk ID")
+            # Always sync these fields from Clerk (source of truth)
+            updates = {
+                "email": email,  # Email might change in Clerk
+                "full_name": full_name or existing_user.get("full_name") or "User",
+                "updated_at": datetime.utcnow().isoformat(),
+                "is_admin": is_admin  # Re-check admin status
+            }
             
-            logger.info(f"[SYNC] ✅ Existing user found: {user_id}")
+            # Only update profile_image if we have one
+            if profile_image:
+                updates["profile_image_url"] = profile_image
+            
+            supabase.table("users").update(updates).eq("id", user_id).execute()
+            logger.info(f"[SYNC] ✅ User synced: {user_id} ({email})")
+            
             return {
                 "status": "success",
                 "user_id": user_id,
@@ -725,17 +735,42 @@ async def sync_user_to_supabase(current_user: Dict = Depends(get_current_user)):
                 "onboarding_completed": existing_user.get("onboarding_completed", False)
             }
         
-        # NEW USER: Create in Supabase
-        logger.info(f"[SYNC] Creating new user in Supabase: {email}")
+        # STEP 2: Check if user exists with this email but different/no clerk_id
+        # This handles migration from old systems or manual user creation
+        email_result = supabase.table("users").select("*").eq("email", email).execute()
         
-        # Check if user is admin
-        is_admin = email.lower().strip() in [e.lower() for e in ADMIN_EMAILS]
+        if email_result.data:
+            # User exists by email - update with real clerk_id
+            existing_user = email_result.data[0]
+            user_id = existing_user["id"]
+            
+            supabase.table("users").update({
+                "clerk_id": clerk_id,  # Link to real Clerk account
+                "full_name": full_name or existing_user.get("full_name") or "User",
+                "profile_image_url": profile_image or existing_user.get("profile_image_url"),
+                "is_admin": is_admin,
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", user_id).execute()
+            
+            logger.info(f"[SYNC] ✅ User linked to Clerk: {user_id} ({email})")
+            
+            return {
+                "status": "success",
+                "user_id": user_id,
+                "is_new_user": False,
+                "onboarding_completed": existing_user.get("onboarding_completed", False)
+            }
+        
+        # STEP 3: Create new user with complete data
+        logger.info(f"[SYNC] Creating new user: {email}")
         
         new_user_data = {
             "clerk_id": clerk_id,
             "email": email,
-            "full_name": full_name or "User",  # Generic fallback instead of exposing email prefix
+            "full_name": full_name or "User",
+            "profile_image_url": profile_image,
             "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat(),
             "onboarding_completed": False,
             "is_admin": is_admin,
             "subscription_plan": "free",
@@ -752,21 +787,18 @@ async def sync_user_to_supabase(current_user: Dict = Depends(get_current_user)):
         new_user = insert_result.data[0]
         user_id = new_user["id"]
         
-        logger.info(f"[SYNC] ✅ New user created: {user_id}")
+        logger.info(f"[SYNC] ✅ New user created: {user_id} ({email})")
         
-        # Also create user_profile for new user
+        # Create user_profile for new user
         try:
             supabase.table("user_profiles").insert({
                 "user_id": user_id,
                 "subscription_tier": "free"
-                # Note: subscription_plan, subscription_status, posts_this_month, posts_reset_at
-                # are stored in users table to avoid duplication. user_profiles is for
-                # personalization data (writing_tone, target_audience, etc.)
             }).execute()
-            logger.info(f"[SYNC] ✅ User profile created for: {user_id}")
+            logger.info(f"[SYNC] ✅ User profile created: {user_id}")
         except Exception as profile_error:
-            # Non-fatal - profile can be created later during onboarding
-            logger.warning(f"[SYNC] Failed to create user_profile (non-fatal): {profile_error}")
+            # Non-fatal - profile can be created during onboarding
+            logger.warning(f"[SYNC] Profile creation skipped (non-fatal): {profile_error}")
         
         return {
             "status": "success",
@@ -775,6 +807,8 @@ async def sync_user_to_supabase(current_user: Dict = Depends(get_current_user)):
             "onboarding_completed": False
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[SYNC] User sync error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"User sync failed: {str(e)}")
